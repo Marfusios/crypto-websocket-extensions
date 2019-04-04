@@ -336,6 +336,8 @@ namespace Crypto.Websocket.Extensions.Tests
             {
                 OrderBookSubject.OnNext(bulk);
             }
+
+            public override string ExchangeName => "mock";
         }
     }
 }
