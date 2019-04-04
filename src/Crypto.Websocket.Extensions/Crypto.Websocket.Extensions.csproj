@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>Crypto.Websocket.Extensions</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Mariusz Kotas</Authors>
+    <Description>Extensions to cryptocurrency websocket clients</Description>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReleaseNotes>Initial release</PackageReleaseNotes>
+    <Copyright>Copyright 2019 Mariusz Kotas. All rights reserved.</Copyright>
+    <PackageTags>Crypto websockets websocket client cryptocurrency exchange bitcoin extensions</PackageTags>
+    <PackageLicenseUrl>https://github.com/Marfusios/crypto-websocket-extensions/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/Marfusios/crypto-websocket-extensions</PackageProjectUrl>
+    <PackageIconUrl>https://github.com/Marfusios/crypto-websocket-extensions/blob/master/bitcoin.png</PackageIconUrl>
+    <RepositoryUrl>https://github.com/Marfusios/crypto-websocket-extensions</RepositoryUrl>
+    <RepositoryType>Git</RepositoryType>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile> 
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Binance.Client.Websocket" Version="1.0.6" />
+    <PackageReference Include="Bitfinex.Client.Websocket" Version="2.0.76" />
+    <PackageReference Include="Bitmex.Client.Websocket" Version="2.0.56" />
+    <PackageReference Include="LibLog" Version="5.0.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="System.Reactive" Version="4.0.0" />
+  </ItemGroup>
+</Project>
