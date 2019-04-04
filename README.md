@@ -19,11 +19,11 @@ It helps to unify data models and usage of more clients together.
 
 ### Supported exchanges
 
-|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logo&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;                                                                                                     | name                                                                                 | websocket client                                                                                              |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------:|----------------------------------|-----------------------------------------------------------------------------------------|
-|[![bitfinex](https://user-images.githubusercontent.com/1294454/27766244-e328a50c-5ed2-11e7-947b-041416579bb3.jpg)](https://www.bitfinex.com)												  | [Bitfinex](https://www.bitfinex.com)												  | [bitfinex-client-websocket](https://github.com/Marfusios/bitfinex-client-websocket)
-|[![binance](https://user-images.githubusercontent.com/1294454/29604020-d5483cdc-87ee-11e7-94c7-d1a8d9169293.jpg)](https://www.binance.com/?ref=21773680)									  | [Binance](https://www.binance.com/?ref=21773680)									  | [binance-client-websocket](https://github.com/Marfusios/binance-client-websocket)
-|[![bitmex](https://user-images.githubusercontent.com/1294454/27766319-f653c6e6-5ed4-11e7-933d-f0bc3699ae8f.jpg)](https://www.bitmex.com/register/qGWwBG)                                     | [BitMEX](https://www.bitmex.com/register/qGWwBG)                                     | [bitmex-client-websocket](https://github.com/Marfusios/bitmex-client-websocket) 
+| Logo | Name | Websocket client |
+| ------------- | ------------- |:------:|
+| [![bitfinex](https://user-images.githubusercontent.com/1294454/27766244-e328a50c-5ed2-11e7-947b-041416579bb3.jpg)](https://www.bitfinex.com)  | [Bitfinex](https://www.bitfinex.com)  | [bitfinex-client-websocket](https://github.com/Marfusios/bitfinex-client-websocket) |
+| [![bitmex](https://user-images.githubusercontent.com/1294454/27766319-f653c6e6-5ed4-11e7-933d-f0bc3699ae8f.jpg)](https://www.bitmex.com/register/qGWwBG)  | [BitMEX](https://www.bitmex.com/register/qGWwBG)  | [bitmex-client-websocket](https://github.com/Marfusios/bitmex-client-websocket) |
+| [![binance](https://user-images.githubusercontent.com/1294454/29604020-d5483cdc-87ee-11e7-94c7-d1a8d9169293.jpg)](https://www.binance.com/?ref=21773680)  | [Binance](https://www.binance.com/?ref=21773680)  | [binance-client-websocket](https://github.com/Marfusios/binance-client-websocket) |
 
 ### Extensions
 
