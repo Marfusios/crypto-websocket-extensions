@@ -9,6 +9,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     public interface IOrderBookLevel2Source
     {
         /// <summary>
+        /// Origin exchange name
+        /// </summary>
+        string ExchangeName { get; }
+
+        /// <summary>
         /// Streams initial snapshot of the order book
         /// </summary>
         IObservable<OrderBookLevel[]> OrderBookSnapshotStream { get; }

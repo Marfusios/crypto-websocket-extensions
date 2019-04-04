@@ -5,7 +5,6 @@ using Bitfinex.Client.Websocket.Client;
 using Bitfinex.Client.Websocket.Responses.Books;
 using Crypto.Websocket.Extensions.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
-using Crypto.Websocket.Extensions.Utils;
 using Crypto.Websocket.Extensions.Validations;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
@@ -25,6 +24,9 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
             Subscribe();
         }
+
+        /// <inheritdoc />
+        public override string ExchangeName => "bitfinex";
 
         private void Subscribe()
         {

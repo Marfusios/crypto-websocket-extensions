@@ -51,6 +51,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         }
 
         /// <summary>
+        /// Origin exchange name
+        /// </summary>
+        private string ExchangeName => _source.ExchangeName;
+
+        /// <summary>
         /// Target pair for this order book data
         /// </summary>
         public string TargetPair { get; }
@@ -334,7 +339,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
 
         private void NotifyAboutBookChange(double oldBid, double oldAsk)
         {
-            var quotes = new CryptoQuotes(BidPrice, AskPrice);
+            var quotes = new CryptoQuotes(BidPrice, AskPrice, _source.ExchangeName);
             _orderBookUpdated.OnNext(quotes);
             NotifyIfBidAskChanged(oldBid, oldAsk, quotes);
         }

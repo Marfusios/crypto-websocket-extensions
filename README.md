@@ -69,6 +69,26 @@ More usage examples:
 
 **Pull Requests are welcome!**
 
+### Powerfull Rx.NET
+
+Don't forget that you can do pretty nice things with reactive extensions and observables. 
+For example, if you want to check latest bid/ask prices from all exchanges all together, 
+you can do something like this: 
+
+```csharp
+Observable.CombineLatest(new[]
+            {
+                bitmexOrderBook.BidAskUpdatedStream,
+                bitfinexOrderBook.BidAskUpdatedStream,
+                binanceOrderBook.BidAskUpdatedStream,
+            })
+            .Subscribe(HandleQuoteChanged);
+
+// Method HandleQuoteChanged(IList<CryptoQuotes> quotes)
+// will be called on every exchange's price change
+```
+
+
 ### Multi-threading
 
 Observables from Reactive Extensions are single threaded by default. It means that your code inside subscriptions is called synchronously and as soon as the message comes from websocket API. It brings a great advantage of not to worry about synchronization, but if your code takes a longer time to execute it will block the receiving method, buffer the messages and may end up losing messages. For that reason consider to handle messages on the other thread and unblock receiving thread as soon as possible. I've prepared a few examples for you: 

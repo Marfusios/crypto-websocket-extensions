@@ -8,7 +8,6 @@ using Binance.Client.Websocket.Responses.Books;
 using Crypto.Websocket.Extensions.Logging;
 using Crypto.Websocket.Extensions.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
-using Crypto.Websocket.Extensions.Utils;
 using Crypto.Websocket.Extensions.Validations;
 using Newtonsoft.Json;
 using OrderBookLevel = Crypto.Websocket.Extensions.OrderBooks.Models.OrderBookLevel;
@@ -47,6 +46,9 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
             Subscribe();
         }
+
+        /// <inheritdoc />
+        public override string ExchangeName => "binance";
 
         /// <summary>
         /// Load snapshot via HTTP (REST call).
