@@ -1,105 +1,73 @@
-﻿![Logo](binance-logo-alt.png)
-# Binance websocket API client [![Build Status](https://travis-ci.org/Marfusios/binance-client-websocket.svg?branch=master)](https://travis-ci.org/Marfusios/binance-client-websocket) [![NuGet version](https://badge.fury.io/nu/Binance.Client.Websocket.svg)](https://badge.fury.io/nu/Binance.Client.Websocket)
+﻿![Logo](cwe_logo.png)
+# Cryptocurrency websocket extensions [![Build Status](https://travis-ci.org/Marfusios/crypto-websocket-extensions.svg?branch=master)](https://travis-ci.org/Marfusios/crypto-websocket-extensions) [![NuGet version](https://badge.fury.io/nu/crypto-websocket-extensions.svg)](https://badge.fury.io/nu/crypto-websocket-extensions)
 
-This is a C# implementation of the Binance websocket API found here:
+This is a library that provides extensions to cryptocurrency websocket exchange clients. 
 
-https://github.com/binance-exchange/binance-official-api-docs/blob/master/web-socket-streams.md
+It helps to unify data models and usage of more clients together. 
 
-[Releases and breaking changes](https://github.com/Marfusios/binance-client-websocket/releases)
+[Releases and breaking changes](https://github.com/Marfusios/crypto-websocket-extensions/releases)
 
 ### License: 
     Apache License 2.0
 
 ### Features
 
-* installation via NuGet ([Binance.Client.Websocket](https://www.nuget.org/packages/Binance.Client.Websocket))
-* public and authenticated API
+* installation via NuGet ([Crypto.Websocket.Extensions](https://www.nuget.org/packages/Crypto.Websocket.Extensions))
 * targeting .NET Standard 2.0 (.NET Core, Linux/MacOS compatible)
 * reactive extensions ([Rx.NET](https://github.com/Reactive-Extensions/Rx.NET))
 * integrated logging abstraction ([LibLog](https://github.com/damianh/LibLog))
 
-### Usage
+### Supported exchanges
+
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logo&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;                                                                                                     | name                                                                                 | websocket client                                                                                              |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------------:|----------------------------------|-----------------------------------------------------------------------------------------|
+|[![bitfinex](https://user-images.githubusercontent.com/1294454/27766244-e328a50c-5ed2-11e7-947b-041416579bb3.jpg)](https://www.bitfinex.com)												  | [Bitfinex](https://www.bitfinex.com)												  | [bitfinex-client-websocket](https://github.com/Marfusios/bitfinex-client-websocket)
+|[![binance](https://user-images.githubusercontent.com/1294454/29604020-d5483cdc-87ee-11e7-94c7-d1a8d9169293.jpg)](https://www.binance.com/?ref=21773680)									  | [Binance](https://www.binance.com/?ref=21773680)									  | [binance-client-websocket](https://github.com/Marfusios/binance-client-websocket)
+|[![bitmex](https://user-images.githubusercontent.com/1294454/27766319-f653c6e6-5ed4-11e7-933d-f0bc3699ae8f.jpg)](https://www.bitmex.com/register/qGWwBG)                                     | [BitMEX](https://www.bitmex.com/register/qGWwBG)                                     | [bitmex-client-websocket](https://github.com/Marfusios/bitmex-client-websocket) 
+
+### Extensions
+
+#### Order book
+
+* `CryptoOrderBook` class - unified order book across all exchanges
+* support for level2 market data (only differences in order book)
+* provides streams:
+    * `OrderBookUpdatedStream` - streams on an every order book update
+    * `BidAskUpdatedStream` - streams when bid or ask price changed (top level of the order book)
+* provides properties and methods:
+    * `BidLevels` and `AskLevels` - ordered array of current state of the order book
+    * `FindLevelByPrice` and `FindLevelById` - returns specific order book level
+
+Usage:
 
 ```csharp
-var exitEvent = new ManualResetEvent(false);
-var url = BinanceValues.ApiWebsocketUrl;
+var url = BitmexValues.ApiWebsocketUrl;
+var communicator = new BitmexWebsocketCommunicator(url);
+var client = new BitmexWebsocketClient(communicator);
 
-using (var communicator = new BinanceWebsocketCommunicator(url))
+var pair = "XBTUSD";
+
+var source = new BitmexOrderBookSource(client);
+var orderBook = new CryptoOrderBook(pair, source);
+
+// orderBook.BidAskUpdatedStream.Subscribe(xxx)
+orderBook.OrderBookUpdatedStream.Subscribe(quotes =>
 {
-    using (var client = new BinanceWebsocketClient(communicator))
-    {
-        client.Streams.TradesStream.Subscribe(response =>
-        {
-            var trade = response.Data;
-            Console.WriteLine($"Trade executed [{trade.Symbol}] price: {trade.Price}");
-        });
+    var currentBid = orderBook.BidPrice;
+    var currentAsk = orderBook.AskPrice;
 
-        client.SetSubscriptions(
-            new TradeSubscription("btcusdt"),
-            new TradeSubscription("ethbtc"),
-            new TradeSubscription("bnbbtc"),
-            );
-        await communicator.Start();
-
-        exitEvent.WaitOne(TimeSpan.FromSeconds(30));
-    }
-}
-```
-
-More usage examples:
-* console sample ([link](test_integration/Binance.Client.Websocket.Sample/Program.cs))
-* integration tests ([link](test_integration/Binance.Client.Websocket.Tests.Integration))
-* desktop sample ([link](test_integration/Binance.Client.Websocket.Sample.WinForms))
-
-### API coverage
-
-| PUBLIC                 |    Covered     |  
-|------------------------|:--------------:|
-| Aggregate trades       |  ✔            |
-| Trades                 |  ✔            |
-| Kline/Candlesticks     |                |
-| Individual mini tickers|                |
-| All mini tickers       |                |
-| Individual tickers     |                |
-| All tickers            |                |
-| Partial orderbook      |  ✔            |
-| Diff. orderbook        |  ✔            |
-
-**Pull Requests are welcome!**
-
-### Reconnecting
-
-There is a built-in reconnection which invokes after 1 minute (default) of not receiving any messages from the server. It is possible to configure that timeout via `communicator.ReconnectTimeoutMs`. Also, there is a stream `ReconnectionHappened` which sends information about a type of reconnection. However, if you are subscribed to low rate channels, it is very likely that you will encounter that timeout - higher the timeout to a few minutes or call `PingRequest` by your own every few seconds. 
-
-In the case of Binance outage, there is a built-in functionality which slows down reconnection requests (could be configured via `communicator.ErrorReconnectTimeoutMs`, the default is 1 minute).
-
-### Backtesting
-
-The library is prepared for backtesting. The dependency between `Client` and `Communicator` is via abstraction `IBinanceCommunicator`. There are two communicator implementations: 
-* `BinanceWebsocketCommunicator` - a realtime communication with Binance via websocket API.
-* `BinanceFileCommunicator` - a simulated communication, raw data are loaded from files and streamed. If you are **interested in buying historical raw data** (trades, order book events), contact me.
-
-Feel free to implement `IBinanceCommunicator` on your own, for example, load raw data from database, cache, etc. 
-
-Usage: 
-
-```csharp
-var communicator = new BinanceFileCommunicator();
-communicator.FileNames = new[]
-{
-    "data/binance_raw_btcusdt_2018-11-13.txt"
-};
-communicator.Delimiter = ";;";
-
-var client = new BinanceWebsocketClient(communicator);
-client.Streams.TradesStream.Subscribe(response =>
-{
-    // do something with trade
+    var bids = orderBook.BidLevels;
+    // xxx
 });
-
+        
 await communicator.Start();
 ```
 
+More usage examples:
+* integration tests ([link](test_integration/Crypto.Websocket.Extensions.Tests.Integration))
+* console sample ([link](test_integration/Crypto.Websocket.Extensions.Sample/Program.cs))
+
+**Pull Requests are welcome!**
 
 ### Multi-threading
 
@@ -171,12 +139,6 @@ client
 // ----- code1 ----- code1 ----- ----- code1
 // ----- ----- code2 ----- code2 code2 ----
 ```
-
-#### Desktop application (WinForms or WPF)
-
-Due to the large amount of questions about integration of this library into a desktop application (old full .NET Framework), I've prepared WinForms example ([link](test_integration/Binance.Client.Websocket.Sample.WinForms)). 
-
-![WinForms example screen](test_integration/Binance.Client.Websocket.Sample.WinForms/winforms_example_app.png)
 
 ### Available for help
 I do consulting, please don't hesitate to contact me if you have a custom solution you would like me to implement ([web](http://mkotas.cz/), 

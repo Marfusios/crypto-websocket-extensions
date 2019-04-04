@@ -3,6 +3,12 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Threading;
+using System.Threading.Tasks;
+using Bitmex.Client.Websocket;
+using Bitmex.Client.Websocket.Client;
+using Bitmex.Client.Websocket.Websockets;
+using Crypto.Websocket.Extensions.OrderBooks;
+using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Serilog;
 using Serilog.Events;
 
@@ -64,7 +70,29 @@ namespace Crypto.Websocket.Extensions.Sample
             Log.CloseAndFlush();
         }
 
+        private static async Task StartBitmex()
+        {
+            var url = BitmexValues.ApiWebsocketUrl;
+            var communicator = new BitmexWebsocketCommunicator(url);
+            var client = new BitmexWebsocketClient(communicator);
 
+            var pair = "XBTUSD";
+
+            var source = new BitmexOrderBookSource(client);
+            var orderBook = new CryptoOrderBook(pair, source);
+
+            // orderBook.BidAskUpdatedStream.Subscribe(xxx)
+            orderBook.OrderBookUpdatedStream.Subscribe(quotes =>
+            {
+                var currentBid = orderBook.BidPrice;
+                var currentAsk = orderBook.AskPrice;
+
+                var bids = orderBook.BidLevels;
+                // xxx
+            });
+                    
+            await communicator.Start();
+        }
 
         private static void InitLogging()
         {
