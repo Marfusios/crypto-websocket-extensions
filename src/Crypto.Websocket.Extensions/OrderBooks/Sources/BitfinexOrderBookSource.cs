@@ -62,7 +62,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                 x.Price,
                 x.Amount,
                 x.Count,
-                CryptoPairsHelper.Clean(x.Pair)
+                x.Pair
             );
         }
 

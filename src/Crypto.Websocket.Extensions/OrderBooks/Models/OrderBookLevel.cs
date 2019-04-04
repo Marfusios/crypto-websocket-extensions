@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using Crypto.Websocket.Extensions.Models;
+using Crypto.Websocket.Extensions.Utils;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Models
 {
@@ -18,7 +19,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Models
             Price = price;
             Count = count;
             Amount = amount;
-            Pair = pair;
+            Pair = pair == null ? null : CryptoPairsHelper.Clean(pair);
 
             Price = Abs(Price);
             Amount = Abs(Amount);
