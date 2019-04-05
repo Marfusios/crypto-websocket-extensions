@@ -172,6 +172,15 @@ namespace Crypto.Websocket.Extensions.OrderBooks
 
         private void HandleSnapshotSynchronized(OrderBookLevel[] levels)
         {
+            var levelsForThis = levels
+                .Where(x => TargetPair.Equals(x.Pair))
+                .ToArray();
+            if (!levelsForThis.Any())
+            {
+                // snapshot for different pair, ignore
+                return;
+            }
+
             double oldBid;
             double oldAsk;
 
@@ -179,7 +188,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
             {
                 oldBid = BidPrice;
                 oldAsk = AskPrice;
-                HandleSnapshot(levels);
+                HandleSnapshot(levelsForThis);
             }
 
             NotifyAboutBookChange(oldBid, oldAsk);
@@ -187,6 +196,15 @@ namespace Crypto.Websocket.Extensions.OrderBooks
 
         private void HandleDiffSynchronized(OrderBookLevelBulk bulk)
         {
+            var levelsForThis = bulk.Levels
+                .Where(x => TargetPair.Equals(x.Pair))
+                .ToArray();
+            if (!levelsForThis.Any())
+            {
+                // snapshot for different pair, ignore
+                return;
+            }
+
             double oldBid;
             double oldAsk;
 
@@ -194,7 +212,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
             {
                 oldBid = BidPrice;
                 oldAsk = AskPrice;
-                HandleDiff(bulk);
+                HandleDiff(bulk, levelsForThis);
             }
 
             NotifyAboutBookChange(oldBid, oldAsk);
@@ -221,7 +239,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
             _isSnapshotLoaded = true;
         }
 
-        private void HandleDiff(OrderBookLevelBulk bulk)
+        private void HandleDiff(OrderBookLevelBulk bulk, OrderBookLevel[] correctLevels)
         {
             if (!_isSnapshotLoaded)
             {
@@ -232,13 +250,13 @@ namespace Crypto.Websocket.Extensions.OrderBooks
             switch (bulk.Action)
             {
                 case OrderBookAction.Insert:
-                    InsertLevels(bulk.Levels);
+                    InsertLevels(correctLevels);
                     break;
                 case OrderBookAction.Update:
-                    UpdateLevels(bulk.Levels);
+                    UpdateLevels(correctLevels);
                     break;
                 case OrderBookAction.Delete:
-                    DeleteLevels(bulk.Levels);
+                    DeleteLevels(correctLevels);
                     break;
                 default:
                     return;
@@ -339,7 +357,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
 
         private void NotifyAboutBookChange(double oldBid, double oldAsk)
         {
-            var quotes = new CryptoQuotes(BidPrice, AskPrice, _source.ExchangeName);
+            var quotes = new CryptoQuotes(BidPrice, AskPrice, _source.ExchangeName, TargetPair);
             _orderBookUpdated.OnNext(quotes);
             NotifyIfBidAskChanged(oldBid, oldAsk, quotes);
         }

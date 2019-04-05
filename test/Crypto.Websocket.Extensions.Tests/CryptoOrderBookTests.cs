@@ -49,20 +49,30 @@ namespace Crypto.Websocket.Extensions.Tests
             var data = data2.Concat(data1).ToArray();
             var source = new OrderBookSourceMock(data);
 
-            var orderBook = new CryptoOrderBook(pair1, source);
+            var orderBook1 = new CryptoOrderBook(pair1, source);
+            var orderBook2 = new CryptoOrderBook(pair2, source);
 
             source.StreamSnapshot();
 
-            Assert.Equal(500, orderBook.BidLevels.Length);
-            Assert.Equal(500, orderBook.AskLevels.Length);
+            Assert.Equal(500, orderBook1.BidLevels.Length);
+            Assert.Equal(500, orderBook1.AskLevels.Length);
 
-            Assert.Equal(499, orderBook.BidLevels.First().Price);
-            Assert.Equal(1499, orderBook.BidLevels.First().Amount);
+            Assert.Equal(200, orderBook2.BidLevels.Length);
+            Assert.Equal(200, orderBook2.AskLevels.Length);
 
-            Assert.Equal(501, orderBook.AskLevels.First().Price);
-            Assert.Equal(2501, orderBook.AskLevels.First().Amount);
+            Assert.Equal(499, orderBook1.BidLevels.First().Price);
+            Assert.Equal(1499, orderBook1.BidLevels.First().Amount);
+
+            Assert.Equal(199, orderBook2.BidLevels.First().Price);
+            Assert.Equal(599, orderBook2.BidLevels.First().Amount);
+
+            Assert.Equal(501, orderBook1.AskLevels.First().Price);
+            Assert.Equal(2501, orderBook1.AskLevels.First().Amount);
+
+            Assert.Equal(201, orderBook2.AskLevels.First().Price);
+            Assert.Equal(1001, orderBook2.AskLevels.First().Amount);
             
-            var levels = orderBook.Levels;
+            var levels = orderBook1.Levels;
             foreach (var level in levels)
             {
                 Assert.Equal(CryptoPairsHelper.Clean(pair1), level.Pair);
@@ -128,7 +138,10 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 300.33, 3350, CryptoSide.Bid),
                 CreateLevel(pair, 500.2, 400, CryptoSide.Ask),
                 CreateLevel(pair, 503.1, 3000, CryptoSide.Ask),
-                CreateLevel(pair, 800.123, 1234, CryptoSide.Ask)
+                CreateLevel(pair, 800.123, 1234, CryptoSide.Ask),
+
+                CreateLevel(null, 101.1, null, CryptoSide.Bid),
+                CreateLevel(null, 901.1, null, CryptoSide.Ask)
             ));
 
             source.StreamBulk(GetUpdateBulk(
@@ -137,15 +150,15 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 501, 32, CryptoSide.Ask),
                 CreateLevel(pair, 503.1, 32, CryptoSide.Ask),
 
-                CreateLevel(null, 100, null, CryptoSide.Bid),
-                CreateLevel(null, 900, null, CryptoSide.Ask)
+                CreateLevel(pair, 100, null, CryptoSide.Bid),
+                CreateLevel(pair, 900, null, CryptoSide.Ask)
             ));
 
             source.StreamBulk(GetDeleteBulk(
-                CreateLevel(0, CryptoSide.Bid),
-                CreateLevel(1, CryptoSide.Bid),
-                CreateLevel(1000, CryptoSide.Ask),
-                CreateLevel(999, CryptoSide.Ask)
+                CreateLevel(pair, 0, CryptoSide.Bid),
+                CreateLevel(pair, 1, CryptoSide.Bid),
+                CreateLevel(pair, 1000, CryptoSide.Ask),
+                CreateLevel(pair, 999, CryptoSide.Ask)
             ));
 
             Assert.NotEmpty(orderBook.BidLevels);
@@ -177,6 +190,117 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Null(orderBook.FindBidLevelByPrice(1));
             Assert.Null(orderBook.FindAskLevelByPrice(1000));
             Assert.Null(orderBook.FindAskLevelByPrice(999));
+
+            Assert.Null(orderBook.FindBidLevelByPrice(101.1));
+            Assert.Null(orderBook.FindAskLevelByPrice(901.1));
+        }
+
+        [Fact]
+        public void StreamingDiff_TwoPairs_ShouldHandleCorrectly()
+        {
+            var pair1 = "BTC/USD";
+            var pair2 = "ETH/USD";
+
+            var data1 = GetOrderBookSnapshotMockData(pair1, 500);
+            var data2 = GetOrderBookSnapshotMockData(pair2, 200);
+            var data = data2.Concat(data1).ToArray();
+            var source = new OrderBookSourceMock(data);
+
+            var orderBook1 = new CryptoOrderBook(pair1, source);
+            var orderBook2 = new CryptoOrderBook(pair2, source);
+
+            source.StreamSnapshot();
+
+            source.StreamBulk(GetInsertBulk(
+                CreateLevel(pair2, 199.4, 50, CryptoSide.Bid),
+                CreateLevel(pair2, 198.3, 600, CryptoSide.Bid),
+                CreateLevel(pair2, 50.33, 3350, CryptoSide.Bid),
+
+                CreateLevel(pair1, 500.2, 400, CryptoSide.Ask),
+                CreateLevel(pair1, 503.1, 3000, CryptoSide.Ask),
+                CreateLevel(pair1, 800.123, 1234, CryptoSide.Ask),
+
+                CreateLevel(null, 101.1, null, CryptoSide.Bid),
+                CreateLevel(null, 901.1, null, CryptoSide.Ask)
+            ));
+
+            source.StreamBulk(GetInsertBulk(
+                CreateLevel(pair1, 499.4, 50, CryptoSide.Bid),
+                CreateLevel(pair1, 498.3, 600, CryptoSide.Bid),
+                CreateLevel(pair1, 300.33, 3350, CryptoSide.Bid),
+
+                CreateLevel(pair2, 200.2, 400, CryptoSide.Ask),
+                CreateLevel(pair2, 203.1, 3000, CryptoSide.Ask),
+                CreateLevel(pair2, 250.123, 1234, CryptoSide.Ask)
+            ));
+
+            source.StreamBulk(GetUpdateBulk(
+                CreateLevel(pair1, 499, 33, CryptoSide.Bid),
+                CreateLevel(pair1, 450, 33, CryptoSide.Bid),
+                CreateLevel(pair1, 501, 32, CryptoSide.Ask),
+                CreateLevel(pair1, 503.1, 32, CryptoSide.Ask),
+
+                CreateLevel(pair1, 100, null, CryptoSide.Bid),
+                CreateLevel(pair1, 900, null, CryptoSide.Ask)
+            ));
+
+            source.StreamBulk(GetDeleteBulk(
+                CreateLevel(pair1, 0, CryptoSide.Bid),
+                CreateLevel(pair1, 1, CryptoSide.Bid),
+
+                CreateLevel(pair2, 0, CryptoSide.Bid),
+                CreateLevel(pair2, 1, CryptoSide.Bid)
+            ));
+
+            source.StreamBulk(GetDeleteBulk(
+                CreateLevel(pair2, 400, CryptoSide.Ask),
+                CreateLevel(pair2, 399, CryptoSide.Ask),
+
+                CreateLevel(pair1, 1000, CryptoSide.Ask),
+                CreateLevel(pair1, 999, CryptoSide.Ask)
+            ));
+
+            Assert.NotEmpty(orderBook1.BidLevels);
+            Assert.NotEmpty(orderBook1.AskLevels);
+
+            Assert.Equal(501, orderBook1.BidLevels.Length);
+            Assert.Equal(501, orderBook1.AskLevels.Length);
+
+            Assert.Equal(201, orderBook2.BidLevels.Length);
+            Assert.Equal(201, orderBook2.AskLevels.Length);
+
+            Assert.Equal(499.4, orderBook1.BidPrice);
+            Assert.Equal(500.2, orderBook1.AskPrice);
+
+            Assert.Equal(199.4, orderBook2.BidPrice);
+            Assert.Equal(200.2, orderBook2.AskPrice);
+
+            Assert.Equal(33, orderBook1.FindBidLevelByPrice(499)?.Amount);
+            Assert.Equal(33, orderBook1.FindBidLevelByPrice(450)?.Amount);
+
+            Assert.Equal(32, orderBook1.FindAskLevelByPrice(501)?.Amount);
+            Assert.Equal(32, orderBook1.FindAskLevelByPrice(503.1)?.Amount);
+
+            var notCompleteBid = orderBook1.FindBidLevelByPrice(100);
+            Assert.Equal(CryptoPairsHelper.Clean(pair1), notCompleteBid.Pair);
+            Assert.Equal(1100, notCompleteBid.Amount);
+            Assert.Equal(3, notCompleteBid.Count);
+
+            var notCompleteAsk = orderBook1.FindAskLevelByPrice(900);
+            Assert.Equal(CryptoPairsHelper.Clean(pair1), notCompleteAsk.Pair);
+            Assert.Equal(2900, notCompleteAsk.Amount);
+            Assert.Equal(3, notCompleteAsk.Count);
+
+            Assert.Null(orderBook1.FindBidLevelByPrice(0));
+            Assert.Null(orderBook1.FindBidLevelByPrice(1));
+            Assert.Null(orderBook1.FindAskLevelByPrice(1000));
+            Assert.Null(orderBook1.FindAskLevelByPrice(999));
+
+            Assert.Null(orderBook1.FindBidLevelByPrice(101.1));
+            Assert.Null(orderBook1.FindAskLevelByPrice(901.1));
+
+            Assert.Null(orderBook2.FindBidLevelByPrice(101.1));
+            Assert.Null(orderBook2.FindAskLevelByPrice(901.1));
         }
 
         [Fact]
@@ -218,15 +342,15 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 501, 32, CryptoSide.Ask),
                 CreateLevel(pair, 503.1, 32, CryptoSide.Ask),
 
-                CreateLevel(null, 100, null, CryptoSide.Bid),
-                CreateLevel(null, 900, null, CryptoSide.Ask)
+                CreateLevel(pair, 100, null, CryptoSide.Bid),
+                CreateLevel(pair, 900, null, CryptoSide.Ask)
             ));
 
             source.StreamBulk(GetDeleteBulk(
-                CreateLevel(0, CryptoSide.Bid),
-                CreateLevel(1, CryptoSide.Bid),
-                CreateLevel(1000, CryptoSide.Ask),
-                CreateLevel(999, CryptoSide.Ask)
+                CreateLevel(pair, 0, CryptoSide.Bid),
+                CreateLevel(pair, 1, CryptoSide.Bid),
+                CreateLevel(pair, 1000, CryptoSide.Ask),
+                CreateLevel(pair, 999, CryptoSide.Ask)
             ));
 
             Assert.Equal(6, notificationCount);
@@ -281,7 +405,7 @@ namespace Crypto.Websocket.Extensions.Tests
             );
         }
 
-        private OrderBookLevel CreateLevel(double price, CryptoSide side)
+        private OrderBookLevel CreateLevel(string pair, double price, CryptoSide side)
         {
             return new OrderBookLevel(
                 CreateKey(price,side),
@@ -289,7 +413,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 null,
                 null,
                 null,
-                null
+                pair == null ? null : CryptoPairsHelper.Clean(pair)
             );
         }
 
