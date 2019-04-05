@@ -15,10 +15,10 @@ namespace Crypto.Websocket.Extensions.OrderBooks
 {
     /// <summary>
     /// Cryptocurrency order book.
-    /// Process order book data from one source per one target pair. 
+    /// Process order book data from one source and one target pair. 
     /// </summary>
     [DebuggerDisplay("CryptoOrderBook [{TargetPair}] bid: {BidPrice} ({_bidsBook.Count}) ask: {AskPrice} ({_asksBook.Count})")]
-    public class CryptoOrderBook
+    public class CryptoOrderBook : ICryptoOrderBook
     {
         private readonly CryptoAsyncLock _locker = new CryptoAsyncLock();
 
@@ -53,7 +53,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         /// <summary>
         /// Origin exchange name
         /// </summary>
-        private string ExchangeName => _source.ExchangeName;
+        public string ExchangeName => _source.ExchangeName;
 
         /// <summary>
         /// Target pair for this order book data
