@@ -12,7 +12,7 @@
     <PackageTags>Crypto websockets websocket client cryptocurrency exchange bitcoin extensions</PackageTags>
     <PackageLicenseUrl>https://github.com/Marfusios/crypto-websocket-extensions/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Marfusios/crypto-websocket-extensions</PackageProjectUrl>
-    <PackageIconUrl>https://github.com/Marfusios/crypto-websocket-extensions/blob/master/bitcoin.png</PackageIconUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/Marfusios/crypto-websocket-extensions/master/bitcoin.png</PackageIconUrl>
     <RepositoryUrl>https://github.com/Marfusios/crypto-websocket-extensions</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
