@@ -24,8 +24,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks
 
         private readonly IOrderBookLevel2Source _source;
 
-        private readonly Subject<CryptoQuotes> _bidAskUpdated = new Subject<CryptoQuotes>();
-        private readonly Subject<CryptoQuotes> _orderBookUpdated = new Subject<CryptoQuotes>();
+        private readonly Subject<OrderBookChangeInfo> _bidAskUpdated = new Subject<OrderBookChangeInfo>();
+        private readonly Subject<OrderBookChangeInfo> _orderBookUpdated = new Subject<OrderBookChangeInfo>();
 
         private readonly ConcurrentDictionary<string, OrderBookLevel> _bidsBook = new ConcurrentDictionary<string, OrderBookLevel>();
         private readonly ConcurrentDictionary<string, OrderBookLevel> _asksBook = new ConcurrentDictionary<string, OrderBookLevel>();
@@ -68,12 +68,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         /// <summary>
         /// Streams data when top level bid or ask price was updated
         /// </summary>
-        public IObservable<CryptoQuotes> BidAskUpdatedStream => _bidAskUpdated.AsObservable();
+        public IObservable<OrderBookChangeInfo> BidAskUpdatedStream => _bidAskUpdated.AsObservable();
 
         /// <summary>
         /// Streams data on every order book change (price or amount at any level)
         /// </summary>
-        public IObservable<CryptoQuotes> OrderBookUpdatedStream => _orderBookUpdated.AsObservable();
+        public IObservable<OrderBookChangeInfo> OrderBookUpdatedStream => _orderBookUpdated.AsObservable();
 
         /// <summary>
         /// Current bid side of the order book (ordered from higher to lower price)
@@ -191,7 +191,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
                 HandleSnapshot(levelsForThis);
             }
 
-            NotifyAboutBookChange(oldBid, oldAsk);
+            NotifyAboutBookChange(oldBid, oldAsk, levelsForThis);
         }
 
         private void HandleDiffSynchronized(OrderBookLevelBulk bulk)
@@ -215,7 +215,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
                 HandleDiff(bulk, levelsForThis);
             }
 
-            NotifyAboutBookChange(oldBid, oldAsk);
+            NotifyAboutBookChange(oldBid, oldAsk, levelsForThis);
         }
 
         private void HandleSnapshot(OrderBookLevel[] levels)
@@ -225,9 +225,6 @@ namespace Crypto.Websocket.Extensions.OrderBooks
 
             foreach (var level in levels)
             {
-                if(!IsTargetPair(level.Pair))
-                    continue;
-
                 if (level.Side == CryptoSide.Bid)
                     _bidsBook[level.Id] = level;
 
@@ -355,18 +352,21 @@ namespace Crypto.Websocket.Extensions.OrderBooks
                 _asksBook;
         }
 
-        private void NotifyAboutBookChange(double oldBid, double oldAsk)
+        private void NotifyAboutBookChange(double oldBid, double oldAsk, OrderBookLevel[] levels)
         {
-            var quotes = new CryptoQuotes(BidPrice, AskPrice, _source.ExchangeName, TargetPair);
-            _orderBookUpdated.OnNext(quotes);
-            NotifyIfBidAskChanged(oldBid, oldAsk, quotes);
+            var quotes = new CryptoQuotes(BidPrice, AskPrice);
+            var clonedLevels = levels.Select(x => x.Clone()).ToArray();
+            var change = new OrderBookChangeInfo(_source.ExchangeName, TargetPair, quotes, clonedLevels);
+
+            _orderBookUpdated.OnNext(change);
+            NotifyIfBidAskChanged(oldBid, oldAsk, change);
         }
 
-        private void NotifyIfBidAskChanged(double oldBid, double oldAsk, CryptoQuotes quotes)
+        private void NotifyIfBidAskChanged(double oldBid, double oldAsk, OrderBookChangeInfo info)
         {
-            if (!CryptoMathUtils.IsSame(oldBid, quotes.Bid) || !CryptoMathUtils.IsSame(oldAsk, quotes.Ask))
+            if (!CryptoMathUtils.IsSame(oldBid, info.Quotes.Bid) || !CryptoMathUtils.IsSame(oldAsk, info.Quotes.Ask))
             {
-                _bidAskUpdated.OnNext(quotes);
+                _bidAskUpdated.OnNext(info);
             }
         }
     }

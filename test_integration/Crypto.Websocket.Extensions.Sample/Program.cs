@@ -19,6 +19,7 @@ using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Websockets;
 using Crypto.Websocket.Extensions.Models;
 using Crypto.Websocket.Extensions.OrderBooks;
+using Crypto.Websocket.Extensions.OrderBooks.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Serilog;
 using Serilog.Events;
@@ -71,10 +72,10 @@ namespace Crypto.Websocket.Extensions.Sample
                 .Subscribe(HandleQuoteChanged);
         }
 
-        private static void HandleQuoteChanged(IList<CryptoQuotes> quotes)
+        private static void HandleQuoteChanged(IList<OrderBookChangeInfo> quotes)
         {
             var formattedMessages = quotes
-                .Select(x => $"{x.ExchangeName.ToUpper()} {x.Bid + "/" + x.Ask,16}")
+                .Select(x => $"{x.ExchangeName.ToUpper()} {x.Quotes.Bid + "/" + x.Quotes.Ask,16}")
                 .Select(x => $"{x,30}")
                 .ToArray();
 

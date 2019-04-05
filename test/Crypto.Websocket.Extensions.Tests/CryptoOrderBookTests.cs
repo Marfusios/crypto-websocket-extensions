@@ -313,22 +313,28 @@ namespace Crypto.Websocket.Extensions.Tests
             var notificationCount = 0;
             var notificationBidAskCount = 0;
 
+            var changes = new List<OrderBookChangeInfo>();
+
             var orderBook = new CryptoOrderBook(pair, source);
 
-            orderBook.OrderBookUpdatedStream.Subscribe(_ => notificationCount++);
+            orderBook.OrderBookUpdatedStream.Subscribe(x =>
+            {
+                notificationCount++;
+                changes.Add(x);
+            });
             orderBook.BidAskUpdatedStream.Subscribe(_ => notificationBidAskCount++);
 
             source.StreamSnapshot();
 
             source.StreamBulk(GetInsertBulk(
-                CreateLevel(pair, 499.4, 50, CryptoSide.Bid)
+                CreateLevel(pair, 499.4, 50, CryptoSide.Bid),
+                CreateLevel(pair, 500.2, 400, CryptoSide.Ask)
             ));
 
 
             source.StreamBulk(GetInsertBulk(
                 CreateLevel(pair, 499.5, 600, CryptoSide.Bid),
-                CreateLevel(pair, 300.33, 3350, CryptoSide.Bid),
-                CreateLevel(pair, 500.2, 400, CryptoSide.Ask)
+                CreateLevel(pair, 300.33, 3350, CryptoSide.Bid)
             ));
 
             source.StreamBulk(GetInsertBulk(
@@ -355,6 +361,15 @@ namespace Crypto.Websocket.Extensions.Tests
 
             Assert.Equal(6, notificationCount);
             Assert.Equal(3, notificationBidAskCount);
+
+            var firstChange = changes.First();
+            var secondChange = changes[1];
+
+            Assert.Equal(0, firstChange.Levels.First().Price);
+            Assert.Equal(501, firstChange.Levels.Last().Price);
+
+            Assert.Equal(499.4, secondChange.Levels.First().Price);
+            Assert.Equal(500.2, secondChange.Levels.Last().Price);
         }
 
 

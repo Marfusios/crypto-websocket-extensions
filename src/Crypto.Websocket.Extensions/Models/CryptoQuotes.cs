@@ -6,12 +6,10 @@
     public class CryptoQuotes
     {
         /// <inheritdoc />
-        public CryptoQuotes(double bid, double ask, string exchangeName, string pair)
+        public CryptoQuotes(double bid, double ask)
         {
             Bid = bid;
             Ask = ask;
-            ExchangeName = exchangeName;
-            Pair = pair;
             Mid = (bid + ask) / 2;
         }
 
@@ -29,15 +27,5 @@
         /// Current mid price
         /// </summary>
         public double Mid { get; }
-
-        /// <summary>
-        /// Origin exchange name
-        /// </summary>
-        public string ExchangeName { get; }
-
-        /// <summary>
-        /// Target pair for this quotes
-        /// </summary>
-        public string Pair { get; }
     }
 }

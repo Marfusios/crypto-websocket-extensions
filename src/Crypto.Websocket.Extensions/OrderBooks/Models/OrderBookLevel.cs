@@ -56,6 +56,20 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Models
         /// </summary>
         public string Pair { get; private set; }
 
+        /// <summary>
+        /// Create a new clone
+        /// </summary>
+        public OrderBookLevel Clone()
+        {
+            return new OrderBookLevel(
+                Id,
+                Side,
+                Price,
+                Amount,
+                Count,
+                Pair
+                );
+        }
 
         private double? Abs(double? value)
         {
