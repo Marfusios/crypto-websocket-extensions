@@ -19,6 +19,9 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         protected readonly Subject<OrderBookLevelBulk> OrderBookSubject = new Subject<OrderBookLevelBulk>();
 
 
+        /// <summary>
+        /// Exchange name the orderbook source belongs to
+        /// </summary>
         public abstract string ExchangeName { get; }
 
         /// <inheritdoc />

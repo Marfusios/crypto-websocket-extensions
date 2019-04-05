@@ -52,33 +52,36 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         /// <summary>
         /// Load snapshot via HTTP (REST call).
-        /// Need to be called before anything else. 
+        /// Need to be called before anything else.
+        /// Doesn't throw exception (only logs it). 
         /// </summary>
         public async Task LoadSnapshot(string pair, int count = 1000)
         {
+            OrderBookPartial parsed = null;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
-            var url = $"/api/v1/depth?symbol={pairSafe}&limit={count}";
-            using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-            using (HttpContent content = response.Content)
+            try
             {
-                OrderBookPartial parsed = null;
-                try
+                var url = $"/api/v1/depth?symbol={pairSafe}&limit={count}";
+                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
+                using (HttpContent content = response.Content)
                 {
-                    var result = await content.ReadAsStringAsync();
-                    parsed = JsonConvert.DeserializeObject<OrderBookPartial>(result);
-                    if (parsed == null)
-                        return;
+                   
+                        var result = await content.ReadAsStringAsync();
+                        parsed = JsonConvert.DeserializeObject<OrderBookPartial>(result);
+                        if (parsed == null)
+                            return;
 
-                    parsed.Symbol = pairSafe;
+                        parsed.Symbol = pairSafe;
+                   
                 }
-                catch (Exception e)
-                {
-                    Log.Warn($"Failed to load orderbook snapshot for pair '{pairSafe}'. Error: {e.Message}");
-                    return;
-                }
-               
-                HandleSnapshot(parsed);
             }
+            catch (Exception e)
+            {
+                Log.Warn($"Failed to load orderbook snapshot for pair '{pairSafe}'. Error: {e.Message}");
+                return;
+            }
+               
+            HandleSnapshot(parsed);
         }
 
         private void Subscribe()
