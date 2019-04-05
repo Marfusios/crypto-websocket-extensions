@@ -12,25 +12,34 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     /// <inheritdoc />
     public class BitmexOrderBookSource : OrderBookLevel2SourceBase
     {
-        private readonly BitmexWebsocketClient _client;
+        private BitmexWebsocketClient _client;
+        private IDisposable _subscription;
 
 
         /// <inheritdoc />
         public BitmexOrderBookSource(BitmexWebsocketClient client)
         {
-            CryptoValidations.ValidateInput(client, nameof(client));
-
-            _client = client;
-
-            Subscribe();
+            ChangeClient(client);
         }
 
         /// <inheritdoc />
         public override string ExchangeName => "bitmex";
 
+        /// <summary>
+        /// Change client and resubscribe to the new streams
+        /// </summary>
+        public void ChangeClient(BitmexWebsocketClient client)
+        {
+            CryptoValidations.ValidateInput(client, nameof(client));
+
+            _client = client;
+            _subscription?.Dispose();
+            Subscribe();
+        }
+
         private void Subscribe()
         {
-            _client.Streams.BookStream.Subscribe(HandleBookResponse);
+            _subscription = _client.Streams.BookStream.Subscribe(HandleBookResponse);
         }
 
         private void HandleBookResponse(BookResponse bookResponse)

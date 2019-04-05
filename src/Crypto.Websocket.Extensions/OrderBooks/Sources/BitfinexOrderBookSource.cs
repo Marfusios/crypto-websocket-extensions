@@ -12,26 +12,37 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     /// <inheritdoc />
     public class BitfinexOrderBookSource : OrderBookLevel2SourceBase
     {
-        private readonly BitfinexWebsocketClient _client;
+        private BitfinexWebsocketClient _client;
+        private IDisposable _subscription;
+        private IDisposable _subscriptionSnapshot;
 
 
         /// <inheritdoc />
         public BitfinexOrderBookSource(BitfinexWebsocketClient client)
         {
-            CryptoValidations.ValidateInput(client, nameof(client));
-
-            _client = client;
-
-            Subscribe();
+            ChangeClient(client);
         }
 
         /// <inheritdoc />
         public override string ExchangeName => "bitfinex";
 
+        /// <summary>
+        /// Change client and resubscribe to the new streams
+        /// </summary>
+        public void ChangeClient(BitfinexWebsocketClient client)
+        {
+            CryptoValidations.ValidateInput(client, nameof(client));
+
+            _client = client;
+            _subscriptionSnapshot?.Dispose();
+            _subscription?.Dispose();
+            Subscribe();
+        }
+
         private void Subscribe()
         {
-            _client.Streams.BookSnapshotStream.Subscribe(HandleSnapshot);
-            _client.Streams.BookStream.Subscribe(HandleBook);
+            _subscriptionSnapshot = _client.Streams.BookSnapshotStream.Subscribe(HandleSnapshot);
+            _subscription = _client.Streams.BookStream.Subscribe(HandleBook);
         }
 
         private void HandleSnapshot(Book[] books)

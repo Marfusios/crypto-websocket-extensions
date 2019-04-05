@@ -33,22 +33,32 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private readonly BinanceWebsocketClient _client;
         private readonly HttpClient _httpClient = new HttpClient();
+        private BinanceWebsocketClient _client;
+        private IDisposable _subscription;
 
         /// <inheritdoc />
         public BinanceOrderBookSource(BinanceWebsocketClient client)
         {
-            CryptoValidations.ValidateInput(client, nameof(client));
-
-            _client = client;
             _httpClient.BaseAddress = new Uri("https://www.binance.com");
 
-            Subscribe();
+            ChangeClient(client);
         }
 
         /// <inheritdoc />
         public override string ExchangeName => "binance";
+
+        /// <summary>
+        /// Change client and resubscribe to the new streams
+        /// </summary>
+        public void ChangeClient(BinanceWebsocketClient client)
+        {
+            CryptoValidations.ValidateInput(client, nameof(client));
+
+            _client = client;
+            _subscription?.Dispose();
+            Subscribe();
+        }
 
         /// <summary>
         /// Load snapshot via HTTP (REST call).
@@ -86,7 +96,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private void Subscribe()
         {
-            _client.Streams.OrderBookDiffStream.Subscribe(HandleDiff);
+            _subscription = _client.Streams.OrderBookDiffStream.Subscribe(HandleDiff);
         }
 
         private void HandleSnapshot(OrderBookPartial response)
