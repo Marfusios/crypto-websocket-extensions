@@ -17,7 +17,6 @@ using Bitfinex.Client.Websocket.Websockets;
 using Bitmex.Client.Websocket;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Websockets;
-using Crypto.Websocket.Extensions.Models;
 using Crypto.Websocket.Extensions.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
@@ -62,6 +61,8 @@ namespace Crypto.Websocket.Extensions.Sample
             var bitmexOb = await StartBitmex("XBTUSD");
             var bitfinexOb = await StartBitfinex("BTCUSD");
             var binanceOb = await StartBinance("BTCUSDT");
+
+            Log.Information("Waiting for price change...");
 
             Observable.CombineLatest(new[]
                 {
