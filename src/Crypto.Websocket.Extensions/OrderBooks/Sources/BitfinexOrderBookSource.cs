@@ -1,17 +1,24 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Bitfinex.Client.Websocket.Client;
 using Bitfinex.Client.Websocket.Responses.Books;
+using Crypto.Websocket.Extensions.Logging;
 using Crypto.Websocket.Extensions.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Validations;
+using Newtonsoft.Json;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 {
     /// <inheritdoc />
     public class BitfinexOrderBookSource : OrderBookLevel2SourceBase
     {
+        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+
+        private readonly HttpClient _httpClient = new HttpClient();
         private BitfinexWebsocketClient _client;
         private IDisposable _subscription;
         private IDisposable _subscriptionSnapshot;
@@ -20,6 +27,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <inheritdoc />
         public BitfinexOrderBookSource(BitfinexWebsocketClient client)
         {
+            _httpClient.BaseAddress = new Uri("https://api-pub.bitfinex.com");
+
             ChangeClient(client);
         }
 
@@ -37,6 +46,42 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             _subscriptionSnapshot?.Dispose();
             _subscription?.Dispose();
             Subscribe();
+        }
+
+        /// <inheritdoc />
+        public override async Task LoadSnapshot(string pair, int count = 1000)
+        {
+            Book[] parsed = null;
+            var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
+            pairSafe = $"t{pairSafe}";
+            var countSafe = count > 100 ? 100 : count;
+
+            try
+            {
+                var url = $"/v2/book/{pairSafe}/P0?len={countSafe}";
+                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
+                using (HttpContent content = response.Content)
+                {
+                   
+                    var result = await content.ReadAsStringAsync();
+                    parsed = JsonConvert.DeserializeObject<Book[]>(result);
+                    if (parsed == null || !parsed.Any())
+                        return;
+                   
+                    foreach (var book in parsed)
+                    {
+                        book.Pair = pair;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn($"[{ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
+                         $"Error: {e.Message}");
+                return;
+            }
+
+            HandleSnapshot(parsed);
         }
 
         private void Subscribe()

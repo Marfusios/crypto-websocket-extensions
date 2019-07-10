@@ -4,6 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading;
+using System.Threading.Tasks;
+using Crypto.Websocket.Extensions.Logging;
 using Crypto.Websocket.Extensions.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
@@ -20,6 +23,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks
     [DebuggerDisplay("CryptoOrderBook [{TargetPair}] bid: {BidPrice} ({_bidsBook.Count}) ask: {AskPrice} ({_asksBook.Count})")]
     public class CryptoOrderBook : ICryptoOrderBook
     {
+        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+
         private readonly CryptoAsyncLock _locker = new CryptoAsyncLock();
 
         private readonly IOrderBookLevel2Source _source;
@@ -31,6 +36,9 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         private readonly ConcurrentDictionary<string, OrderBookLevel> _asksBook = new ConcurrentDictionary<string, OrderBookLevel>();
 
         private bool _isSnapshotLoaded = false;
+        private Timer _snapshotReloadTimer;
+        private TimeSpan _snapshotReloadTimeout = TimeSpan.FromMinutes(1);
+        private bool _snapshotReloadEnabled = true;
 
         /// <summary>
         /// Cryptocurrency order book.
@@ -48,6 +56,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
             _source = source;
 
             Subscribe();
+            RestartAutoSnapshotReloading();
         }
 
         /// <summary>
@@ -64,6 +73,28 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         /// Originally provided target pair for this order book data
         /// </summary>
         public string TargetPairOriginal { get; }
+
+        /// <inheritdoc />
+        public TimeSpan SnapshotReloadTimeout
+        {
+            get => _snapshotReloadTimeout;
+            set
+            {
+                _snapshotReloadTimeout = value;
+                RestartAutoSnapshotReloading();
+            }
+        }
+
+        /// <inheritdoc />
+        public bool SnapshotReloadEnabled
+        {
+            get => _snapshotReloadEnabled;
+            set
+            {
+                _snapshotReloadEnabled = value;
+                RestartAutoSnapshotReloading();
+            }
+        }
 
         /// <summary>
         /// Streams data when top level bid or ask price was updated
@@ -368,6 +399,45 @@ namespace Crypto.Websocket.Extensions.OrderBooks
             {
                 _bidAskUpdated.OnNext(info);
             }
+        }
+
+        private async Task ReloadSnapshot()
+        {
+            try
+            {
+                DeactivateAutoSnapshotReloading();
+                await _source.LoadSnapshot(TargetPair, 10000);
+            }
+            catch (Exception e)
+            {
+                Log.Warn(e, $"[ORDER BOOK] Failed to auto reload snapshot for pair '{TargetPair}', " +
+                            $"error: {e.Message}");
+            }
+            finally
+            {
+                RestartAutoSnapshotReloading();
+            }
+        }
+
+        private void RestartAutoSnapshotReloading()
+        {
+            DeactivateAutoSnapshotReloading();
+
+            if (!_snapshotReloadEnabled)
+            {
+                // snapshot reloading disabled, do not start timer
+                return;
+            }
+
+            var timerMs = (int)SnapshotReloadTimeout.TotalMilliseconds;
+            _snapshotReloadTimer = new Timer(async _ => await ReloadSnapshot(), 
+                null, timerMs, timerMs);
+        }
+
+        private void DeactivateAutoSnapshotReloading()
+        {
+            _snapshotReloadTimer?.Dispose();
+            _snapshotReloadTimer = null;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Models;
 using Crypto.Websocket.Extensions.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
@@ -393,6 +394,22 @@ namespace Crypto.Websocket.Extensions.Tests
             return result.ToArray();
         }
 
+        [Fact]
+        public async Task AutoSnapshotReloading_ShouldWorkCorrectly()
+        {
+            var pair = "BTC/USD";
+            var data = GetOrderBookSnapshotMockData(pair, 500);
+            var source = new OrderBookSourceMock(data);
+
+            var orderBook = new CryptoOrderBook(pair, source);
+            orderBook.SnapshotReloadTimeout = TimeSpan.FromSeconds(1);
+
+            await Task.Delay(TimeSpan.FromSeconds(6));
+
+            Assert.Equal("btcusd", source.SnapshotLastPair);
+            Assert.True(source.SnapshotCalledCount >= 4);
+        }
+
         private OrderBookLevelBulk GetInsertBulk(params OrderBookLevel[] levels)
         {
             return new OrderBookLevelBulk(OrderBookAction.Insert, levels);
@@ -443,6 +460,9 @@ namespace Crypto.Websocket.Extensions.Tests
             private readonly OrderBookLevel[] _snapshot;
             private readonly OrderBookLevelBulk[] _bulks;
 
+            public int SnapshotCalledCount { get; private set; }
+            public string SnapshotLastPair { get; private set; }
+
             public OrderBookSourceMock()
             {
                 
@@ -477,6 +497,14 @@ namespace Crypto.Websocket.Extensions.Tests
             }
 
             public override string ExchangeName => "mock";
+
+            public override Task LoadSnapshot(string pair, int count = 1000)
+            {
+                SnapshotCalledCount++;
+                SnapshotLastPair = pair;
+
+                return Task.CompletedTask;
+            }
         }
     }
 }

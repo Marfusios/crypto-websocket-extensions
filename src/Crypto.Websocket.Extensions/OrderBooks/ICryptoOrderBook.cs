@@ -26,6 +26,18 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         string TargetPairOriginal { get; }
 
         /// <summary>
+        /// Time interval for auto snapshot reloading.
+        /// Default 1 min. 
+        /// </summary>
+        TimeSpan SnapshotReloadTimeout { get; set; }
+
+        /// <summary>
+        /// Whenever auto snapshot reloading feature is enabled.
+        /// Enabled by default
+        /// </summary>
+        bool SnapshotReloadEnabled { get; set; }
+
+        /// <summary>
         /// Streams data when top level bid or ask price was updated
         /// </summary>
         IObservable<OrderBookChangeInfo> BidAskUpdatedStream { get; }

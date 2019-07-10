@@ -1,17 +1,26 @@
 ﻿using System;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Binance.Client.Websocket.Responses.Books;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Responses;
 using Bitmex.Client.Websocket.Responses.Books;
+using Crypto.Websocket.Extensions.Logging;
 using Crypto.Websocket.Extensions.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Validations;
+using Newtonsoft.Json;
+using OrderBookLevel = Crypto.Websocket.Extensions.OrderBooks.Models.OrderBookLevel;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 {
     /// <inheritdoc />
     public class BitmexOrderBookSource : OrderBookLevel2SourceBase
     {
+        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+
+        private readonly HttpClient _httpClient = new HttpClient();
         private BitmexWebsocketClient _client;
         private IDisposable _subscription;
 
@@ -19,6 +28,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <inheritdoc />
         public BitmexOrderBookSource(BitmexWebsocketClient client)
         {
+            _httpClient.BaseAddress = new Uri("https://www.bitmex.com");
+
             ChangeClient(client);
         }
 
@@ -35,6 +46,38 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             _client = client;
             _subscription?.Dispose();
             Subscribe();
+        }
+
+        /// <inheritdoc />
+        public override async Task LoadSnapshot(string pair, int count = 1000)
+        {
+            BookLevel[] parsed = null;
+            var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
+            var countSafe = count > 1000 ? 0 : count;
+
+            try
+            {
+                var url = $"/api/v1/orderBook/L2?symbol={pairSafe}&depth={countSafe}";
+                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
+                using (HttpContent content = response.Content)
+                {
+                   
+                    var result = await content.ReadAsStringAsync();
+                    parsed = JsonConvert.DeserializeObject<BookLevel[]>(result);
+                    if (parsed == null || !parsed.Any())
+                        return;
+                   
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn($"[{ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
+                         $"Error: {e.Message}");
+                return;
+            }
+               
+            // received snapshot, convert and stream
+            OrderBookSnapshotSubject.OnNext(ConvertLevels(parsed));
         }
 
         private void Subscribe()

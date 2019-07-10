@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
@@ -29,5 +30,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         /// <inheritdoc />
         public IObservable<OrderBookLevelBulk> OrderBookStream => OrderBookSubject.AsObservable();
+
+        /// <inheritdoc />
+        public abstract Task LoadSnapshot(string pair, int count = 1000);
     }
 }

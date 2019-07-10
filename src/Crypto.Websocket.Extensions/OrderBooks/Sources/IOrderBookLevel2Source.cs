@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
@@ -22,5 +23,13 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// Streams every update to the order book
         /// </summary>
         IObservable<OrderBookLevelBulk> OrderBookStream { get; }
+
+        /// <summary>
+        /// Request a new order book snapshot, will be streamed via 'OrderBookSnapshotStream'.
+        /// Method doesn't throw exception, just logs it
+        /// </summary>
+        /// <param name="pair">Target pair</param>
+        /// <param name="count">Max level count</param>
+        Task LoadSnapshot(string pair, int count = 1000);
     }
 }

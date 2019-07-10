@@ -65,13 +65,15 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// Need to be called before anything else.
         /// Doesn't throw exception (only logs it). 
         /// </summary>
-        public async Task LoadSnapshot(string pair, int count = 1000)
+        public override async Task LoadSnapshot(string pair, int count = 1000)
         {
             OrderBookPartial parsed = null;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
+            var countSafe = count > 1000 ? 1000 : count;
+
             try
             {
-                var url = $"/api/v1/depth?symbol={pairSafe}&limit={count}";
+                var url = $"/api/v1/depth?symbol={pairSafe}&limit={countSafe}";
                 using (HttpResponseMessage response = await _httpClient.GetAsync(url))
                 using (HttpContent content = response.Content)
                 {
@@ -87,7 +89,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             }
             catch (Exception e)
             {
-                Log.Warn($"Failed to load orderbook snapshot for pair '{pairSafe}'. Error: {e.Message}");
+                Log.Warn($"[{ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
+                         $"Error: {e.Message}");
                 return;
             }
                

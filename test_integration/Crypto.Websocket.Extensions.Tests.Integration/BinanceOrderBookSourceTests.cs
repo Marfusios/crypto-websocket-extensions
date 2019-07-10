@@ -45,5 +45,36 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
                 }
             }
         }
+
+        [Fact]
+        public async Task AutoSnapshotReloading_ShouldWorkAfterTimeout()
+        {
+            var url = BinanceValues.ApiWebsocketUrl;
+            using (var communicator = new BinanceWebsocketCommunicator(url))
+            {
+                using (var client = new BinanceWebsocketClient(communicator))
+                {
+                    var pair = "BTCUSDT";
+
+                    client.SetSubscriptions(
+                        new OrderBookDiffSubscription(pair)
+                    );
+
+                    var source = new BinanceOrderBookSource(client);
+                    var orderBook = new CryptoOrderBook(pair, source)
+                    {
+                        SnapshotReloadTimeout = TimeSpan.FromSeconds(5)
+                    };
+
+                    await Task.Delay(TimeSpan.FromSeconds(13));
+
+                    Assert.True(orderBook.BidPrice > 0);
+                    Assert.True(orderBook.AskPrice > 0);
+
+                    Assert.NotEmpty(orderBook.BidLevels);
+                    Assert.NotEmpty(orderBook.AskLevels);
+                }
+            }
+        }
     }
 }
