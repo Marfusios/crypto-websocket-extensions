@@ -20,10 +20,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         protected readonly Subject<OrderBookLevelBulk> OrderBookSubject = new Subject<OrderBookLevelBulk>();
 
 
-        /// <summary>
-        /// Exchange name the orderbook source belongs to
-        /// </summary>
+        /// <inheritdoc />
         public abstract string ExchangeName { get; }
+
+        /// <inheritdoc />
+        public bool LoadSnapshotEnabled { get; protected set; } = true;
 
         /// <inheritdoc />
         public IObservable<OrderBookLevel[]> OrderBookSnapshotStream => OrderBookSnapshotSubject.AsObservable();

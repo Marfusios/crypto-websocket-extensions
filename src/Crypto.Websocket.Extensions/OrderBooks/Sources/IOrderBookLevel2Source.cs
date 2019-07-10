@@ -15,6 +15,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         string ExchangeName { get; }
 
         /// <summary>
+        /// Enable or disable snapshot loading (used by auto snapshot reload feature on OrderBook). 
+        /// Enabled by default. 
+        /// </summary>
+        bool LoadSnapshotEnabled { get; }
+
+        /// <summary>
         /// Streams initial snapshot of the order book
         /// </summary>
         IObservable<OrderBookLevel[]> OrderBookSnapshotStream { get; }

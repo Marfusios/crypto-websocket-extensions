@@ -313,6 +313,7 @@ namespace Crypto.Websocket.Extensions.Tests
 
             var notificationCount = 0;
             var notificationBidAskCount = 0;
+            var notificationTopLevelCount = 0;
 
             var changes = new List<OrderBookChangeInfo>();
 
@@ -324,6 +325,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 changes.Add(x);
             });
             orderBook.BidAskUpdatedStream.Subscribe(_ => notificationBidAskCount++);
+            orderBook.TopLevelUpdatedStream.Subscribe(_ => notificationTopLevelCount++);
 
             source.StreamSnapshot();
 
@@ -353,6 +355,19 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 900, null, CryptoSide.Ask)
             ));
 
+            
+            source.StreamBulk(GetUpdateBulk(
+                CreateLevel(pair, 499.5, 100, CryptoSide.Bid)
+            ));
+
+            source.StreamBulk(GetUpdateBulk(
+                CreateLevel(pair, 499.5, 200, CryptoSide.Bid)
+            ));
+
+            source.StreamBulk(GetUpdateBulk(
+                CreateLevel(pair, 500.2, 22, CryptoSide.Ask)
+            ));
+
             source.StreamBulk(GetDeleteBulk(
                 CreateLevel(pair, 0, CryptoSide.Bid),
                 CreateLevel(pair, 1, CryptoSide.Bid),
@@ -360,8 +375,9 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 999, CryptoSide.Ask)
             ));
 
-            Assert.Equal(6, notificationCount);
+            Assert.Equal(9, notificationCount);
             Assert.Equal(3, notificationBidAskCount);
+            Assert.Equal(6, notificationTopLevelCount);
 
             var firstChange = changes.First();
             var secondChange = changes[1];

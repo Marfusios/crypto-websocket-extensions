@@ -8,6 +8,7 @@ using Binance.Client.Websocket.Responses.Books;
 using Crypto.Websocket.Extensions.Logging;
 using Crypto.Websocket.Extensions.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
+using Crypto.Websocket.Extensions.Threading;
 using Crypto.Websocket.Extensions.Validations;
 using Newtonsoft.Json;
 using OrderBookLevel = Crypto.Websocket.Extensions.OrderBooks.Models.OrderBookLevel;
@@ -32,6 +33,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     public class BinanceOrderBookSource : OrderBookLevel2SourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+
+        private readonly CryptoAsyncLock _locker = new CryptoAsyncLock();
 
         private readonly HttpClient _httpClient = new HttpClient();
         private BinanceWebsocketClient _client;
@@ -67,39 +70,15 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// </summary>
         public override async Task LoadSnapshot(string pair, int count = 1000)
         {
-            OrderBookPartial parsed = null;
-            var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
-            var countSafe = count > 1000 ? 1000 : count;
-
-            try
+            using (await _locker.LockAsync())
             {
-                var url = $"/api/v1/depth?symbol={pairSafe}&limit={countSafe}";
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                using (HttpContent content = response.Content)
-                {
-                   
-                        var result = await content.ReadAsStringAsync();
-                        parsed = JsonConvert.DeserializeObject<OrderBookPartial>(result);
-                        if (parsed == null)
-                            return;
-
-                        parsed.Symbol = pairSafe;
-                   
-                }
+                await LoadSnapshotInternal(pair, count);
             }
-            catch (Exception e)
-            {
-                Log.Warn($"[{ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
-                         $"Error: {e.Message}");
-                return;
-            }
-               
-            HandleSnapshot(parsed);
         }
 
         private void Subscribe()
         {
-            _subscription = _client.Streams.OrderBookDiffStream.Subscribe(HandleDiff);
+            _subscription = _client.Streams.OrderBookDiffStream.Subscribe(HandleDiffSynchronized);
         }
 
         private void HandleSnapshot(OrderBookPartial response)
@@ -114,11 +93,20 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             OrderBookSnapshotSubject.OnNext(all);
         }
 
+        private void HandleDiffSynchronized(OrderBookDiffResponse response)
+        {
+            using (_locker.Lock())
+            {
+                HandleDiff(response);
+            }
+
+        }
+
         private void HandleDiff(OrderBookDiffResponse response)
         {
             var bids = ConvertLevels(response.Data?.Bids, response.Data?.Symbol, CryptoSide.Bid);
             var asks = ConvertLevels(response.Data?.Asks, response.Data?.Symbol, CryptoSide.Ask);
-            
+
             var all = bids.Concat(asks).ToArray();
             var toDelete = all.Where(x => x.Amount <= 0).ToArray();
             var toUpdate = all.Where(x => x.Amount > 0).ToArray();
@@ -159,6 +147,36 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                 null,
                 pair
             );
+        }
+
+        private async Task LoadSnapshotInternal(string pair, int count)
+        {
+            OrderBookPartial parsed = null;
+            var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
+            var countSafe = count > 1000 ? 1000 : count;
+
+            try
+            {
+                var url = $"/api/v1/depth?symbol={pairSafe}&limit={countSafe}";
+                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
+                using (HttpContent content = response.Content)
+                {
+                    var result = await content.ReadAsStringAsync();
+                    parsed = JsonConvert.DeserializeObject<OrderBookPartial>(result);
+                    if (parsed == null)
+                        return;
+
+                    parsed.Symbol = pairSafe;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Trace($"[{ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
+                         $"Error: {e.Message}");
+                return;
+            }
+
+            HandleSnapshot(parsed);
         }
     }
 }

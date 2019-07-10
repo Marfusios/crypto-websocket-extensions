@@ -8,6 +8,7 @@ using Bitfinex.Client.Websocket.Responses.Books;
 using Crypto.Websocket.Extensions.Logging;
 using Crypto.Websocket.Extensions.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
+using Crypto.Websocket.Extensions.Threading;
 using Crypto.Websocket.Extensions.Validations;
 using Newtonsoft.Json;
 
@@ -17,6 +18,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     public class BitfinexOrderBookSource : OrderBookLevel2SourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+
+        private readonly CryptoAsyncLock _locker = new CryptoAsyncLock();
 
         private readonly HttpClient _httpClient = new HttpClient();
         private BitfinexWebsocketClient _client;
@@ -51,43 +54,16 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <inheritdoc />
         public override async Task LoadSnapshot(string pair, int count = 1000)
         {
-            Book[] parsed = null;
-            var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
-            pairSafe = $"t{pairSafe}";
-            var countSafe = count > 100 ? 100 : count;
-
-            try
+            using (await _locker.LockAsync())
             {
-                var url = $"/v2/book/{pairSafe}/P0?len={countSafe}";
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                using (HttpContent content = response.Content)
-                {
-                   
-                    var result = await content.ReadAsStringAsync();
-                    parsed = JsonConvert.DeserializeObject<Book[]>(result);
-                    if (parsed == null || !parsed.Any())
-                        return;
-                   
-                    foreach (var book in parsed)
-                    {
-                        book.Pair = pair;
-                    }
-                }
+                await LoadSnapshotInternal(pair, count);
             }
-            catch (Exception e)
-            {
-                Log.Warn($"[{ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
-                         $"Error: {e.Message}");
-                return;
-            }
-
-            HandleSnapshot(parsed);
         }
 
         private void Subscribe()
         {
             _subscriptionSnapshot = _client.Streams.BookSnapshotStream.Subscribe(HandleSnapshot);
-            _subscription = _client.Streams.BookStream.Subscribe(HandleBook);
+            _subscription = _client.Streams.BookStream.Subscribe(HandleBookSynchronized);
         }
 
         private void HandleSnapshot(Book[] books)
@@ -96,11 +72,19 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             OrderBookSnapshotSubject.OnNext(ConvertLevels(books));
         }
 
+        private void HandleBookSynchronized(Book book)
+        {
+            using (_locker.Lock())
+            {
+                HandleBook(book);
+            }
+        }
+
         private void HandleBook(Book book)
         {
             var converted = ConvertLevel(book);
             var action = RecognizeAction(book);
-            var bulk = new OrderBookLevelBulk(action, new []{converted});
+            var bulk = new OrderBookLevelBulk(action, new[] {converted});
             OrderBookSubject.OnNext(bulk);
         }
 
@@ -138,6 +122,40 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             if (book.Count > 0)
                 return OrderBookAction.Update;
             return OrderBookAction.Delete;
+        }
+
+        private async Task LoadSnapshotInternal(string pair, int count)
+        {
+            Book[] parsed = null;
+            var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
+            pairSafe = $"t{pairSafe}";
+            var countSafe = count > 100 ? 100 : count;
+
+            try
+            {
+                var url = $"/v2/book/{pairSafe}/P0?len={countSafe}";
+                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
+                using (HttpContent content = response.Content)
+                {
+                    var result = await content.ReadAsStringAsync();
+                    parsed = JsonConvert.DeserializeObject<Book[]>(result);
+                    if (parsed == null || !parsed.Any())
+                        return;
+
+                    foreach (var book in parsed)
+                    {
+                        book.Pair = pair;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Trace($"[{ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
+                         $"Error: {e.Message}");
+                return;
+            }
+
+            HandleSnapshot(parsed);
         }
     }
 }

@@ -6,10 +6,12 @@
     public class CryptoQuotes
     {
         /// <inheritdoc />
-        public CryptoQuotes(double bid, double ask)
+        public CryptoQuotes(double bid, double ask, double bidAmount, double askAmount)
         {
             Bid = bid;
             Ask = ask;
+            BidAmount = bidAmount;
+            AskAmount = askAmount;
             Mid = (bid + ask) / 2;
         }
 
@@ -27,5 +29,15 @@
         /// Current mid price
         /// </summary>
         public double Mid { get; }
+
+        /// <summary>
+        /// Top level bid amount
+        /// </summary>
+        public double BidAmount { get; }
+
+        /// <summary>
+        /// Top level ask amount
+        /// </summary>
+        public double AskAmount { get; }
     }
 }

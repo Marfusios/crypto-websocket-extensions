@@ -43,6 +43,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         IObservable<OrderBookChangeInfo> BidAskUpdatedStream { get; }
 
         /// <summary>
+        /// Streams data when top level bid or ask price or amount was updated
+        /// </summary>
+        IObservable<OrderBookChangeInfo> TopLevelUpdatedStream { get; }
+
+        /// <summary>
         /// Streams data on every order book change (price or amount at any level)
         /// </summary>
         IObservable<OrderBookChangeInfo> OrderBookUpdatedStream { get; }
@@ -76,6 +81,16 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         /// Current mid price
         /// </summary>
         double MidPrice { get; }
+
+        /// <summary>
+        /// Current top level bid amount
+        /// </summary>
+        double BidAmount { get; }
+
+        /// <summary>
+        /// Current top level ask amount
+        /// </summary>
+        double AskAmount { get; }
 
         /// <summary>
         /// Find bid level by provided price (returns null in case of not found)
