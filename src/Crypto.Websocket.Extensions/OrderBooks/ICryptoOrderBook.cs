@@ -33,7 +33,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
 
         /// <summary>
         /// Whenever auto snapshot reloading feature is enabled.
-        /// Enabled by default
+        /// Disabled by default
         /// </summary>
         bool SnapshotReloadEnabled { get; set; }
 

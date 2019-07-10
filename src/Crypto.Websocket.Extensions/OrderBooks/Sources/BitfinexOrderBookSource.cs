@@ -54,16 +54,16 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <inheritdoc />
         public override async Task LoadSnapshot(string pair, int count = 1000)
         {
-            using (await _locker.LockAsync())
-            {
+            //using (await _locker.LockAsync())
+            //{
                 await LoadSnapshotInternal(pair, count);
-            }
+            //}
         }
 
         private void Subscribe()
         {
             _subscriptionSnapshot = _client.Streams.BookSnapshotStream.Subscribe(HandleSnapshot);
-            _subscription = _client.Streams.BookStream.Subscribe(HandleBookSynchronized);
+            _subscription = _client.Streams.BookStream.Subscribe(HandleBook);
         }
 
         private void HandleSnapshot(Book[] books)
@@ -72,6 +72,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             OrderBookSnapshotSubject.OnNext(ConvertLevels(books));
         }
 
+        // too slow
         private void HandleBookSynchronized(Book book)
         {
             using (_locker.Lock())

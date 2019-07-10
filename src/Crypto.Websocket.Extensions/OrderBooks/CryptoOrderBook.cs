@@ -39,7 +39,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         private bool _isSnapshotLoaded = false;
         private Timer _snapshotReloadTimer;
         private TimeSpan _snapshotReloadTimeout = TimeSpan.FromMinutes(1);
-        private bool _snapshotReloadEnabled = true;
+        private bool _snapshotReloadEnabled = false;
 
         /// <summary>
         /// Cryptocurrency order book.
@@ -75,7 +75,10 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         /// </summary>
         public string TargetPairOriginal { get; }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Time interval for auto snapshot reloading.
+        /// Default 1 min. 
+        /// </summary>
         public TimeSpan SnapshotReloadTimeout
         {
             get => _snapshotReloadTimeout;
@@ -86,7 +89,10 @@ namespace Crypto.Websocket.Extensions.OrderBooks
             }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Whenever auto snapshot reloading feature is enabled.
+        /// Disabled by default
+        /// </summary>
         public bool SnapshotReloadEnabled
         {
             get => _snapshotReloadEnabled;
@@ -102,7 +108,9 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         /// </summary>
         public IObservable<OrderBookChangeInfo> BidAskUpdatedStream => _bidAskUpdated.AsObservable();
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Streams data when top level bid or ask price or amount was updated
+        /// </summary>
         public IObservable<OrderBookChangeInfo> TopLevelUpdatedStream => _topLevelUpdated.AsObservable();
 
         /// <summary>
@@ -231,14 +239,14 @@ namespace Crypto.Websocket.Extensions.OrderBooks
             double oldBidAmount;
             double oldAskAmount;
 
-            using (_locker.Lock())
-            {
+            //using (_locker.Lock())
+            //{
                 oldBid = BidPrice;
                 oldAsk = AskPrice;
                 oldBidAmount = BidAmount;
                 oldAskAmount = AskAmount;
                 HandleSnapshot(levelsForThis);
-            }
+            //}
 
             NotifyAboutBookChange(
                 oldBid, oldAsk, 
@@ -262,14 +270,14 @@ namespace Crypto.Websocket.Extensions.OrderBooks
             double oldBidAmount;
             double oldAskAmount;
 
-            using (_locker.Lock())
-            {
+            //using (_locker.Lock())
+            //{
                 oldBid = BidPrice;
                 oldAsk = AskPrice;
                 oldBidAmount = BidAmount;
                 oldAskAmount = AskAmount;
                 HandleDiff(bulk, levelsForThis);
-            }
+            //}
 
             NotifyAboutBookChange(
                 oldBid, oldAsk, 

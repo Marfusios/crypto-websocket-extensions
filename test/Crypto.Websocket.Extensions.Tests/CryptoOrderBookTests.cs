@@ -419,6 +419,7 @@ namespace Crypto.Websocket.Extensions.Tests
 
             var orderBook = new CryptoOrderBook(pair, source);
             orderBook.SnapshotReloadTimeout = TimeSpan.FromSeconds(1);
+            orderBook.SnapshotReloadEnabled = true;
 
             await Task.Delay(TimeSpan.FromSeconds(6));
 

@@ -52,17 +52,18 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <inheritdoc />
         public override async Task LoadSnapshot(string pair, int count = 1000)
         {
-            using (await _locker.LockAsync())
-            {
+            //using (await _locker.LockAsync())
+            //{
                 await LoadSnapshotInternal(pair, count);
-            }
+            //}
         }
 
         private void Subscribe()
         {
-            _subscription = _client.Streams.BookStream.Subscribe(HandleBookResponseSynchronized);
+            _subscription = _client.Streams.BookStream.Subscribe(HandleBookResponse);
         }
 
+        // too slow
         private void HandleBookResponseSynchronized(BookResponse bookResponse)
         {
             using (_locker.Lock())

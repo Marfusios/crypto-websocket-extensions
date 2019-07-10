@@ -52,7 +52,8 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
                     var source = new BitmexOrderBookSource(client);
                     var orderBook = new CryptoOrderBook(pair, source)
                     {
-                        SnapshotReloadTimeout = TimeSpan.FromSeconds(5)
+                        SnapshotReloadTimeout = TimeSpan.FromSeconds(5),
+                        SnapshotReloadEnabled = true
                     };
 
                     await Task.Delay(TimeSpan.FromSeconds(13));
