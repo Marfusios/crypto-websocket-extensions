@@ -7,7 +7,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     /// <summary>
     /// Order book source that provides level 2 data
     /// </summary>
-    public interface IOrderBookLevel2Source
+    public interface IOrderBookLevel2Source : IDisposable
     {
         /// <summary>
         /// Origin exchange name
@@ -16,9 +16,18 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         /// <summary>
         /// Enable or disable snapshot loading (used by auto snapshot reload feature on OrderBook). 
-        /// Enabled by default. 
+        /// Disabled by default. 
         /// </summary>
-        bool LoadSnapshotEnabled { get; }
+        bool LoadSnapshotEnabled { get; set; }
+
+        /// <summary>
+        /// Time interval for buffering received order book data updates.
+        /// Higher it for data intensive sources (Bitmex, etc.)
+        /// Lower - more realtime data, high CPU load.
+        /// Higher - less realtime data, less CPU intensive. 
+        /// Default: 100 ms
+        /// </summary>
+        TimeSpan BufferInterval { get; set; }
 
         /// <summary>
         /// Streams initial snapshot of the order book
@@ -28,7 +37,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <summary>
         /// Streams every update to the order book
         /// </summary>
-        IObservable<OrderBookLevelBulk> OrderBookStream { get; }
+        IObservable<OrderBookLevelBulk[]> OrderBookStream { get; }
 
         /// <summary>
         /// Request a new order book snapshot, will be streamed via 'OrderBookSnapshotStream'.

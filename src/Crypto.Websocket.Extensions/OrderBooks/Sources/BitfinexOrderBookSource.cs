@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
@@ -8,7 +9,6 @@ using Bitfinex.Client.Websocket.Responses.Books;
 using Crypto.Websocket.Extensions.Logging;
 using Crypto.Websocket.Extensions.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
-using Crypto.Websocket.Extensions.Threading;
 using Crypto.Websocket.Extensions.Validations;
 using Newtonsoft.Json;
 
@@ -18,8 +18,6 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     public class BitfinexOrderBookSource : OrderBookLevel2SourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
-        private readonly CryptoAsyncLock _locker = new CryptoAsyncLock();
 
         private readonly HttpClient _httpClient = new HttpClient();
         private BitfinexWebsocketClient _client;
@@ -51,15 +49,6 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             Subscribe();
         }
 
-        /// <inheritdoc />
-        public override async Task LoadSnapshot(string pair, int count = 1000)
-        {
-            //using (await _locker.LockAsync())
-            //{
-                await LoadSnapshotInternal(pair, count);
-            //}
-        }
-
         private void Subscribe()
         {
             _subscriptionSnapshot = _client.Streams.BookSnapshotStream.Subscribe(HandleSnapshot);
@@ -69,24 +58,13 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         private void HandleSnapshot(Book[] books)
         {
             // received snapshot, convert and stream
-            OrderBookSnapshotSubject.OnNext(ConvertLevels(books));
-        }
-
-        // too slow
-        private void HandleBookSynchronized(Book book)
-        {
-            using (_locker.Lock())
-            {
-                HandleBook(book);
-            }
+            var levels = ConvertLevels(books);
+            StreamSnapshot(levels);
         }
 
         private void HandleBook(Book book)
         {
-            var converted = ConvertLevel(book);
-            var action = RecognizeAction(book);
-            var bulk = new OrderBookLevelBulk(action, new[] {converted});
-            OrderBookSubject.OnNext(bulk);
+            BufferData(book);
         }
 
         private OrderBookLevel[] ConvertLevels(Book[] data)
@@ -125,7 +103,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return OrderBookAction.Delete;
         }
 
-        private async Task LoadSnapshotInternal(string pair, int count)
+        /// <inheritdoc />
+        protected override async Task<OrderBookLevel[]> LoadSnapshotInternal(string pair, int count)
         {
             Book[] parsed = null;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
@@ -141,7 +120,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                     var result = await content.ReadAsStringAsync();
                     parsed = JsonConvert.DeserializeObject<Book[]>(result);
                     if (parsed == null || !parsed.Any())
-                        return;
+                        return null;
 
                     foreach (var book in parsed)
                     {
@@ -153,10 +132,38 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             {
                 Log.Trace($"[{ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
                          $"Error: {e.Message}");
-                return;
+                return null;
             }
 
-            HandleSnapshot(parsed);
+            var levels = ConvertLevels(parsed);
+            return levels;
         }
+
+        private OrderBookLevelBulk ConvertDiff(Book book)
+        {
+            var converted = ConvertLevel(book);
+            var action = RecognizeAction(book);
+            var bulk = new OrderBookLevelBulk(action, new[] {converted});
+            return bulk;
+        }
+
+        /// <inheritdoc />
+        protected override OrderBookLevelBulk[] ConvertData(object[] data)
+        {
+            var result = new List<OrderBookLevelBulk>();
+            foreach (var response in data)
+            {
+                var responseSafe = response as Book;
+                if(responseSafe == null)
+                    continue;
+
+                var converted = ConvertDiff(responseSafe);
+                result.Add(converted);
+            }
+
+            return result.ToArray();
+        }
+
+
     }
 }

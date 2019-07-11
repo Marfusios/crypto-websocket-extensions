@@ -49,7 +49,10 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
                 {
                     var pair = "XBTUSD";
 
-                    var source = new BitmexOrderBookSource(client);
+                    var source = new BitmexOrderBookSource(client)
+                    {
+                        LoadSnapshotEnabled = true
+                    };
                     var orderBook = new CryptoOrderBook(pair, source)
                     {
                         SnapshotReloadTimeout = TimeSpan.FromSeconds(5),

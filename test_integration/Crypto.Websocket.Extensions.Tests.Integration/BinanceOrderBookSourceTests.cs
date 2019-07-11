@@ -60,7 +60,10 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
                         new OrderBookDiffSubscription(pair)
                     );
 
-                    var source = new BinanceOrderBookSource(client);
+                    var source = new BinanceOrderBookSource(client)
+                    {
+                        LoadSnapshotEnabled = true
+                    };
                     var orderBook = new CryptoOrderBook(pair, source)
                     {
                         SnapshotReloadTimeout = TimeSpan.FromSeconds(5),

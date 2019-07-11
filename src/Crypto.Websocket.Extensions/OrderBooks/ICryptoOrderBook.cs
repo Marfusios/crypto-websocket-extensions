@@ -8,7 +8,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
     /// Cryptocurrency order book.
     /// Process order book data from one source (exchange) and one target pair. 
     /// </summary>
-    public interface ICryptoOrderBook
+    public interface ICryptoOrderBook : IDisposable
     {
         /// <summary>
         /// Origin exchange name
@@ -36,6 +36,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         /// Disabled by default
         /// </summary>
         bool SnapshotReloadEnabled { get; set; }
+
+        /// <summary>
+        /// Provide more info (on every change) whenever enabled. 
+        /// Disabled by default
+        /// </summary>
+        bool DebugEnabled { get; set; }
 
         /// <summary>
         /// Streams data when top level bid or ask price was updated

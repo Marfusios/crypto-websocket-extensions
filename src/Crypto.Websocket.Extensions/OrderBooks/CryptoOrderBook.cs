@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
@@ -10,7 +10,6 @@ using Crypto.Websocket.Extensions.Logging;
 using Crypto.Websocket.Extensions.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
-using Crypto.Websocket.Extensions.Threading;
 using Crypto.Websocket.Extensions.Utils;
 using Crypto.Websocket.Extensions.Validations;
 
@@ -25,21 +24,22 @@ namespace Crypto.Websocket.Extensions.OrderBooks
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private readonly CryptoAsyncLock _locker = new CryptoAsyncLock();
-
         private readonly IOrderBookLevel2Source _source;
 
         private readonly Subject<OrderBookChangeInfo> _bidAskUpdated = new Subject<OrderBookChangeInfo>();
         private readonly Subject<OrderBookChangeInfo> _topLevelUpdated = new Subject<OrderBookChangeInfo>();
         private readonly Subject<OrderBookChangeInfo> _orderBookUpdated = new Subject<OrderBookChangeInfo>();
 
-        private readonly ConcurrentDictionary<string, OrderBookLevel> _bidsBook = new ConcurrentDictionary<string, OrderBookLevel>();
-        private readonly ConcurrentDictionary<string, OrderBookLevel> _asksBook = new ConcurrentDictionary<string, OrderBookLevel>();
+        private readonly Dictionary<string, OrderBookLevel> _bidsBook = new Dictionary<string, OrderBookLevel>();
+        private readonly Dictionary<string, OrderBookLevel> _asksBook = new Dictionary<string, OrderBookLevel>();
 
         private bool _isSnapshotLoaded = false;
         private Timer _snapshotReloadTimer;
         private TimeSpan _snapshotReloadTimeout = TimeSpan.FromMinutes(1);
         private bool _snapshotReloadEnabled = false;
+
+        private IDisposable _subscriptionDiff;
+        private IDisposable _subscriptionSnapshot;
 
         /// <summary>
         /// Cryptocurrency order book.
@@ -58,6 +58,17 @@ namespace Crypto.Websocket.Extensions.OrderBooks
 
             Subscribe();
             RestartAutoSnapshotReloading();
+        }
+
+        /// <summary>
+        /// Dispose background processing
+        /// </summary>
+        public void Dispose()
+        {
+            DeactivateAutoSnapshotReloading();
+            _source.Dispose();
+            _subscriptionDiff?.Dispose();
+            _subscriptionSnapshot?.Dispose();
         }
 
         /// <summary>
@@ -102,6 +113,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks
                 RestartAutoSnapshotReloading();
             }
         }
+
+        /// <summary>
+        /// Provide more info (on every change) whenever enabled. 
+        /// Disabled by default
+        /// </summary>
+        public bool DebugEnabled { get; set; } = false;
 
         /// <summary>
         /// Streams data when top level bid or ask price was updated
@@ -214,11 +231,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks
 
         private void Subscribe()
         {
-            _source
+            _subscriptionSnapshot = _source
                 .OrderBookSnapshotStream
                 .Subscribe(HandleSnapshotSynchronized);
 
-            _source
+            _subscriptionDiff = _source
                 .OrderBookStream
                 .Subscribe(HandleDiffSynchronized);
         }
@@ -234,55 +251,50 @@ namespace Crypto.Websocket.Extensions.OrderBooks
                 return;
             }
 
-            double oldBid;
-            double oldAsk;
-            double oldBidAmount;
-            double oldAskAmount;
-
-            //using (_locker.Lock())
-            //{
-                oldBid = BidPrice;
-                oldAsk = AskPrice;
-                oldBidAmount = BidAmount;
-                oldAskAmount = AskAmount;
-                HandleSnapshot(levelsForThis);
-            //}
+            var oldBid = BidPrice;
+            var oldAsk = AskPrice;
+            var oldBidAmount = BidAmount;
+            var oldAskAmount = AskAmount;
+            HandleSnapshot(levelsForThis);
 
             NotifyAboutBookChange(
-                oldBid, oldAsk, 
-                oldBidAmount, oldAskAmount,
-                levelsForThis);
+            oldBid, oldAsk, 
+            oldBidAmount, oldAskAmount,
+            levelsForThis);
         }
 
-        private void HandleDiffSynchronized(OrderBookLevelBulk bulk)
+        private void HandleDiffSynchronized(OrderBookLevelBulk[] bulks)
         {
-            var levelsForThis = bulk.Levels
-                .Where(x => TargetPair.Equals(x.Pair))
+            var forThis = bulks
+                .Where(x => x.Levels.Any(y => TargetPair.Equals(y.Pair)))
                 .ToArray();
-            if (!levelsForThis.Any())
+            if (!forThis.Any())
             {
                 // snapshot for different pair, ignore
                 return;
             }
 
-            double oldBid;
-            double oldAsk;
-            double oldBidAmount;
-            double oldAskAmount;
+            var oldBid = BidPrice;
+            var oldAsk = AskPrice;
+            var oldBidAmount = BidAmount;
+            var oldAskAmount = AskAmount;
 
-            //using (_locker.Lock())
-            //{
-                oldBid = BidPrice;
-                oldAsk = AskPrice;
-                oldBidAmount = BidAmount;
-                oldAskAmount = AskAmount;
+            var allLevels = new List<OrderBookLevel>();
+            foreach (var bulk in forThis)
+            {
+                var levelsForThis = bulk.Levels
+                    .Where(x => TargetPair.Equals(x.Pair))
+                    .ToArray();
+                allLevels.AddRange(levelsForThis);
                 HandleDiff(bulk, levelsForThis);
-            //}
+            }
+
+            RecomputeAfterChange();
 
             NotifyAboutBookChange(
                 oldBid, oldAsk, 
                 oldBidAmount, oldAskAmount,
-                levelsForThis);
+                allLevels.ToArray());
         }
 
         private void HandleSnapshot(OrderBookLevel[] levels)
@@ -325,8 +337,6 @@ namespace Crypto.Websocket.Extensions.OrderBooks
                 default:
                     return;
             }
-
-            RecomputeAfterChange();
         }
 
         private void InsertLevels(OrderBookLevel[] levels)
@@ -369,21 +379,21 @@ namespace Crypto.Websocket.Extensions.OrderBooks
             }
         }
 
-        private void InsertToCollection(ConcurrentDictionary<string, OrderBookLevel> collection, string id, OrderBookLevel level)
+        private void InsertToCollection(Dictionary<string, OrderBookLevel> collection, string id, OrderBookLevel level)
         {
             if (collection == null)
                 return;
-            if (IsValidLevel(id, level))
+            if (IsInvalidLevel(id, level))
             {
-                //Log.Debug($"[ORDER BOOK {ExchangeName} {TargetPair}] " +
-                //          $"Received weird level, ignoring. Id: {level.Id}, price: {level.Price}, amount: {level.Amount}");
+                Log.Debug($"[ORDER BOOK {ExchangeName} {TargetPair}] " +
+                          $"Received weird level, ignoring. Id: {level.Id}, price: {level.Price}, amount: {level.Amount}");
                 return;
             }
 
             collection[id] = level;
         }
 
-        private static bool IsValidLevel(string id, OrderBookLevel level)
+        private static bool IsInvalidLevel(string id, OrderBookLevel level)
         {
             return string.IsNullOrWhiteSpace(id) ||
                    level.Price == null ||
@@ -398,7 +408,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
                     continue;
 
                 var collection = GetLevelsCollection(level.Side);
-                collection.TryRemove(level.Id, out OrderBookLevel _);
+                collection.Remove(level.Id);
             }
         }
 
@@ -431,7 +441,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
             return levels;
         }
 
-        private ConcurrentDictionary<string, OrderBookLevel> GetLevelsCollection(CryptoSide side)
+        private Dictionary<string, OrderBookLevel> GetLevelsCollection(CryptoSide side)
         {
             if (side == CryptoSide.Undefined)
                 return null;
@@ -445,7 +455,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
             OrderBookLevel[] levels)
         {
             var quotes = new CryptoQuotes(BidPrice, AskPrice, BidAmount, AskAmount);
-            var clonedLevels = levels.Select(x => x.Clone()).ToArray();
+            var clonedLevels = DebugEnabled ? levels.Select(x => x.Clone()).ToArray() : new OrderBookLevel[0];
             var change = new OrderBookChangeInfo(_source.ExchangeName, TargetPair, quotes, clonedLevels);
 
             _orderBookUpdated.OnNext(change);

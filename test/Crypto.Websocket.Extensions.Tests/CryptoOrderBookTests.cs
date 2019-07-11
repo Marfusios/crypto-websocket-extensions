@@ -102,7 +102,7 @@ namespace Crypto.Websocket.Extensions.Tests
         }
 
         [Fact]
-        public void StreamingDiff_BeforeSnapshot_ShouldDoNothing()
+        public async Task StreamingDiff_BeforeSnapshot_ShouldDoNothing()
         {
             var pair = "BTC/USD";
             var source = new OrderBookSourceMock();
@@ -115,6 +115,8 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 200, 3000, CryptoSide.Ask)
             ));
 
+            await Task.Delay(100);
+
             Assert.Empty(orderBook.BidLevels);
             Assert.Empty(orderBook.AskLevels);
 
@@ -123,7 +125,7 @@ namespace Crypto.Websocket.Extensions.Tests
         }
 
         [Fact]
-        public void StreamingDiff_ShouldHandleCorrectly()
+        public async Task StreamingDiff_ShouldHandleCorrectly()
         {
             var pair = "BTC/USD";
             var data = GetOrderBookSnapshotMockData(pair, 500);
@@ -162,6 +164,8 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 999, CryptoSide.Ask)
             ));
 
+            await Task.Delay(100);
+
             Assert.NotEmpty(orderBook.BidLevels);
             Assert.NotEmpty(orderBook.AskLevels);
 
@@ -197,7 +201,7 @@ namespace Crypto.Websocket.Extensions.Tests
         }
 
         [Fact]
-        public void StreamingDiff_TwoPairs_ShouldHandleCorrectly()
+        public async Task StreamingDiff_TwoPairs_ShouldHandleCorrectly()
         {
             var pair1 = "BTC/USD";
             var pair2 = "ETH/USD";
@@ -207,8 +211,8 @@ namespace Crypto.Websocket.Extensions.Tests
             var data = data2.Concat(data1).ToArray();
             var source = new OrderBookSourceMock(data);
 
-            var orderBook1 = new CryptoOrderBook(pair1, source);
-            var orderBook2 = new CryptoOrderBook(pair2, source);
+            var orderBook1 = new CryptoOrderBook(pair1, source) {DebugEnabled = true};
+            var orderBook2 = new CryptoOrderBook(pair2, source) {DebugEnabled = true};
 
             source.StreamSnapshot();
 
@@ -261,6 +265,8 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair1, 999, CryptoSide.Ask)
             ));
 
+            await Task.Delay(100);
+
             Assert.NotEmpty(orderBook1.BidLevels);
             Assert.NotEmpty(orderBook1.AskLevels);
 
@@ -305,7 +311,7 @@ namespace Crypto.Websocket.Extensions.Tests
         }
 
         [Fact]
-        public void StreamingData_ShouldNotifyCorrectly()
+        public async Task StreamingData_ShouldNotifyCorrectly()
         {
             var pair = "BTC/USD";
             var data = GetOrderBookSnapshotMockData(pair, 500);
@@ -317,7 +323,7 @@ namespace Crypto.Websocket.Extensions.Tests
 
             var changes = new List<OrderBookChangeInfo>();
 
-            var orderBook = new CryptoOrderBook(pair, source);
+            var orderBook = new CryptoOrderBook(pair, source) {DebugEnabled = true};
 
             orderBook.OrderBookUpdatedStream.Subscribe(x =>
             {
@@ -334,16 +340,21 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 500.2, 400, CryptoSide.Ask)
             ));
 
+            await Task.Delay(50);
 
             source.StreamBulk(GetInsertBulk(
                 CreateLevel(pair, 499.5, 600, CryptoSide.Bid),
                 CreateLevel(pair, 300.33, 3350, CryptoSide.Bid)
             ));
 
+            await Task.Delay(50);
+
             source.StreamBulk(GetInsertBulk(
                 CreateLevel(pair, 503.1, 3000, CryptoSide.Ask),
                 CreateLevel(pair, 800.123, 1234, CryptoSide.Ask)
             ));
+
+            await Task.Delay(50);
 
             source.StreamBulk(GetUpdateBulk(
                 CreateLevel(pair, 499, 33, CryptoSide.Bid),
@@ -355,18 +366,25 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 900, null, CryptoSide.Ask)
             ));
 
+            await Task.Delay(50);
             
             source.StreamBulk(GetUpdateBulk(
                 CreateLevel(pair, 499.5, 100, CryptoSide.Bid)
             ));
 
+            await Task.Delay(50);
+
             source.StreamBulk(GetUpdateBulk(
                 CreateLevel(pair, 499.5, 200, CryptoSide.Bid)
             ));
 
+            await Task.Delay(50);
+
             source.StreamBulk(GetUpdateBulk(
                 CreateLevel(pair, 500.2, 22, CryptoSide.Ask)
             ));
+
+            await Task.Delay(50);
 
             source.StreamBulk(GetDeleteBulk(
                 CreateLevel(pair, 0, CryptoSide.Bid),
@@ -374,6 +392,8 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 1000, CryptoSide.Ask),
                 CreateLevel(pair, 999, CryptoSide.Ask)
             ));
+
+            await Task.Delay(50);
 
             Assert.Equal(9, notificationCount);
             Assert.Equal(3, notificationBidAskCount);
@@ -389,6 +409,27 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(500.2, secondChange.Levels.Last().Price);
         }
 
+        [Fact]
+        public async Task AutoSnapshotReloading_ShouldWorkCorrectly()
+        {
+            var pair = "BTC/USD";
+            var data = GetOrderBookSnapshotMockData(pair, 500);
+            var source = new OrderBookSourceMock(data)
+            {
+                LoadSnapshotEnabled = true
+            };
+
+            var orderBook = new CryptoOrderBook(pair, source)
+            {
+                SnapshotReloadTimeout = TimeSpan.FromSeconds(1), 
+                SnapshotReloadEnabled = true
+            };
+
+            await Task.Delay(TimeSpan.FromSeconds(6));
+
+            Assert.Equal("btcusd", source.SnapshotLastPair);
+            Assert.True(source.SnapshotCalledCount >= 4);
+        }
 
         private OrderBookLevel[] GetOrderBookSnapshotMockData(string pair, int count)
         {
@@ -409,24 +450,6 @@ namespace Crypto.Websocket.Extensions.Tests
 
             return result.ToArray();
         }
-
-        [Fact]
-        public async Task AutoSnapshotReloading_ShouldWorkCorrectly()
-        {
-            var pair = "BTC/USD";
-            var data = GetOrderBookSnapshotMockData(pair, 500);
-            var source = new OrderBookSourceMock(data);
-
-            var orderBook = new CryptoOrderBook(pair, source);
-            orderBook.SnapshotReloadTimeout = TimeSpan.FromSeconds(1);
-            orderBook.SnapshotReloadEnabled = true;
-
-            await Task.Delay(TimeSpan.FromSeconds(6));
-
-            Assert.Equal("btcusd", source.SnapshotLastPair);
-            Assert.True(source.SnapshotCalledCount >= 4);
-        }
-
         private OrderBookLevelBulk GetInsertBulk(params OrderBookLevel[] levels)
         {
             return new OrderBookLevelBulk(OrderBookAction.Insert, levels);
@@ -482,45 +505,52 @@ namespace Crypto.Websocket.Extensions.Tests
 
             public OrderBookSourceMock()
             {
-                
+                BufferInterval = TimeSpan.FromMilliseconds(10);
             }
 
             public OrderBookSourceMock(params OrderBookLevel[] snapshot)
             {
+                BufferInterval = TimeSpan.FromMilliseconds(10);
                 _snapshot = snapshot;
             }
 
             public OrderBookSourceMock(params OrderBookLevelBulk[] bulks)
             {
+                BufferInterval = TimeSpan.FromMilliseconds(10);
                 _bulks = bulks;
             }
 
             public void StreamSnapshot()
             {
-                OrderBookSnapshotSubject.OnNext(_snapshot);
+                StreamSnapshot(_snapshot);
             }
 
             public void StreamBulks()
             {
                 foreach (var bulk in _bulks)
                 {
-                    OrderBookSubject.OnNext(bulk);
+                    BufferData(bulk);
                 }
             }
 
             public void StreamBulk(OrderBookLevelBulk bulk)
             {
-                OrderBookSubject.OnNext(bulk);
+                BufferData(bulk);
             }
 
             public override string ExchangeName => "mock";
 
-            public override Task LoadSnapshot(string pair, int count = 1000)
+            protected override Task<OrderBookLevel[]> LoadSnapshotInternal(string pair, int count = 1000)
             {
                 SnapshotCalledCount++;
                 SnapshotLastPair = pair;
 
-                return Task.CompletedTask;
+                return Task.FromResult(new OrderBookLevel[0]);
+            }
+
+            protected override OrderBookLevelBulk[] ConvertData(object[] data)
+            {
+                return data.Cast<OrderBookLevelBulk>().ToArray();
             }
         }
     }

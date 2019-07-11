@@ -50,7 +50,10 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
                 {
                     var pair = "BTCUSD";
 
-                    var source = new BitfinexOrderBookSource(client);
+                    var source = new BitfinexOrderBookSource(client)
+                    {
+                        LoadSnapshotEnabled = true
+                    };
                     var orderBook = new CryptoOrderBook(pair, source)
                     {
                         SnapshotReloadTimeout = TimeSpan.FromSeconds(5),
