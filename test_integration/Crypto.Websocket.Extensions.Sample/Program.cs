@@ -17,6 +17,11 @@ using Bitfinex.Client.Websocket.Websockets;
 using Bitmex.Client.Websocket;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Websockets;
+using Coinbase.Client.Websocket;
+using Coinbase.Client.Websocket.Channels;
+using Coinbase.Client.Websocket.Client;
+using Coinbase.Client.Websocket.Communicator;
+using Coinbase.Client.Websocket.Requests;
 using Crypto.Websocket.Extensions.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
@@ -61,6 +66,7 @@ namespace Crypto.Websocket.Extensions.Sample
             var bitmexOb = await StartBitmex("XBTUSD");
             var bitfinexOb = await StartBitfinex("BTCUSD");
             var binanceOb = await StartBinance("BTCUSDT");
+            var coinbaseOb = await StartCoinbase("BTC-USD");
 
             Log.Information("Waiting for price change...");
 
@@ -69,6 +75,7 @@ namespace Crypto.Websocket.Extensions.Sample
                     bitmexOb.BidAskUpdatedStream,
                     bitfinexOb.BidAskUpdatedStream,
                     binanceOb.BidAskUpdatedStream,
+                    coinbaseOb.BidAskUpdatedStream
                 })
                 .Subscribe(HandleQuoteChanged);
         }
@@ -139,6 +146,24 @@ namespace Crypto.Websocket.Extensions.Sample
             return orderBook;
         }
 
+        private static async Task<CryptoOrderBook> StartCoinbase(string pair)
+        {
+            var url = CoinbaseValues.ApiWebsocketUrl;
+            var communicator = new CoinbaseWebsocketCommunicator(url) { Name = "Coinbase" };
+            var client = new CoinbaseWebsocketClient(communicator);
+
+            var source = new CoinbaseOrderBookSource(client);
+            var orderBook = new CryptoOrderBook(pair, source);
+            await communicator.Start();
+
+            // Send subscription request to order book data
+            await client.Send(new SubscribeRequest(
+                new []{pair},
+                ChannelSubscriptionType.Level2
+            ));
+
+            return orderBook;
+        }
 
 
         private static void InitLogging()

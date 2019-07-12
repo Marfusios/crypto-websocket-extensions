@@ -427,7 +427,7 @@ namespace Crypto.Websocket.Extensions.Tests
 
             await Task.Delay(TimeSpan.FromSeconds(6));
 
-            Assert.Equal("btcusd", source.SnapshotLastPair);
+            Assert.Equal(pair, source.SnapshotLastPair);
             Assert.True(source.SnapshotCalledCount >= 4);
         }
 

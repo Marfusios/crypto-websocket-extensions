@@ -385,8 +385,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks
                 return;
             if (IsInvalidLevel(id, level))
             {
-                Log.Debug($"[ORDER BOOK {ExchangeName} {TargetPair}] " +
-                          $"Received weird level, ignoring. Id: {level.Id}, price: {level.Price}, amount: {level.Amount}");
+                //Log.Debug($"[ORDER BOOK {ExchangeName} {TargetPair}] " +
+                //          $"Received weird level, ignoring. Id: {level.Id}, price: {level.Price}, amount: {level.Amount}");
                 return;
             }
 
@@ -504,7 +504,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks
                 }
 
                 DeactivateAutoSnapshotReloading();
-                await _source.LoadSnapshot(TargetPair, 10000);
+                await _source.LoadSnapshot(TargetPairOriginal, 10000);
             }
             catch (Exception e)
             {
