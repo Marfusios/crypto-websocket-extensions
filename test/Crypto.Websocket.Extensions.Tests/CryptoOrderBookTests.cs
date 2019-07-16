@@ -7,8 +7,6 @@ using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Utils;
-using Crypto.Websocket.Extensions.OrderBooks;
-using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Xunit;
 
 namespace Crypto.Websocket.Extensions.Tests
@@ -117,7 +115,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 200, 3000, CryptoOrderSide.Ask)
             ));
 
-            await Task.Delay(100);
+            await Task.Delay(500);
 
             Assert.Empty(orderBook.BidLevels);
             Assert.Empty(orderBook.AskLevels);
@@ -166,7 +164,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 999, CryptoOrderSide.Ask)
             ));
 
-            await Task.Delay(100);
+            await Task.Delay(500);
 
             Assert.NotEmpty(orderBook.BidLevels);
             Assert.NotEmpty(orderBook.AskLevels);
@@ -267,7 +265,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair1, 999, CryptoOrderSide.Ask)
             ));
 
-            await Task.Delay(100);
+            await Task.Delay(500);
 
             Assert.NotEmpty(orderBook1.BidLevels);
             Assert.NotEmpty(orderBook1.AskLevels);
