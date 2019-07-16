@@ -64,7 +64,7 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
                         SnapshotReloadEnabled = true
                     };
 
-                    await Task.Delay(TimeSpan.FromSeconds(13));
+                    await Task.Delay(TimeSpan.FromSeconds(20));
 
                     Assert.True(orderBook.BidPrice > 0);
                     Assert.True(orderBook.AskPrice > 0);

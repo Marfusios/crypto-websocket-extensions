@@ -21,6 +21,13 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         bool LoadSnapshotEnabled { get; set; }
 
         /// <summary>
+        /// Whenever messages should be buffered before processing.
+        /// Use property `BufferInterval` to configure buffering interval.
+        /// Enabled by default. 
+        /// </summary>
+        bool BufferEnabled { get; set; }
+
+        /// <summary>
         /// Time interval for buffering received order book data updates.
         /// Higher it for data intensive sources (Bitmex, etc.)
         /// Lower - more realtime data, high CPU load.

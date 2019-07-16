@@ -19,6 +19,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
 
         private List<object> _dataBuffer = new List<object>();
+        private bool _bufferEnabled = true;
 
         /// <summary>
         /// Use this subject to stream order book snapshot data
@@ -33,7 +34,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <inheritdoc />
         protected OrderBookLevel2SourceBase()
         {
-            Task.Factory.StartNew(_ => ProcessData(), _cancellation.Token, TaskCreationOptions.LongRunning);
+            StartProcessingFromBufferThread();
         }
 
         /// <summary>
@@ -49,6 +50,23 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         /// <inheritdoc />
         public bool LoadSnapshotEnabled { get; set; } = false;
+
+        /// <inheritdoc />
+        public bool BufferEnabled
+        {
+            get => _bufferEnabled;
+            set
+            {
+                var wasDisabled = !_bufferEnabled;
+                _bufferEnabled = value;
+
+                if (wasDisabled && _bufferEnabled)
+                {
+                    // buffering was disabled, enable it
+                    StartProcessingFromBufferThread();
+                }
+            }
+        }
 
         /// <inheritdoc />
         public TimeSpan BufferInterval { get; set; } = TimeSpan.FromMilliseconds(100);
@@ -96,11 +114,18 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <summary>
-        /// Save received data into the buffer
+        /// Save received data into the buffer or
+        /// stream directly if buffering is disabled
         /// </summary>
         protected void BufferData(object data)
         {
-            _dataBuffer.Add(data);
+            if (_bufferEnabled)
+            {
+                _dataBuffer.Add(data);
+                return;
+            }
+            
+            ConvertAndStream(new []{data});
         }
 
         /// <summary>
@@ -108,9 +133,16 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// </summary>
         protected abstract OrderBookLevelBulk[] ConvertData(object[] data);
 
+        private void StartProcessingFromBufferThread()
+        {
+            Task.Factory.StartNew(_ => ProcessData(), 
+                _cancellation.Token, 
+                TaskCreationOptions.LongRunning);
+        }
+
         private async Task ProcessData()
         {
-            while (!_cancellation.IsCancellationRequested)
+            while (!_cancellation.IsCancellationRequested && _bufferEnabled)
             {
                 await Task.Delay(BufferInterval);
                 StreamDataSynchronized();
@@ -136,8 +168,14 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         {
             var data = _dataBuffer;
             _dataBuffer = new List<object>();
+            var dataArr = data.ToArray();
 
-            var converted = ConvertData(data.ToArray());
+            ConvertAndStream(dataArr);
+        }
+
+        private void ConvertAndStream(object[] dataArr)
+        {
+            var converted = ConvertData(dataArr);
             _orderBookSubject.OnNext(converted);
         }
     }
