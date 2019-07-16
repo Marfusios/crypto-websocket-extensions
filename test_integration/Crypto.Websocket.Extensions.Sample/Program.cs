@@ -22,8 +22,9 @@ using Coinbase.Client.Websocket.Channels;
 using Coinbase.Client.Websocket.Client;
 using Coinbase.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket.Requests;
+using Crypto.Websocket.Extensions.Core.OrderBooks;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.OrderBooks;
-using Crypto.Websocket.Extensions.OrderBooks.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Serilog;
 using Serilog.Events;
@@ -80,7 +81,7 @@ namespace Crypto.Websocket.Extensions.Sample
                 .Subscribe(HandleQuoteChanged);
         }
 
-        private static void HandleQuoteChanged(IList<OrderBookChangeInfo> quotes)
+        private static void HandleQuoteChanged(IList<IOrderBookChangeInfo> quotes)
         {
             var formattedMessages = quotes
                 .Select(x => $"{x.ExchangeName.ToUpper()} {x.Quotes.Bid + "/" + x.Quotes.Ask,16}")

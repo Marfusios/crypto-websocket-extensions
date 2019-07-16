@@ -1,23 +1,23 @@
-﻿namespace Crypto.Websocket.Extensions.Models
+﻿namespace Crypto.Websocket.Extensions.Core.Models
 {
     /// <summary>
-    /// Order side - bid or ask
+    /// Trade side - buy or sell
     /// </summary>
-    public enum CryptoSide
+    public enum CryptoTradeSide
     {
         /// <summary>
         /// Unknown side
         /// </summary>
-        Undefined,
+        Undefined = 0,
 
         /// <summary>
         /// Buy side
         /// </summary>
-        Bid,
+        Buy = 1,
 
         /// <summary>
         /// Sell side
         /// </summary>
-        Ask
+        Sell = 2
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Crypto.Websocket.Extensions.Exceptions
+namespace Crypto.Websocket.Extensions.Core.Exceptions
 {
     /// <summary>
     /// Base exception for this library

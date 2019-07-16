@@ -5,6 +5,7 @@ using Bitfinex.Client.Websocket.Client;
 using Bitfinex.Client.Websocket.Requests.Subscriptions;
 using Bitfinex.Client.Websocket.Utils;
 using Bitfinex.Client.Websocket.Websockets;
+using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Xunit;

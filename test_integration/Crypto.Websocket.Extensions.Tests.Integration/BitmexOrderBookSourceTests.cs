@@ -4,6 +4,7 @@ using Bitmex.Client.Websocket;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Requests;
 using Bitmex.Client.Websocket.Websockets;
+using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Xunit;
@@ -28,7 +29,7 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
                     await communicator.Start();
                     await client.Send(new BookSubscribeRequest(pair));
 
-                    await Task.Delay(TimeSpan.FromSeconds(5));
+                    await Task.Delay(TimeSpan.FromSeconds(10));
 
                     Assert.True(orderBook.BidPrice > 0);
                     Assert.True(orderBook.AskPrice > 0);

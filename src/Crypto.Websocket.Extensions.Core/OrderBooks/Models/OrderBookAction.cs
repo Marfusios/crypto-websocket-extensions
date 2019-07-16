@@ -1,4 +1,4 @@
-﻿namespace Crypto.Websocket.Extensions.OrderBooks.Models
+﻿namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
 {
     /// <summary>
     /// Action type of the order book data

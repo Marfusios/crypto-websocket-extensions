@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Crypto.Websocket.Extensions.Models;
+using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
+using Crypto.Websocket.Extensions.Core.Utils;
 using Crypto.Websocket.Extensions.OrderBooks;
-using Crypto.Websocket.Extensions.OrderBooks.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
-using Crypto.Websocket.Extensions.Utils;
 using Xunit;
 
 namespace Crypto.Websocket.Extensions.Tests
@@ -109,10 +111,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var orderBook = new CryptoOrderBook(pair, source);
 
             source.StreamBulk(GetInsertBulk(
-                CreateLevel(pair, 100, 50, CryptoSide.Bid),
-                CreateLevel(pair, 55, 600, CryptoSide.Bid),
-                CreateLevel(pair, 105, 400, CryptoSide.Ask),
-                CreateLevel(pair, 200, 3000, CryptoSide.Ask)
+                CreateLevel(pair, 100, 50, CryptoOrderSide.Bid),
+                CreateLevel(pair, 55, 600, CryptoOrderSide.Bid),
+                CreateLevel(pair, 105, 400, CryptoOrderSide.Ask),
+                CreateLevel(pair, 200, 3000, CryptoOrderSide.Ask)
             ));
 
             await Task.Delay(100);
@@ -136,32 +138,32 @@ namespace Crypto.Websocket.Extensions.Tests
             source.StreamSnapshot();
 
             source.StreamBulk(GetInsertBulk(
-                CreateLevel(pair, 499.4, 50, CryptoSide.Bid),
-                CreateLevel(pair, 498.3, 600, CryptoSide.Bid),
-                CreateLevel(pair, 300.33, 3350, CryptoSide.Bid),
-                CreateLevel(pair, 500.2, 400, CryptoSide.Ask),
-                CreateLevel(pair, 503.1, 3000, CryptoSide.Ask),
-                CreateLevel(pair, 800.123, 1234, CryptoSide.Ask),
+                CreateLevel(pair, 499.4, 50, CryptoOrderSide.Bid),
+                CreateLevel(pair, 498.3, 600, CryptoOrderSide.Bid),
+                CreateLevel(pair, 300.33, 3350, CryptoOrderSide.Bid),
+                CreateLevel(pair, 500.2, 400, CryptoOrderSide.Ask),
+                CreateLevel(pair, 503.1, 3000, CryptoOrderSide.Ask),
+                CreateLevel(pair, 800.123, 1234, CryptoOrderSide.Ask),
 
-                CreateLevel(null, 101.1, null, CryptoSide.Bid),
-                CreateLevel(null, 901.1, null, CryptoSide.Ask)
+                CreateLevel(null, 101.1, null, CryptoOrderSide.Bid),
+                CreateLevel(null, 901.1, null, CryptoOrderSide.Ask)
             ));
 
             source.StreamBulk(GetUpdateBulk(
-                CreateLevel(pair, 499, 33, CryptoSide.Bid),
-                CreateLevel(pair, 450, 33, CryptoSide.Bid),
-                CreateLevel(pair, 501, 32, CryptoSide.Ask),
-                CreateLevel(pair, 503.1, 32, CryptoSide.Ask),
+                CreateLevel(pair, 499, 33, CryptoOrderSide.Bid),
+                CreateLevel(pair, 450, 33, CryptoOrderSide.Bid),
+                CreateLevel(pair, 501, 32, CryptoOrderSide.Ask),
+                CreateLevel(pair, 503.1, 32, CryptoOrderSide.Ask),
 
-                CreateLevel(pair, 100, null, CryptoSide.Bid),
-                CreateLevel(pair, 900, null, CryptoSide.Ask)
+                CreateLevel(pair, 100, null, CryptoOrderSide.Bid),
+                CreateLevel(pair, 900, null, CryptoOrderSide.Ask)
             ));
 
             source.StreamBulk(GetDeleteBulk(
-                CreateLevel(pair, 0, CryptoSide.Bid),
-                CreateLevel(pair, 1, CryptoSide.Bid),
-                CreateLevel(pair, 1000, CryptoSide.Ask),
-                CreateLevel(pair, 999, CryptoSide.Ask)
+                CreateLevel(pair, 0, CryptoOrderSide.Bid),
+                CreateLevel(pair, 1, CryptoOrderSide.Bid),
+                CreateLevel(pair, 1000, CryptoOrderSide.Ask),
+                CreateLevel(pair, 999, CryptoOrderSide.Ask)
             ));
 
             await Task.Delay(100);
@@ -217,52 +219,52 @@ namespace Crypto.Websocket.Extensions.Tests
             source.StreamSnapshot();
 
             source.StreamBulk(GetInsertBulk(
-                CreateLevel(pair2, 199.4, 50, CryptoSide.Bid),
-                CreateLevel(pair2, 198.3, 600, CryptoSide.Bid),
-                CreateLevel(pair2, 50.33, 3350, CryptoSide.Bid),
+                CreateLevel(pair2, 199.4, 50, CryptoOrderSide.Bid),
+                CreateLevel(pair2, 198.3, 600, CryptoOrderSide.Bid),
+                CreateLevel(pair2, 50.33, 3350, CryptoOrderSide.Bid),
 
-                CreateLevel(pair1, 500.2, 400, CryptoSide.Ask),
-                CreateLevel(pair1, 503.1, 3000, CryptoSide.Ask),
-                CreateLevel(pair1, 800.123, 1234, CryptoSide.Ask),
+                CreateLevel(pair1, 500.2, 400, CryptoOrderSide.Ask),
+                CreateLevel(pair1, 503.1, 3000, CryptoOrderSide.Ask),
+                CreateLevel(pair1, 800.123, 1234, CryptoOrderSide.Ask),
 
-                CreateLevel(null, 101.1, null, CryptoSide.Bid),
-                CreateLevel(null, 901.1, null, CryptoSide.Ask)
+                CreateLevel(null, 101.1, null, CryptoOrderSide.Bid),
+                CreateLevel(null, 901.1, null, CryptoOrderSide.Ask)
             ));
 
             source.StreamBulk(GetInsertBulk(
-                CreateLevel(pair1, 499.4, 50, CryptoSide.Bid),
-                CreateLevel(pair1, 498.3, 600, CryptoSide.Bid),
-                CreateLevel(pair1, 300.33, 3350, CryptoSide.Bid),
+                CreateLevel(pair1, 499.4, 50, CryptoOrderSide.Bid),
+                CreateLevel(pair1, 498.3, 600, CryptoOrderSide.Bid),
+                CreateLevel(pair1, 300.33, 3350, CryptoOrderSide.Bid),
 
-                CreateLevel(pair2, 200.2, 400, CryptoSide.Ask),
-                CreateLevel(pair2, 203.1, 3000, CryptoSide.Ask),
-                CreateLevel(pair2, 250.123, 1234, CryptoSide.Ask)
+                CreateLevel(pair2, 200.2, 400, CryptoOrderSide.Ask),
+                CreateLevel(pair2, 203.1, 3000, CryptoOrderSide.Ask),
+                CreateLevel(pair2, 250.123, 1234, CryptoOrderSide.Ask)
             ));
 
             source.StreamBulk(GetUpdateBulk(
-                CreateLevel(pair1, 499, 33, CryptoSide.Bid),
-                CreateLevel(pair1, 450, 33, CryptoSide.Bid),
-                CreateLevel(pair1, 501, 32, CryptoSide.Ask),
-                CreateLevel(pair1, 503.1, 32, CryptoSide.Ask),
+                CreateLevel(pair1, 499, 33, CryptoOrderSide.Bid),
+                CreateLevel(pair1, 450, 33, CryptoOrderSide.Bid),
+                CreateLevel(pair1, 501, 32, CryptoOrderSide.Ask),
+                CreateLevel(pair1, 503.1, 32, CryptoOrderSide.Ask),
 
-                CreateLevel(pair1, 100, null, CryptoSide.Bid),
-                CreateLevel(pair1, 900, null, CryptoSide.Ask)
+                CreateLevel(pair1, 100, null, CryptoOrderSide.Bid),
+                CreateLevel(pair1, 900, null, CryptoOrderSide.Ask)
             ));
 
             source.StreamBulk(GetDeleteBulk(
-                CreateLevel(pair1, 0, CryptoSide.Bid),
-                CreateLevel(pair1, 1, CryptoSide.Bid),
+                CreateLevel(pair1, 0, CryptoOrderSide.Bid),
+                CreateLevel(pair1, 1, CryptoOrderSide.Bid),
 
-                CreateLevel(pair2, 0, CryptoSide.Bid),
-                CreateLevel(pair2, 1, CryptoSide.Bid)
+                CreateLevel(pair2, 0, CryptoOrderSide.Bid),
+                CreateLevel(pair2, 1, CryptoOrderSide.Bid)
             ));
 
             source.StreamBulk(GetDeleteBulk(
-                CreateLevel(pair2, 400, CryptoSide.Ask),
-                CreateLevel(pair2, 399, CryptoSide.Ask),
+                CreateLevel(pair2, 400, CryptoOrderSide.Ask),
+                CreateLevel(pair2, 399, CryptoOrderSide.Ask),
 
-                CreateLevel(pair1, 1000, CryptoSide.Ask),
-                CreateLevel(pair1, 999, CryptoSide.Ask)
+                CreateLevel(pair1, 1000, CryptoOrderSide.Ask),
+                CreateLevel(pair1, 999, CryptoOrderSide.Ask)
             ));
 
             await Task.Delay(100);
@@ -321,7 +323,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var notificationBidAskCount = 0;
             var notificationTopLevelCount = 0;
 
-            var changes = new List<OrderBookChangeInfo>();
+            var changes = new List<IOrderBookChangeInfo>();
 
             var orderBook = new CryptoOrderBook(pair, source) {DebugEnabled = true};
 
@@ -336,61 +338,61 @@ namespace Crypto.Websocket.Extensions.Tests
             source.StreamSnapshot();
 
             source.StreamBulk(GetInsertBulk(
-                CreateLevel(pair, 499.4, 50, CryptoSide.Bid),
-                CreateLevel(pair, 500.2, 400, CryptoSide.Ask)
+                CreateLevel(pair, 499.4, 50, CryptoOrderSide.Bid),
+                CreateLevel(pair, 500.2, 400, CryptoOrderSide.Ask)
             ));
 
             await Task.Delay(50);
 
             source.StreamBulk(GetInsertBulk(
-                CreateLevel(pair, 499.5, 600, CryptoSide.Bid),
-                CreateLevel(pair, 300.33, 3350, CryptoSide.Bid)
+                CreateLevel(pair, 499.5, 600, CryptoOrderSide.Bid),
+                CreateLevel(pair, 300.33, 3350, CryptoOrderSide.Bid)
             ));
 
             await Task.Delay(50);
 
             source.StreamBulk(GetInsertBulk(
-                CreateLevel(pair, 503.1, 3000, CryptoSide.Ask),
-                CreateLevel(pair, 800.123, 1234, CryptoSide.Ask)
+                CreateLevel(pair, 503.1, 3000, CryptoOrderSide.Ask),
+                CreateLevel(pair, 800.123, 1234, CryptoOrderSide.Ask)
             ));
 
             await Task.Delay(50);
 
             source.StreamBulk(GetUpdateBulk(
-                CreateLevel(pair, 499, 33, CryptoSide.Bid),
-                CreateLevel(pair, 450, 33, CryptoSide.Bid),
-                CreateLevel(pair, 501, 32, CryptoSide.Ask),
-                CreateLevel(pair, 503.1, 32, CryptoSide.Ask),
+                CreateLevel(pair, 499, 33, CryptoOrderSide.Bid),
+                CreateLevel(pair, 450, 33, CryptoOrderSide.Bid),
+                CreateLevel(pair, 501, 32, CryptoOrderSide.Ask),
+                CreateLevel(pair, 503.1, 32, CryptoOrderSide.Ask),
 
-                CreateLevel(pair, 100, null, CryptoSide.Bid),
-                CreateLevel(pair, 900, null, CryptoSide.Ask)
+                CreateLevel(pair, 100, null, CryptoOrderSide.Bid),
+                CreateLevel(pair, 900, null, CryptoOrderSide.Ask)
             ));
 
             await Task.Delay(50);
             
             source.StreamBulk(GetUpdateBulk(
-                CreateLevel(pair, 499.5, 100, CryptoSide.Bid)
+                CreateLevel(pair, 499.5, 100, CryptoOrderSide.Bid)
             ));
 
             await Task.Delay(50);
 
             source.StreamBulk(GetUpdateBulk(
-                CreateLevel(pair, 499.5, 200, CryptoSide.Bid)
+                CreateLevel(pair, 499.5, 200, CryptoOrderSide.Bid)
             ));
 
             await Task.Delay(50);
 
             source.StreamBulk(GetUpdateBulk(
-                CreateLevel(pair, 500.2, 22, CryptoSide.Ask)
+                CreateLevel(pair, 500.2, 22, CryptoOrderSide.Ask)
             ));
 
             await Task.Delay(50);
 
             source.StreamBulk(GetDeleteBulk(
-                CreateLevel(pair, 0, CryptoSide.Bid),
-                CreateLevel(pair, 1, CryptoSide.Bid),
-                CreateLevel(pair, 1000, CryptoSide.Ask),
-                CreateLevel(pair, 999, CryptoSide.Ask)
+                CreateLevel(pair, 0, CryptoOrderSide.Bid),
+                CreateLevel(pair, 1, CryptoOrderSide.Bid),
+                CreateLevel(pair, 1000, CryptoOrderSide.Ask),
+                CreateLevel(pair, 999, CryptoOrderSide.Ask)
             ));
 
             await Task.Delay(50);
@@ -437,14 +439,14 @@ namespace Crypto.Websocket.Extensions.Tests
 
             for (int i = 0; i < count; i++)
             {
-                var bid = CreateLevel(pair, i, count * 2 + i, CryptoSide.Bid);
+                var bid = CreateLevel(pair, i, count * 2 + i, CryptoOrderSide.Bid);
                 result.Add(bid);
             }
 
             
             for (int i = count*2; i > count; i--)
             {
-                var ask = CreateLevel(pair, i, count * 4 + i, CryptoSide.Ask);
+                var ask = CreateLevel(pair, i, count * 4 + i, CryptoOrderSide.Ask);
                 result.Add(ask);
             }
 
@@ -465,7 +467,7 @@ namespace Crypto.Websocket.Extensions.Tests
             return new OrderBookLevelBulk(OrderBookAction.Delete, levels);
         }
 
-        private OrderBookLevel CreateLevel(string pair, double price, double? amount, CryptoSide side)
+        private OrderBookLevel CreateLevel(string pair, double price, double? amount, CryptoOrderSide side)
         {
             return new OrderBookLevel(
                 CreateKey(price,side),
@@ -477,7 +479,7 @@ namespace Crypto.Websocket.Extensions.Tests
             );
         }
 
-        private OrderBookLevel CreateLevel(string pair, double price, CryptoSide side)
+        private OrderBookLevel CreateLevel(string pair, double price, CryptoOrderSide side)
         {
             return new OrderBookLevel(
                 CreateKey(price,side),
@@ -489,9 +491,9 @@ namespace Crypto.Websocket.Extensions.Tests
             );
         }
 
-        private string CreateKey(double price, CryptoSide side)
+        private string CreateKey(double price, CryptoOrderSide side)
         {
-            var sideSafe = side == CryptoSide.Bid ? "bid" : "ask";
+            var sideSafe = side == CryptoOrderSide.Bid ? "bid" : "ask";
             return $"{price}-{sideSafe}";
         }
 

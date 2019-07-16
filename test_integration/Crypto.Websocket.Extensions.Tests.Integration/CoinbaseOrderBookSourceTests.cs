@@ -5,6 +5,7 @@ using Coinbase.Client.Websocket.Channels;
 using Coinbase.Client.Websocket.Client;
 using Coinbase.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket.Requests;
+using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Xunit;

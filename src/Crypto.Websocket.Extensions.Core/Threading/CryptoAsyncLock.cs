@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Crypto.Websocket.Extensions.Threading
+namespace Crypto.Websocket.Extensions.Core.Threading
 {
     /// <summary>
     /// Class that wraps SemaphoreSlim and enables to use locking inside 'using' blocks easily

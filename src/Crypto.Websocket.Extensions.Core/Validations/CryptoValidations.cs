@@ -1,10 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Crypto.Websocket.Extensions.Exceptions;
+using Crypto.Websocket.Extensions.Core.Exceptions;
 
-namespace Crypto.Websocket.Extensions.Validations
+namespace Crypto.Websocket.Extensions.Core.Validations
 {
-    internal static class CryptoValidations
+    /// <summary>
+    /// Validations utils
+    /// </summary>
+    public static class CryptoValidations
     {
          /// <summary>
         /// It throws <exception cref="CryptoBadInputException"></exception> if value is null or empty/white spaces

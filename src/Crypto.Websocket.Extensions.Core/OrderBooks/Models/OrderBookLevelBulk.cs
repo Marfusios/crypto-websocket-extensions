@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace Crypto.Websocket.Extensions.OrderBooks.Models
+namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
 {
     /// <summary>
     /// Groups together order book levels that are coming from server

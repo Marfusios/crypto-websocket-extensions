@@ -5,11 +5,11 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
-using Crypto.Websocket.Extensions.Logging;
-using Crypto.Websocket.Extensions.OrderBooks.Models;
-using Crypto.Websocket.Extensions.Threading;
+using Crypto.Websocket.Extensions.Core.Logging;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
+using Crypto.Websocket.Extensions.Core.Threading;
 
-namespace Crypto.Websocket.Extensions.OrderBooks.Sources
+namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 {
     /// <inheritdoc />
     public abstract class OrderBookLevel2SourceBase : IOrderBookLevel2Source

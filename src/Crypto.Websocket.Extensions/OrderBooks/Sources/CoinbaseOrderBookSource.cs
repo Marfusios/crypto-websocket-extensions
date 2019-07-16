@@ -6,13 +6,14 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Coinbase.Client.Websocket.Client;
 using Coinbase.Client.Websocket.Responses.Books;
+using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
+using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Logging;
-using Crypto.Websocket.Extensions.Models;
-using Crypto.Websocket.Extensions.OrderBooks.Models;
-using Crypto.Websocket.Extensions.Validations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OrderBookLevel = Crypto.Websocket.Extensions.OrderBooks.Models.OrderBookLevel;
+using OrderBookLevel = Crypto.Websocket.Extensions.Core.OrderBooks.Models.OrderBookLevel;
 using CoinbaseOrderBookLevel = Coinbase.Client.Websocket.Responses.Books.OrderBookLevel;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
@@ -98,13 +99,13 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             );
         }
 
-        private CryptoSide ConvertSide(OrderBookSide side)
+        private CryptoOrderSide ConvertSide(OrderBookSide side)
         {
             if (side == OrderBookSide.Buy)
-                return CryptoSide.Bid;
+                return CryptoOrderSide.Bid;
             if (side == OrderBookSide.Sell)
-                return CryptoSide.Ask;
-            return CryptoSide.Undefined;
+                return CryptoOrderSide.Ask;
+            return CryptoOrderSide.Undefined;
         }
 
         private OrderBookAction RecognizeAction(OrderBookLevel level)

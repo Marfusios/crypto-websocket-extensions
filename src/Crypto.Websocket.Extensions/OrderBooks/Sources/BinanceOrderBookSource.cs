@@ -6,12 +6,13 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Responses.Books;
+using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
+using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Logging;
-using Crypto.Websocket.Extensions.Models;
-using Crypto.Websocket.Extensions.OrderBooks.Models;
-using Crypto.Websocket.Extensions.Validations;
 using Newtonsoft.Json;
-using OrderBookLevel = Crypto.Websocket.Extensions.OrderBooks.Models.OrderBookLevel;
+using OrderBookLevel = Crypto.Websocket.Extensions.Core.OrderBooks.Models.OrderBookLevel;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 {
@@ -72,7 +73,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         private OrderBookLevel[] ConvertLevels(Binance.Client.Websocket.Responses.Books.OrderBookLevel[] books, 
-            string pair, CryptoSide side)
+            string pair, CryptoOrderSide side)
         {
             if (books == null)
                 return new OrderBookLevel[0];
@@ -83,7 +84,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         private OrderBookLevel ConvertLevel(Binance.Client.Websocket.Responses.Books.OrderBookLevel x, 
-            string pair, CryptoSide side)
+            string pair, CryptoOrderSide side)
         {
             return new OrderBookLevel
             (
@@ -130,8 +131,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private OrderBookLevel[] ConvertSnapshot(OrderBookPartial response)
         {
-            var bids = ConvertLevels(response.Bids, response.Symbol, CryptoSide.Bid);
-            var asks = ConvertLevels(response.Asks, response.Symbol, CryptoSide.Ask);
+            var bids = ConvertLevels(response.Bids, response.Symbol, CryptoOrderSide.Bid);
+            var asks = ConvertLevels(response.Asks, response.Symbol, CryptoOrderSide.Ask);
 
             var all = bids
                 .Concat(asks)
@@ -143,8 +144,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         private OrderBookLevelBulk[] ConvertDiff(OrderBookDiffResponse response)
         {
             var result = new List<OrderBookLevelBulk>();
-            var bids = ConvertLevels(response.Data?.Bids, response.Data?.Symbol, CryptoSide.Bid);
-            var asks = ConvertLevels(response.Data?.Asks, response.Data?.Symbol, CryptoSide.Ask);
+            var bids = ConvertLevels(response.Data?.Bids, response.Data?.Symbol, CryptoOrderSide.Bid);
+            var asks = ConvertLevels(response.Data?.Asks, response.Data?.Symbol, CryptoOrderSide.Ask);
 
             var all = bids.Concat(asks).ToArray();
             var toDelete = all.Where(x => x.Amount <= 0).ToArray();

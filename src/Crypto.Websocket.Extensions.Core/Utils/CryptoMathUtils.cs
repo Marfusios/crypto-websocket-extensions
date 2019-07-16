@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Crypto.Websocket.Extensions.Utils
+namespace Crypto.Websocket.Extensions.Core.Utils
 {
     /// <summary>
     /// Math utils

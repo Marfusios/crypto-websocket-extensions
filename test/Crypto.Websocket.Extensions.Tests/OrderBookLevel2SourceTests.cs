@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Crypto.Websocket.Extensions.Models;
-using Crypto.Websocket.Extensions.OrderBooks;
-using Crypto.Websocket.Extensions.OrderBooks.Models;
-using Crypto.Websocket.Extensions.OrderBooks.Sources;
-using Crypto.Websocket.Extensions.Utils;
+using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Xunit;
 
 namespace Crypto.Websocket.Extensions.Tests
@@ -19,8 +14,8 @@ namespace Crypto.Websocket.Extensions.Tests
         {
             var snapshot = new[]
             {
-                new OrderBookLevel("1", CryptoSide.Bid, 100, 5, 1, "BTCUSD"),
-                new OrderBookLevel("2", CryptoSide.Ask, 101, 50, 2, "BTCUSD"),
+                new OrderBookLevel("1", CryptoOrderSide.Bid, 100, 5, 1, "BTCUSD"),
+                new OrderBookLevel("2", CryptoOrderSide.Ask, 101, 50, 2, "BTCUSD"),
             };
 
             var bulks = new[]
@@ -54,8 +49,8 @@ namespace Crypto.Websocket.Extensions.Tests
         {
             var snapshot = new[]
             {
-                new OrderBookLevel("1", CryptoSide.Bid, 100, 5, 1, "BTCUSD"),
-                new OrderBookLevel("2", CryptoSide.Ask, 101, 50, 2, "BTCUSD"),
+                new OrderBookLevel("1", CryptoOrderSide.Bid, 100, 5, 1, "BTCUSD"),
+                new OrderBookLevel("2", CryptoOrderSide.Ask, 101, 50, 2, "BTCUSD"),
             };
 
             var bulks = new[]

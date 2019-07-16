@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <PackageId>Crypto.Websocket.Extensions</PackageId>
+    <PackageId>Crypto.Websocket.Extensions.Core</PackageId>
     <Version>2.0.0</Version>
     <Authors>Mariusz Kotas</Authors>
-    <Description>Extensions to cryptocurrency websocket clients</Description>
+    <Description>Extensions to cryptocurrency websocket clients (core library, only interfaces and feature classes)</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReleaseNotes>Initial release</PackageReleaseNotes>
     <Copyright>Copyright 2019 Mariusz Kotas. All rights reserved.</Copyright>
@@ -22,17 +22,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Binance.Client.Websocket" Version="1.0.8" />
-    <PackageReference Include="Bitfinex.Client.Websocket" Version="3.0.91" />
-    <PackageReference Include="Bitmex.Client.Websocket" Version="2.0.62" />
-    <PackageReference Include="Coinbase.Client.Websocket" Version="1.0.1" />
     <PackageReference Include="LibLog" Version="5.0.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="System.Reactive" Version="4.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Crypto.Websocket.Extensions.Core\Crypto.Websocket.Extensions.Core.csproj" />
-  </ItemGroup>
 </Project>

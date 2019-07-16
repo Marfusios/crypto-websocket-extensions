@@ -6,12 +6,13 @@ using System.Threading.Tasks;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Responses;
 using Bitmex.Client.Websocket.Responses.Books;
+using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
+using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Logging;
-using Crypto.Websocket.Extensions.Models;
-using Crypto.Websocket.Extensions.OrderBooks.Models;
-using Crypto.Websocket.Extensions.Validations;
 using Newtonsoft.Json;
-using OrderBookLevel = Crypto.Websocket.Extensions.OrderBooks.Models.OrderBookLevel;
+using OrderBookLevel = Crypto.Websocket.Extensions.Core.OrderBooks.Models.OrderBookLevel;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 {
@@ -87,16 +88,16 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                 .ToArray();
         }
 
-        private CryptoSide ConvertSide(BitmexSide side)
+        private CryptoOrderSide ConvertSide(BitmexSide side)
         {
             switch (side)
             {
                 case BitmexSide.Buy:
-                    return CryptoSide.Bid;
+                    return CryptoOrderSide.Bid;
                 case BitmexSide.Sell:
-                    return CryptoSide.Ask;
+                    return CryptoOrderSide.Ask;
                 default:
-                    return CryptoSide.Undefined;
+                    return CryptoOrderSide.Undefined;
             }
         }
 

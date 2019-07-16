@@ -1,4 +1,4 @@
-﻿using Crypto.Websocket.Extensions.Utils;
+﻿using Crypto.Websocket.Extensions.Core.Utils;
 using Xunit;
 
 namespace Crypto.Websocket.Extensions.Tests

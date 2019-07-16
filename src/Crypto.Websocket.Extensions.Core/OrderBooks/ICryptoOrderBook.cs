@@ -1,8 +1,8 @@
 ﻿using System;
-using Crypto.Websocket.Extensions.Models;
-using Crypto.Websocket.Extensions.OrderBooks.Models;
+using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 
-namespace Crypto.Websocket.Extensions.OrderBooks
+namespace Crypto.Websocket.Extensions.Core.OrderBooks
 {
     /// <summary>
     /// Cryptocurrency order book.
@@ -46,17 +46,17 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         /// <summary>
         /// Streams data when top level bid or ask price was updated
         /// </summary>
-        IObservable<OrderBookChangeInfo> BidAskUpdatedStream { get; }
+        IObservable<IOrderBookChangeInfo> BidAskUpdatedStream { get; }
 
         /// <summary>
         /// Streams data when top level bid or ask price or amount was updated
         /// </summary>
-        IObservable<OrderBookChangeInfo> TopLevelUpdatedStream { get; }
+        IObservable<IOrderBookChangeInfo> TopLevelUpdatedStream { get; }
 
         /// <summary>
         /// Streams data on every order book change (price or amount at any level)
         /// </summary>
-        IObservable<OrderBookChangeInfo> OrderBookUpdatedStream { get; }
+        IObservable<IOrderBookChangeInfo> OrderBookUpdatedStream { get; }
 
         /// <summary>
         /// Current bid side of the order book (ordered from higher to lower price)
@@ -122,6 +122,6 @@ namespace Crypto.Websocket.Extensions.OrderBooks
         /// Find level by provided identification (returns null in case of not found).
         /// You need to specify side.
         /// </summary>
-        OrderBookLevel FindLevelById(string id, CryptoSide side);
+        OrderBookLevel FindLevelById(string id, CryptoOrderSide side);
     }
 }

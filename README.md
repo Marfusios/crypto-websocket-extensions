@@ -12,7 +12,9 @@ It helps to unify data models and usage of more clients together.
 
 ### Features
 
-* installation via NuGet ([Crypto.Websocket.Extensions](https://www.nuget.org/packages/Crypto.Websocket.Extensions))
+* installation via NuGet
+    * full (with all exchange clients) - [Crypto.Websocket.Extensions](https://www.nuget.org/packages/Crypto.Websocket.Extensions)
+	* core (only interfaces and features) - [Crypto.Websocket.Extensions.Core](https://www.nuget.org/packages/Crypto.Websocket.Extensions.Core)
 * targeting .NET Standard 2.0 (.NET Core, Linux/MacOS compatible)
 * reactive extensions ([Rx.NET](https://github.com/Reactive-Extensions/Rx.NET))
 * integrated logging abstraction ([LibLog](https://github.com/damianh/LibLog))

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
-using Crypto.Websocket.Extensions.Models;
-using Crypto.Websocket.Extensions.Utils;
+using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.Utils;
 
-namespace Crypto.Websocket.Extensions.OrderBooks.Models
+namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
 {
     /// <summary>
     /// One level of the order book
@@ -12,7 +12,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Models
     public class OrderBookLevel
     {
         /// <inheritdoc />
-        public OrderBookLevel(string id, CryptoSide side, double? price, double? amount, int? count, string pair)
+        public OrderBookLevel(string id, CryptoOrderSide side, double? price, double? amount, int? count, string pair)
         {
             Id = id;
             Side = side;
@@ -34,7 +34,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Models
         /// <summary>
         /// Side of this order book level
         /// </summary>
-        public CryptoSide Side { get; private set; }
+        public CryptoOrderSide Side { get; private set; }
 
         /// <summary>
         /// Price level

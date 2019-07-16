@@ -4,6 +4,7 @@ using Binance.Client.Websocket;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Subscriptions;
 using Binance.Client.Websocket.Websockets;
+using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Xunit;

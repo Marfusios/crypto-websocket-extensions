@@ -1,9 +1,9 @@
-﻿namespace Crypto.Websocket.Extensions.Models
+﻿namespace Crypto.Websocket.Extensions.Core.Models
 {
     /// <summary>
     /// Price quotes
     /// </summary>
-    public class CryptoQuotes
+    public class CryptoQuotes : ICryptoQuotes
     {
         /// <inheritdoc />
         public CryptoQuotes(double bid, double ask, double bidAmount, double askAmount)

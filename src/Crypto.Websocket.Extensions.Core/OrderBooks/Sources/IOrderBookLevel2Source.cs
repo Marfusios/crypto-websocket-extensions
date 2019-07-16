@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Crypto.Websocket.Extensions.OrderBooks.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 
-namespace Crypto.Websocket.Extensions.OrderBooks.Sources
+namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 {
     /// <summary>
     /// Order book source that provides level 2 data

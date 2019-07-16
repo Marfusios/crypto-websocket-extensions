@@ -6,10 +6,11 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Bitfinex.Client.Websocket.Client;
 using Bitfinex.Client.Websocket.Responses.Books;
+using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
+using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Logging;
-using Crypto.Websocket.Extensions.Models;
-using Crypto.Websocket.Extensions.OrderBooks.Models;
-using Crypto.Websocket.Extensions.Validations;
 using Newtonsoft.Json;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
@@ -87,13 +88,13 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             );
         }
 
-        private CryptoSide ConvertSide(double amount)
+        private CryptoOrderSide ConvertSide(double amount)
         {
             if (amount > 0)
-                return CryptoSide.Bid;
+                return CryptoOrderSide.Bid;
             if (amount < 0)
-                return CryptoSide.Ask;
-            return CryptoSide.Undefined;
+                return CryptoOrderSide.Ask;
+            return CryptoOrderSide.Undefined;
         }
 
         private OrderBookAction RecognizeAction(Book book)
