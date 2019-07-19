@@ -9,15 +9,9 @@ script:
 - dotnet build -c Release
 - dotnet test test/Crypto.Websocket.Extensions.Tests -c Release
 deploy:
-  - provider: script
-    skip_cleanup: true
-    script:
-      - cd src/Crypto.Websocket.Extensions.Core && dotnet pack /p:PackageVersion=2.0.$TRAVIS_BUILD_NUMBER -c Release && cd bin/Release && dotnet nuget push **/*.2.0.$TRAVIS_BUILD_NUMBER.nupkg -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json
-    on:
-      branch: master
-  - provider: script
-    skip_cleanup: true
-    script:
-      - cd src/Crypto.Websocket.Extensions      && dotnet pack /p:PackageVersion=2.0.$TRAVIS_BUILD_NUMBER -c Release && cd bin/Release && dotnet nuget push **/*.2.0.$TRAVIS_BUILD_NUMBER.nupkg -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json
-    on:
-      branch: master
+  provider: script
+  skip_cleanup: true
+  script:
+    - dotnet pack /p:PackageVersion=2.0.$TRAVIS_BUILD_NUMBER -c Release && cd src && dotnet nuget push **/*.2.0.$TRAVIS_BUILD_NUMBER.nupkg -k $NUGET_API_KEY -s https://api.nuget.org/v3/index.json
+  on:
+    branch: master

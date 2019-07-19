@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -30,8 +31,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         private readonly Subject<OrderBookChangeInfo> _topLevelUpdated = new Subject<OrderBookChangeInfo>();
         private readonly Subject<OrderBookChangeInfo> _orderBookUpdated = new Subject<OrderBookChangeInfo>();
 
-        private readonly Dictionary<string, OrderBookLevel> _bidsBook = new Dictionary<string, OrderBookLevel>();
-        private readonly Dictionary<string, OrderBookLevel> _asksBook = new Dictionary<string, OrderBookLevel>();
+        private readonly ConcurrentDictionary<string, OrderBookLevel> _bidsBook = new ConcurrentDictionary<string, OrderBookLevel>();
+        private readonly ConcurrentDictionary<string, OrderBookLevel> _asksBook = new ConcurrentDictionary<string, OrderBookLevel>();
 
         private bool _isSnapshotLoaded = false;
         private Timer _snapshotReloadTimer;
@@ -379,7 +380,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
         }
 
-        private void InsertToCollection(Dictionary<string, OrderBookLevel> collection, string id, OrderBookLevel level)
+        private void InsertToCollection(ConcurrentDictionary<string, OrderBookLevel> collection, string id, OrderBookLevel level)
         {
             if (collection == null)
                 return;
@@ -408,7 +409,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                     continue;
 
                 var collection = GetLevelsCollection(level.Side);
-                collection.Remove(level.Id);
+                collection.TryRemove(level.Id, out OrderBookLevel _);
             }
         }
 
@@ -441,7 +442,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             return levels;
         }
 
-        private Dictionary<string, OrderBookLevel> GetLevelsCollection(CryptoOrderSide side)
+        private ConcurrentDictionary<string, OrderBookLevel> GetLevelsCollection(CryptoOrderSide side)
         {
             if (side == CryptoOrderSide.Undefined)
                 return null;
