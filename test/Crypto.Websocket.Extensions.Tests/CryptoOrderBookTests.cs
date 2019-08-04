@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
@@ -410,6 +411,70 @@ namespace Crypto.Websocket.Extensions.Tests
         }
 
         [Fact]
+        public async Task StreamingData_ShouldNotifyOneByOne()
+        {
+            var pair = "BTC/USD";
+            var data = GetOrderBookSnapshotMockData(pair, 500);
+            var source = new OrderBookSourceMock(data);
+
+            var notificationCount = 0;
+
+            var changes = new List<IOrderBookChangeInfo>();
+
+            var orderBook = new CryptoOrderBook(pair, source) {DebugEnabled = true};
+
+            orderBook.OrderBookUpdatedStream.Subscribe(x =>
+            {
+                notificationCount++;
+                changes.Add(x);
+                Thread.Sleep(1000);
+            });
+
+            source.StreamBulk(GetInsertBulk(
+                CreateLevel(pair, 499.4, 50, CryptoOrderSide.Bid),
+                CreateLevel(pair, 500.2, 400, CryptoOrderSide.Ask)
+            ));
+
+            await Task.Delay(50);
+
+            source.StreamBulk(GetInsertBulk(
+                CreateLevel(pair, 499.5, 600, CryptoOrderSide.Bid),
+                CreateLevel(pair, 300.33, 3350, CryptoOrderSide.Bid)
+            ));
+
+            await Task.Delay(50);
+
+            source.StreamBulk(GetInsertBulk(
+                CreateLevel(pair, 503.1, 3000, CryptoOrderSide.Ask),
+                CreateLevel(pair, 800.123, 1234, CryptoOrderSide.Ask)
+            ));
+
+            await Task.Delay(50);
+
+            source.StreamBulk(GetInsertBulk(
+                CreateLevel(pair, 504.1, 3000, CryptoOrderSide.Ask),
+                CreateLevel(pair, 800.101, 1234, CryptoOrderSide.Ask)
+            ));
+
+            await Task.Delay(50);
+
+            Assert.Equal(1, notificationCount);
+
+            await Task.Delay(2100);
+
+            Assert.Equal(2, notificationCount);
+
+            var firstChange = changes.First();
+            var secondChange = changes[1];
+
+            Assert.Equal(2, firstChange.Levels.Length);
+            Assert.Equal(499.4, firstChange.Levels.First().Price);
+            Assert.Equal(500.2, firstChange.Levels.Last().Price);
+
+            Assert.Equal(6, secondChange.Levels.Length);
+        }
+
+        [Fact]
         public async Task AutoSnapshotReloading_ShouldWorkCorrectly()
         {
             var pair = "BTC/USD";
@@ -429,6 +494,78 @@ namespace Crypto.Websocket.Extensions.Tests
 
             Assert.Equal(pair, source.SnapshotLastPair);
             Assert.True(source.SnapshotCalledCount >= 4);
+        }
+
+        [Fact]
+        public async Task ValidityChecking_ShouldWorkCorrectly()
+        {
+            var pair = "BTC/USD";
+            var data = new []
+            {
+                CreateLevel(pair, 480, 50, CryptoOrderSide.Bid),
+                CreateLevel(pair, 520, 50, CryptoOrderSide.Ask),
+            };
+            var source = new OrderBookSourceMock(data);
+            var orderBookUpdatedCount = 0;
+
+            var orderBook = new CryptoOrderBook(pair, source)
+            {
+                ValidityCheckTimeout = TimeSpan.FromMilliseconds(200), 
+                ValidityCheckEnabled = true
+            };
+
+            orderBook.OrderBookUpdatedStream.Subscribe(x =>
+            {
+                orderBookUpdatedCount++;
+            });
+
+            source.StreamSnapshot();
+            source.StreamBulk(GetInsertBulk(
+                CreateLevel(pair, 500, 50, CryptoOrderSide.Bid),
+                CreateLevel(pair, 499, 400, CryptoOrderSide.Ask)
+            ));
+
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+            Assert.Equal(pair, source.SnapshotLastPair);
+            Assert.Equal(2, source.SnapshotCalledCount);
+            Assert.Equal(2, orderBookUpdatedCount);
+        }
+
+        [Fact]
+        public async Task ValidityChecking_Disabling_ShouldWork()
+        {
+            var pair = "BTC/USD";
+            var data = new []
+            {
+                CreateLevel(pair, 480, 50, CryptoOrderSide.Bid),
+                CreateLevel(pair, 520, 50, CryptoOrderSide.Ask),
+            };
+            var source = new OrderBookSourceMock(data);
+            var orderBookUpdatedCount = 0;
+
+            var orderBook = new CryptoOrderBook(pair, source)
+            {
+                ValidityCheckTimeout = TimeSpan.FromMilliseconds(200), 
+                ValidityCheckEnabled = false
+            };
+
+            orderBook.OrderBookUpdatedStream.Subscribe(x =>
+            {
+                orderBookUpdatedCount++;
+            });
+
+            source.StreamSnapshot();
+            source.StreamBulk(GetInsertBulk(
+                CreateLevel(pair, 500, 50, CryptoOrderSide.Bid),
+                CreateLevel(pair, 499, 400, CryptoOrderSide.Ask)
+            ));
+
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+            Assert.Null(source.SnapshotLastPair);
+            Assert.Equal(0, source.SnapshotCalledCount);
+            Assert.Equal(2, orderBookUpdatedCount);
         }
 
         private OrderBookLevel[] GetOrderBookSnapshotMockData(string pair, int count)

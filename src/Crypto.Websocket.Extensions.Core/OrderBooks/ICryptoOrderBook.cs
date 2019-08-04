@@ -38,6 +38,20 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         bool SnapshotReloadEnabled { get; set; }
 
         /// <summary>
+        /// Time interval for validity checking.
+        /// It forces snapshot reloading whenever invalid state. 
+        /// Default 5 sec. 
+        /// </summary>
+        TimeSpan ValidityCheckTimeout { get; set; }
+
+        /// <summary>
+        /// Whenever validity checking feature is enabled.
+        /// It forces snapshot reloading whenever invalid state. 
+        /// Enabled by default
+        /// </summary>
+        bool ValidityCheckEnabled { get; set; }
+
+        /// <summary>
         /// Provide more info (on every change) whenever enabled. 
         /// Disabled by default
         /// </summary>
@@ -123,5 +137,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// You need to specify side.
         /// </summary>
         OrderBookLevel FindLevelById(string id, CryptoOrderSide side);
+
+        /// <summary>
+        /// Returns true if order book is in valid state
+        /// </summary>
+        bool IsValid();
     }
 }

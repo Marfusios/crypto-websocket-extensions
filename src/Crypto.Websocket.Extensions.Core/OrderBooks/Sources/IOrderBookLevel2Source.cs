@@ -53,5 +53,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// <param name="pair">Target pair</param>
         /// <param name="count">Max level count</param>
         Task LoadSnapshot(string pair, int count = 1000);
+
+        /// <summary>
+        /// Returns true if order book is in valid state
+        /// </summary>
+        bool IsValid();
     }
 }

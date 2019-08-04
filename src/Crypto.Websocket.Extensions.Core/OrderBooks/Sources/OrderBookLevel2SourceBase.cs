@@ -98,6 +98,15 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         }
 
         /// <summary>
+        /// Returns true if order book is in valid state.
+        /// Should be overriden by specific exchange implementation.
+        /// </summary>
+        public virtual bool IsValid()
+        {
+            return true;
+        }
+
+        /// <summary>
         /// Implement snapshot loading, it should not throw an exception
         /// </summary>
         protected abstract Task<OrderBookLevel[]> LoadSnapshotInternal(string pair, int count = 1000);

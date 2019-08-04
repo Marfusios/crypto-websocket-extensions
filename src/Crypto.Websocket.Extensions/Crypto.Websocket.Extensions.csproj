@@ -22,10 +22,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Binance.Client.Websocket" Version="1.0.8" />
-    <PackageReference Include="Bitfinex.Client.Websocket" Version="3.0.91" />
-    <PackageReference Include="Bitmex.Client.Websocket" Version="2.0.62" />
-    <PackageReference Include="Coinbase.Client.Websocket" Version="1.0.1" />
+    <PackageReference Include="Binance.Client.Websocket" Version="1.0.9" />
+    <PackageReference Include="Bitfinex.Client.Websocket" Version="3.0.95" />
+    <PackageReference Include="Bitmex.Client.Websocket" Version="2.0.63" />
+    <PackageReference Include="Coinbase.Client.Websocket" Version="1.0.2" />
     <PackageReference Include="LibLog" Version="5.0.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>

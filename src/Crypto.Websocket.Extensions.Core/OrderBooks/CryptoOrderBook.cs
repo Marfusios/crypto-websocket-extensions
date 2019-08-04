@@ -39,6 +39,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         private TimeSpan _snapshotReloadTimeout = TimeSpan.FromMinutes(1);
         private bool _snapshotReloadEnabled = false;
 
+        private Timer _validityCheckTimer;
+        private TimeSpan _validityCheckTimeout = TimeSpan.FromSeconds(5);
+        private bool _validityCheckEnabled = true;
+
         private IDisposable _subscriptionDiff;
         private IDisposable _subscriptionSnapshot;
 
@@ -59,6 +63,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
             Subscribe();
             RestartAutoSnapshotReloading();
+            RestartValidityChecking();
         }
 
         /// <summary>
@@ -67,6 +72,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         public void Dispose()
         {
             DeactivateAutoSnapshotReloading();
+            DeactivateValidityChecking();
             _source.Dispose();
             _subscriptionDiff?.Dispose();
             _subscriptionSnapshot?.Dispose();
@@ -112,6 +118,28 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             {
                 _snapshotReloadEnabled = value;
                 RestartAutoSnapshotReloading();
+            }
+        }
+
+        /// <inheritdoc />
+        public TimeSpan ValidityCheckTimeout
+        {
+            get => _validityCheckTimeout;
+            set
+            {
+                _validityCheckTimeout = value;
+                RestartValidityChecking();
+            }
+        }
+
+        /// <inheritdoc />
+        public bool ValidityCheckEnabled
+        {
+            get => _validityCheckEnabled;
+            set
+            {
+                _validityCheckEnabled = value;
+                RestartValidityChecking();
             }
         }
 
@@ -228,6 +256,13 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             if (collection.ContainsKey(id))
                 return collection[id];
             return null;
+        }
+
+        /// <inheritdoc />
+        public bool IsValid()
+        {
+            var isPriceValid = BidPrice <= AskPrice;
+            return isPriceValid &&_source.IsValid();
         }
 
         private void Subscribe()
@@ -499,29 +534,45 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                    !CryptoMathUtils.IsSame(oldAskAmount, info.Quotes.AskAmount);
         }
 
+        private async Task ReloadSnapshotWithCheck()
+        {
+            if (!_source.LoadSnapshotEnabled)
+            {
+                // snapshot loading disabled on the source, do nothing
+                return;
+            }
+
+            await ReloadSnapshot();
+        }
+
         private async Task ReloadSnapshot()
         {
             try
             {
-                if (!_source.LoadSnapshotEnabled)
-                {
-                    // snapshot loading disabled on the source, do nothing
-                    return;
-                }
-
                 DeactivateAutoSnapshotReloading();
+                DeactivateValidityChecking();
                 await _source.LoadSnapshot(TargetPairOriginal, 10000);
             }
             catch (Exception e)
             {
                 Log.Debug(e, $"[ORDER BOOK {ExchangeName} {TargetPair}] " +
-                            $"Failed to auto reload snapshot for pair '{TargetPair}', " +
-                            $"error: {e.Message}");
+                             $"Failed to reload snapshot for pair '{TargetPair}', " +
+                             $"error: {e.Message}");
             }
             finally
             {
                 RestartAutoSnapshotReloading();
+                RestartValidityChecking();
             }
+        }
+
+        private async Task CheckValidityAndReload()
+        {
+            var isValid = IsValid();
+            if (isValid)
+                return;
+
+            await ReloadSnapshot();
         }
 
         private void RestartAutoSnapshotReloading()
@@ -535,7 +586,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
 
             var timerMs = (int)SnapshotReloadTimeout.TotalMilliseconds;
-            _snapshotReloadTimer = new Timer(async _ => await ReloadSnapshot(), 
+            _snapshotReloadTimer = new Timer(async _ => await ReloadSnapshotWithCheck(), 
                 null, timerMs, timerMs);
         }
 
@@ -543,6 +594,27 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             _snapshotReloadTimer?.Dispose();
             _snapshotReloadTimer = null;
+        }
+
+        private void RestartValidityChecking()
+        {
+            DeactivateValidityChecking();
+
+            if (!_validityCheckEnabled)
+            {
+                // validity checking disabled, do not start timer
+                return;
+            }
+
+            var timerMs = (int)ValidityCheckTimeout.TotalMilliseconds;
+            _validityCheckTimer = new Timer(async _ => await CheckValidityAndReload(), 
+                null, timerMs, timerMs);
+        }
+
+        private void DeactivateValidityChecking()
+        {
+            _validityCheckTimer?.Dispose();
+            _validityCheckTimer = null;
         }
     }
 }

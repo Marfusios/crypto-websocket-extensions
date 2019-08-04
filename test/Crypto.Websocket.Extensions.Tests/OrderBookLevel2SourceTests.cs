@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
@@ -73,6 +74,62 @@ namespace Crypto.Websocket.Extensions.Tests
 
             Assert.NotNull(receivedSnapshot);
             Assert.NotNull(receivedBulks);
+        }
+
+        [Fact]
+        public async Task Buffering_ShouldStreamOneByOne()
+        {
+            var snapshot = new[]
+            {
+                new OrderBookLevel("1", CryptoOrderSide.Bid, 100, 5, 1, "BTCUSD"),
+                new OrderBookLevel("2", CryptoOrderSide.Ask, 101, 50, 2, "BTCUSD"),
+            };
+
+            var bulks = new[]
+            {
+                new OrderBookLevelBulk(OrderBookAction.Update, snapshot),
+                new OrderBookLevelBulk(OrderBookAction.Delete, snapshot)
+            };
+
+            var source = GetMock(snapshot, bulks);
+
+            OrderBookLevel[] receivedSnapshot = null;
+            OrderBookLevelBulk[] receivedBulks = null;
+            var receivedCount = 0;
+
+            source.BufferInterval = TimeSpan.FromMilliseconds(100);
+            source.OrderBookSnapshotStream.Subscribe(x => receivedSnapshot = x);
+            source.OrderBookStream.Subscribe(x =>
+            {
+                receivedBulks = x;
+                receivedCount++;
+                Thread.Sleep(1000);
+            });
+
+            await source.LoadSnapshot("BTCUSD");
+            source.StreamData();
+
+            Assert.NotNull(receivedSnapshot);
+            Assert.Null(receivedBulks);
+            Assert.Equal(0, receivedCount);
+
+            await Task.Delay(200);
+
+            Assert.NotNull(receivedSnapshot);
+            Assert.NotNull(receivedBulks);
+            Assert.Equal(1, receivedCount);
+
+            source.StreamData();
+            source.StreamData();
+            await Task.Delay(200);
+            Assert.Equal(1, receivedCount);
+
+            source.StreamData();
+            await Task.Delay(1000);
+            Assert.Equal(2, receivedCount);
+
+            await Task.Delay(1000);
+            Assert.Equal(3, receivedCount);
         }
 
         private MockSource GetMock(OrderBookLevel[] snapshot, OrderBookLevelBulk[] bulks)
