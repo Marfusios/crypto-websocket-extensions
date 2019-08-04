@@ -89,7 +89,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
                 }
                 catch (Exception e)
                 {
-                    LogBase.Trace($"[{ExchangeName}] Failed to load orderbook snapshot for pair '{pair}'. " +
+                    LogBase.Debug($"[{ExchangeName}] Failed to load orderbook snapshot for pair '{pair}'. " +
                               $"Error: {e.Message}");
                 }
 

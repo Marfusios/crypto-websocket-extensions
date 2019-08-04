@@ -448,11 +448,6 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
         }
 
-        private bool IsTargetPair(string pair)
-        {
-            return TargetPair.Equals(pair);
-        }
-
         private void RecomputeAfterChange()
         {
             BidLevels = ComputeBidLevels();
@@ -572,6 +567,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             if (isValid)
                 return;
 
+            Log.Debug($"[ORDER BOOK {ExchangeName} {TargetPair}] " +
+                         $"Order book is in invalid state, bid: {BidPrice}, ask: {AskPrice}, " +
+                         $"reloading snapshot...");
             await ReloadSnapshot();
         }
 
