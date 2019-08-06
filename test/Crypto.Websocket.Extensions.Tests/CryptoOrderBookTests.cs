@@ -510,9 +510,9 @@ namespace Crypto.Websocket.Extensions.Tests
 
             var orderBook = new CryptoOrderBook(pair, source)
             {
-                ValidityCheckTimeout = TimeSpan.FromMilliseconds(100), 
+                ValidityCheckTimeout = TimeSpan.FromMilliseconds(200), 
                 ValidityCheckEnabled = true,
-                ValidityCheckLimit = 3
+                ValidityCheckLimit = 2
             };
 
             orderBook.OrderBookUpdatedStream.Subscribe(x =>
@@ -526,7 +526,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 499, 400, CryptoOrderSide.Ask)
             ));
 
-            await Task.Delay(TimeSpan.FromMilliseconds(500));
+            await Task.Delay(TimeSpan.FromMilliseconds(900));
 
             Assert.Equal(pair, source.SnapshotLastPair);
             Assert.Equal(2, source.SnapshotCalledCount);

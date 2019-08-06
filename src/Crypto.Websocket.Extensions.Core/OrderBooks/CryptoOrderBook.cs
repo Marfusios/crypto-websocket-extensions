@@ -582,6 +582,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 // waiting for confirmation
                 return;
             }
+            _validityCheckCounter = 0;
 
             Log.Debug($"[ORDER BOOK {ExchangeName} {TargetPair}] " +
                          $"Order book is in invalid state, bid: {BidPrice}, ask: {AskPrice}, " +
