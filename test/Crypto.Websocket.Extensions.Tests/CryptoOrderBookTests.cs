@@ -510,8 +510,9 @@ namespace Crypto.Websocket.Extensions.Tests
 
             var orderBook = new CryptoOrderBook(pair, source)
             {
-                ValidityCheckTimeout = TimeSpan.FromMilliseconds(200), 
-                ValidityCheckEnabled = true
+                ValidityCheckTimeout = TimeSpan.FromMilliseconds(100), 
+                ValidityCheckEnabled = true,
+                ValidityCheckLimit = 3
             };
 
             orderBook.OrderBookUpdatedStream.Subscribe(x =>

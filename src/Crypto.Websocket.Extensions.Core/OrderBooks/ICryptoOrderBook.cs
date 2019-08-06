@@ -45,6 +45,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         TimeSpan ValidityCheckTimeout { get; set; }
 
         /// <summary>
+        /// How many times it should check validity before processing snapshot reload.
+        /// Default 6 times (which is 6 * 5sec = 30sec).
+        /// </summary>
+        int ValidityCheckLimit { get; set; }
+
+        /// <summary>
         /// Whenever validity checking feature is enabled.
         /// It forces snapshot reloading whenever invalid state. 
         /// Enabled by default

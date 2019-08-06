@@ -42,6 +42,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         private Timer _validityCheckTimer;
         private TimeSpan _validityCheckTimeout = TimeSpan.FromSeconds(5);
         private bool _validityCheckEnabled = true;
+        private int _validityCheckCounter = 0;
 
         private IDisposable _subscriptionDiff;
         private IDisposable _subscriptionSnapshot;
@@ -131,6 +132,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 RestartValidityChecking();
             }
         }
+
+        /// <inheritdoc />
+        public int ValidityCheckLimit { get; set; } = 6;
 
         /// <inheritdoc />
         public bool ValidityCheckEnabled
@@ -565,7 +569,19 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             var isValid = IsValid();
             if (isValid)
+            {
+                // ob is valid, just reset counter and do nothing
+                _validityCheckCounter = 0;
                 return;
+            }
+
+            _validityCheckCounter++;
+            if (_validityCheckCounter < ValidityCheckLimit)
+            {
+                // invalid state, but still in the check limit interval
+                // waiting for confirmation
+                return;
+            }
 
             Log.Debug($"[ORDER BOOK {ExchangeName} {TargetPair}] " +
                          $"Order book is in invalid state, bid: {BidPrice}, ask: {AskPrice}, " +

@@ -49,7 +49,7 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
             {
                 using (var client = new BitfinexWebsocketClient(communicator))
                 {
-                    var pair = "BTCUSD";
+                    var pair = "LTCUSD";
 
                     var source = new BitfinexOrderBookSource(client)
                     {

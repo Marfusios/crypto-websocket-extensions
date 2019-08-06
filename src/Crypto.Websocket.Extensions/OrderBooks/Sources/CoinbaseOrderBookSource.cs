@@ -120,6 +120,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         {
             OrderBookSnapshotDto parsed = null;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
+            var result = string.Empty;
 
             try
             {
@@ -127,7 +128,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                 using (HttpResponseMessage response = await _httpClient.GetAsync(url))
                 using (HttpContent content = response.Content)
                 {
-                    var result = await content.ReadAsStringAsync();
+                    result = await content.ReadAsStringAsync();
                     parsed = JsonConvert.DeserializeObject<OrderBookSnapshotDto>(result);
                     if (parsed == null)
                         return null;
@@ -135,8 +136,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             }
             catch (Exception e)
             {
-                Log.Debug($"[{ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
-                         $"Error: {e.Message}");
+                Log.Debug($"[ORDER BOOK {ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
+                         $"Error: '{e.Message}'.  Content: '{result}'");
                 return null;
             }
 
