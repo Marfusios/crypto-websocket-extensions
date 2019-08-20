@@ -418,6 +418,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var pair = "BTC/USD";
             var data = GetOrderBookSnapshotMockData(pair, 500);
             var source = new OrderBookSourceMock(data);
+            source.BufferInterval = TimeSpan.FromMilliseconds(10);
 
             var notificationCount = 0;
 
@@ -437,7 +438,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 500.2, 400, CryptoOrderSide.Ask)
             ));
 
-            await Task.Delay(50);
+            await Task.Delay(500);
 
             source.StreamBulk(GetInsertBulk(
                 CreateLevel(pair, 499.5, 600, CryptoOrderSide.Bid),
@@ -508,6 +509,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 520, 50, CryptoOrderSide.Ask),
             };
             var source = new OrderBookSourceMock(data);
+            source.BufferInterval = TimeSpan.FromMilliseconds(100);
             var orderBookUpdatedCount = 0;
 
             var orderBook = new CryptoOrderBook(pair, source)

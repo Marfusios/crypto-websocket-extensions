@@ -50,7 +50,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(1499, orderBook.BidAmount);
             Assert.Equal(400, orderBook.AskAmount);
 
-            Assert.True(elapsedMs < 50, msg);
+            Assert.True(elapsedMs < 100, msg);
         }
 
         [Fact]
@@ -80,7 +80,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(10049, orderBook.BidAmount);
             Assert.Equal(12999, orderBook.AskAmount);
 
-            Assert.True(elapsedMs < 600, msg);
+            Assert.True(elapsedMs < 1200, msg);
         }
 
         [Fact]
@@ -110,7 +110,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(20049, orderBook.BidAmount);
             Assert.Equal(22999, orderBook.AskAmount);
 
-            Assert.True(elapsedMs < 1200, msg);
+            Assert.True(elapsedMs < 2400, msg);
         }
 
         [Fact]

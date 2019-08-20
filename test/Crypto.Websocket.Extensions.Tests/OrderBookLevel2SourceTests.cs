@@ -92,6 +92,7 @@ namespace Crypto.Websocket.Extensions.Tests
             };
 
             var source = GetMock(snapshot, bulks);
+            source.BufferInterval = TimeSpan.FromMilliseconds(100);
 
             OrderBookLevel[] receivedSnapshot = null;
             OrderBookLevelBulk[] receivedBulks = null;
@@ -113,7 +114,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Null(receivedBulks);
             Assert.Equal(0, receivedCount);
 
-            await Task.Delay(200);
+            await Task.Delay(100);
 
             Assert.NotNull(receivedSnapshot);
             Assert.NotNull(receivedBulks);
@@ -121,14 +122,14 @@ namespace Crypto.Websocket.Extensions.Tests
 
             source.StreamData();
             source.StreamData();
-            await Task.Delay(200);
+            await Task.Delay(100);
             Assert.Equal(1, receivedCount);
 
             source.StreamData();
             await Task.Delay(1000);
             Assert.Equal(2, receivedCount);
 
-            await Task.Delay(1000);
+            await Task.Delay(2000);
             Assert.Equal(3, receivedCount);
         }
 
