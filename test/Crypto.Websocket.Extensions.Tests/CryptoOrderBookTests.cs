@@ -484,12 +484,13 @@ namespace Crypto.Websocket.Extensions.Tests
             var data = GetOrderBookSnapshotMockData(pair, 500);
             var source = new OrderBookSourceMock(data)
             {
-                LoadSnapshotEnabled = true
+                LoadSnapshotEnabled = true,
+                BufferInterval = TimeSpan.FromMilliseconds(100)
             };
 
             var orderBook = new CryptoOrderBook(pair, source)
             {
-                SnapshotReloadTimeout = TimeSpan.FromSeconds(1), 
+                SnapshotReloadTimeout = TimeSpan.FromMilliseconds(500), 
                 SnapshotReloadEnabled = true
             };
 
@@ -530,10 +531,10 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 499, 400, CryptoOrderSide.Ask)
             ));
 
-            await Task.Delay(TimeSpan.FromMilliseconds(900));
+            await Task.Delay(TimeSpan.FromMilliseconds(2000));
 
             Assert.Equal(pair, source.SnapshotLastPair);
-            Assert.Equal(2, source.SnapshotCalledCount);
+            Assert.Equal(4, source.SnapshotCalledCount);
             Assert.Equal(2, orderBookUpdatedCount);
         }
 
