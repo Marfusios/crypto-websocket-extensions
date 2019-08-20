@@ -412,6 +412,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(500.2, secondChange.Levels.Last().Price);
         }
 
+#if DEBUG
         [Fact]
         public async Task StreamingData_ShouldNotifyOneByOne()
         {
@@ -499,6 +500,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(pair, source.SnapshotLastPair);
             Assert.True(source.SnapshotCalledCount >= 4);
         }
+#endif
 
         [Fact]
         public async Task ValidityChecking_ShouldWorkCorrectly()
