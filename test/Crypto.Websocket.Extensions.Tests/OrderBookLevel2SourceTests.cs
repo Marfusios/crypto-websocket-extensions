@@ -92,19 +92,18 @@ namespace Crypto.Websocket.Extensions.Tests
             };
 
             var source = GetMock(snapshot, bulks);
-            source.BufferInterval = TimeSpan.FromMilliseconds(100);
+            source.BufferInterval = TimeSpan.FromMilliseconds(50);
 
             OrderBookLevel[] receivedSnapshot = null;
             OrderBookLevelBulk[] receivedBulks = null;
             var receivedCount = 0;
 
-            source.BufferInterval = TimeSpan.FromMilliseconds(100);
             source.OrderBookSnapshotStream.Subscribe(x => receivedSnapshot = x);
             source.OrderBookStream.Subscribe(x =>
             {
                 receivedBulks = x;
                 receivedCount++;
-                Thread.Sleep(1000);
+                Thread.Sleep(2000);
             });
 
             await source.LoadSnapshot("BTCUSD");
@@ -126,10 +125,10 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(1, receivedCount);
 
             source.StreamData();
-            await Task.Delay(1000);
+            await Task.Delay(2200);
             Assert.Equal(2, receivedCount);
 
-            await Task.Delay(2000);
+            await Task.Delay(2200);
             Assert.Equal(3, receivedCount);
         }
 

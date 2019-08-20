@@ -430,7 +430,7 @@ namespace Crypto.Websocket.Extensions.Tests
             {
                 notificationCount++;
                 changes.Add(x);
-                Thread.Sleep(1000);
+                Thread.Sleep(2000);
             });
 
             source.StreamBulk(GetInsertBulk(
@@ -438,7 +438,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 500.2, 400, CryptoOrderSide.Ask)
             ));
 
-            await Task.Delay(500);
+            await Task.Delay(50);
 
             source.StreamBulk(GetInsertBulk(
                 CreateLevel(pair, 499.5, 600, CryptoOrderSide.Bid),
