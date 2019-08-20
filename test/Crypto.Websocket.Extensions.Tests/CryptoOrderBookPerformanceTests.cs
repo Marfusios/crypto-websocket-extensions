@@ -164,8 +164,8 @@ namespace Crypto.Websocket.Extensions.Tests
             var msg = $"Elapsed time for processing was: {elapsedEnd} ms";
             _output.WriteLine(msg);
 
-            Assert.True(elapsedEnd < 1200, msgInserting);
-            Assert.True(elapsedInsertingMs < 30, msgInserting);
+            Assert.True(elapsedEnd < 5000, msgInserting);
+            Assert.True(elapsedInsertingMs < 100, msgInserting);
         }
 
         [Fact]
@@ -198,8 +198,8 @@ namespace Crypto.Websocket.Extensions.Tests
             var msg = $"Elapsed time for processing was: {elapsedEnd} ms";
             _output.WriteLine(msg);
 
-            Assert.True(elapsedEnd < 2000, msgInserting);
-            Assert.True(elapsedInsertingMs < 20, msgInserting);
+            Assert.True(elapsedEnd < 5000, msgInserting);
+            Assert.True(elapsedInsertingMs < 100, msgInserting);
         }
 
         private static long StreamLevels(string pair, OrderBookSourceMock source, int iterations, int maxBidPrice, int maxAskCount, bool slowDown = false)
