@@ -69,7 +69,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        public TimeSpan BufferInterval { get; set; } = TimeSpan.FromMilliseconds(100);
+        public TimeSpan BufferInterval { get; set; } = TimeSpan.FromMilliseconds(10);
 
         /// <inheritdoc />
         public IObservable<OrderBookLevel[]> OrderBookSnapshotStream => _orderBookSnapshotSubject.AsObservable();

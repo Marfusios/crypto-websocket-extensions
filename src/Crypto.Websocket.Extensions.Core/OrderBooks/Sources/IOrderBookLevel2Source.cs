@@ -32,7 +32,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// Higher it for data intensive sources (Bitmex, etc.)
         /// Lower - more realtime data, high CPU load.
         /// Higher - less realtime data, less CPU intensive. 
-        /// Default: 100 ms
+        /// Default: 10 ms
         /// </summary>
         TimeSpan BufferInterval { get; set; }
 

@@ -6,9 +6,11 @@ using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
-using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Utils;
+using Crypto.Websocket.Extensions.Tests.Helpers;
 using Xunit;
+
+using static Crypto.Websocket.Extensions.Tests.Helpers.OrderBookTestUtils;
 
 namespace Crypto.Websocket.Extensions.Tests
 {
@@ -567,129 +569,6 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Null(source.SnapshotLastPair);
             Assert.Equal(0, source.SnapshotCalledCount);
             Assert.Equal(2, orderBookUpdatedCount);
-        }
-
-        private OrderBookLevel[] GetOrderBookSnapshotMockData(string pair, int count)
-        {
-            var result = new List<OrderBookLevel>();
-
-            for (int i = 0; i < count; i++)
-            {
-                var bid = CreateLevel(pair, i, count * 2 + i, CryptoOrderSide.Bid);
-                result.Add(bid);
-            }
-
-            
-            for (int i = count*2; i > count; i--)
-            {
-                var ask = CreateLevel(pair, i, count * 4 + i, CryptoOrderSide.Ask);
-                result.Add(ask);
-            }
-
-            return result.ToArray();
-        }
-        private OrderBookLevelBulk GetInsertBulk(params OrderBookLevel[] levels)
-        {
-            return new OrderBookLevelBulk(OrderBookAction.Insert, levels);
-        }
-
-        private OrderBookLevelBulk GetUpdateBulk(params OrderBookLevel[] levels)
-        {
-            return new OrderBookLevelBulk(OrderBookAction.Update, levels);
-        }
-
-        private OrderBookLevelBulk GetDeleteBulk(params OrderBookLevel[] levels)
-        {
-            return new OrderBookLevelBulk(OrderBookAction.Delete, levels);
-        }
-
-        private OrderBookLevel CreateLevel(string pair, double price, double? amount, CryptoOrderSide side)
-        {
-            return new OrderBookLevel(
-                CreateKey(price,side),
-                side,
-                price,
-                amount,
-                3,
-                pair == null ? null : CryptoPairsHelper.Clean(pair)
-            );
-        }
-
-        private OrderBookLevel CreateLevel(string pair, double price, CryptoOrderSide side)
-        {
-            return new OrderBookLevel(
-                CreateKey(price,side),
-                side,
-                null,
-                null,
-                null,
-                pair == null ? null : CryptoPairsHelper.Clean(pair)
-            );
-        }
-
-        private string CreateKey(double price, CryptoOrderSide side)
-        {
-            var sideSafe = side == CryptoOrderSide.Bid ? "bid" : "ask";
-            return $"{price}-{sideSafe}";
-        }
-
-        private class OrderBookSourceMock : OrderBookLevel2SourceBase
-        {
-            private readonly OrderBookLevel[] _snapshot;
-            private readonly OrderBookLevelBulk[] _bulks;
-
-            public int SnapshotCalledCount { get; private set; }
-            public string SnapshotLastPair { get; private set; }
-
-            public OrderBookSourceMock()
-            {
-                BufferInterval = TimeSpan.FromMilliseconds(10);
-            }
-
-            public OrderBookSourceMock(params OrderBookLevel[] snapshot)
-            {
-                BufferInterval = TimeSpan.FromMilliseconds(10);
-                _snapshot = snapshot;
-            }
-
-            public OrderBookSourceMock(params OrderBookLevelBulk[] bulks)
-            {
-                BufferInterval = TimeSpan.FromMilliseconds(10);
-                _bulks = bulks;
-            }
-
-            public void StreamSnapshot()
-            {
-                StreamSnapshot(_snapshot);
-            }
-
-            public void StreamBulks()
-            {
-                foreach (var bulk in _bulks)
-                {
-                    BufferData(bulk);
-                }
-            }
-
-            public void StreamBulk(OrderBookLevelBulk bulk)
-            {
-                BufferData(bulk);
-            }
-
-            public override string ExchangeName => "mock";
-
-            protected override Task<OrderBookLevel[]> LoadSnapshotInternal(string pair, int count = 1000)
-            {
-                SnapshotCalledCount++;
-                SnapshotLastPair = pair;
-
-                return Task.FromResult(new OrderBookLevel[0]);
-            }
-
-            protected override OrderBookLevelBulk[] ConvertData(object[] data)
-            {
-                return data.Cast<OrderBookLevelBulk>().ToArray();
-            }
         }
     }
 }

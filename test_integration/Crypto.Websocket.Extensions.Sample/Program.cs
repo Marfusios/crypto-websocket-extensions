@@ -24,7 +24,6 @@ using Coinbase.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket.Requests;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
-using Crypto.Websocket.Extensions.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Serilog;
 using Serilog.Events;
@@ -52,7 +51,8 @@ namespace Crypto.Websocket.Extensions.Sample
             Log.Debug("              STARTING              ");
             Log.Debug("====================================");
 
-            RunEverything().Wait();
+            //RunEverything().Wait();
+            RunOnlyBitmex().Wait();
 
             ExitEvent.WaitOne();
 
@@ -64,7 +64,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
         private static async Task RunEverything()
         {
-            var bitmexOb = await StartBitmex("XBTUSD");
+            var bitmexOb = await StartBitmex("XBTUSD", false);
             var bitfinexOb = await StartBitfinex("BTCUSD");
             var binanceOb = await StartBinance("BTCUSDT");
             var coinbaseOb = await StartCoinbase("BTC-USD");
@@ -81,6 +81,19 @@ namespace Crypto.Websocket.Extensions.Sample
                 .Subscribe(HandleQuoteChanged);
         }
 
+        private static async Task RunOnlyBitmex()
+        {
+            var bitmexOb = await StartBitmex("XBTUSD", true);
+
+            Log.Information("Waiting for price change...");
+
+            Observable.CombineLatest(new[]
+                {
+                    bitmexOb.BidAskUpdatedStream
+                })
+                .Subscribe(HandleQuoteChanged);
+        }
+
         private static void HandleQuoteChanged(IList<IOrderBookChangeInfo> quotes)
         {
             var formattedMessages = quotes
@@ -93,7 +106,7 @@ namespace Crypto.Websocket.Extensions.Sample
         }
 
 
-        private static async Task<CryptoOrderBook> StartBitmex(string pair)
+        private static async Task<CryptoOrderBook> StartBitmex(string pair, bool optimized)
         {
             var url = BitmexValues.ApiWebsocketUrl;
             var communicator = new BitmexWebsocketCommunicator(url) { Name = "Bitmex" };
@@ -101,6 +114,14 @@ namespace Crypto.Websocket.Extensions.Sample
 
             var source = new BitmexOrderBookSource(client);
             var orderBook = new CryptoOrderBook(pair, source);
+
+            if (optimized)
+            {
+                source.BufferEnabled = true;
+                source.BufferInterval = TimeSpan.FromMilliseconds(0);
+                orderBook.DebugEnabled = true;
+            }
+
             await communicator.Start();
 
             // Send subscription request to order book data
