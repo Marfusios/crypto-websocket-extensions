@@ -76,6 +76,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.NotNull(receivedBulks);
         }
 
+#if DEBUG
         [Fact]
         public async Task Buffering_ShouldStreamOneByOne()
         {
@@ -131,6 +132,7 @@ namespace Crypto.Websocket.Extensions.Tests
             await Task.Delay(2200);
             Assert.Equal(3, receivedCount);
         }
+#endif
 
         private MockSource GetMock(OrderBookLevel[] snapshot, OrderBookLevelBulk[] bulks)
         {

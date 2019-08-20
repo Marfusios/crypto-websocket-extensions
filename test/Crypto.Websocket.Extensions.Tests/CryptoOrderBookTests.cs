@@ -500,7 +500,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(pair, source.SnapshotLastPair);
             Assert.True(source.SnapshotCalledCount >= 4);
         }
-#endif
+
 
         [Fact]
         public async Task ValidityChecking_ShouldWorkCorrectly()
@@ -575,5 +575,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(0, source.SnapshotCalledCount);
             Assert.Equal(2, orderBookUpdatedCount);
         }
+#endif
+
     }
 }
