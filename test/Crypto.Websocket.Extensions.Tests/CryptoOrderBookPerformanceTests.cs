@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.Models;
@@ -18,6 +19,8 @@ namespace Crypto.Websocket.Extensions.Tests
         public CryptoOrderBookPerformanceTests(ITestOutputHelper output)
         {
             _output = output;
+
+            GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
         }
 
         [Fact]
@@ -162,7 +165,7 @@ namespace Crypto.Websocket.Extensions.Tests
             _output.WriteLine(msg);
 
             Assert.True(elapsedEnd < 1200, msgInserting);
-            Assert.True(elapsedInsertingMs < 20, msgInserting);
+            Assert.True(elapsedInsertingMs < 30, msgInserting);
         }
 
         [Fact]

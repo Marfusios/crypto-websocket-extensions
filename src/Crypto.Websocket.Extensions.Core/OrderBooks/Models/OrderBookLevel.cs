@@ -39,22 +39,22 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         /// <summary>
         /// Price level
         /// </summary>
-        public double? Price { get; private set; }
+        public double? Price { get; internal set; }
 
         /// <summary>
         /// Number of orders at that price level
         /// </summary>
-        public int? Count { get; private set; }
+        public int? Count { get; internal set; }
 
         /// <summary>
         /// Total amount available at that price level. 
         /// </summary>
-        public double? Amount { get; private set; }
+        public double? Amount { get; internal set; }
 
         /// <summary>
         /// Pair to which this level belongs
         /// </summary>
-        public string Pair { get; private set; }
+        public string Pair { get; internal set; }
 
         /// <summary>
         /// Create a new clone

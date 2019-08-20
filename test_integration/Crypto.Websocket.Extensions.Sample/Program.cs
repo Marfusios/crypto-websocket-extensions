@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.Loader;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,6 +25,7 @@ using Coinbase.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket.Requests;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Serilog;
 using Serilog.Events;
@@ -36,6 +38,8 @@ namespace Crypto.Websocket.Extensions.Sample
 
         static void Main(string[] args)
         {
+            GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+
             InitLogging();
 
             AppDomain.CurrentDomain.ProcessExit += CurrentDomainOnProcessExit;
@@ -51,8 +55,8 @@ namespace Crypto.Websocket.Extensions.Sample
             Log.Debug("              STARTING              ");
             Log.Debug("====================================");
 
-            //RunEverything().Wait();
-            RunOnlyBitmex().Wait();
+            RunEverything().Wait();
+            //RunOnlyBitmex().Wait();
 
             ExitEvent.WaitOne();
 
@@ -65,9 +69,9 @@ namespace Crypto.Websocket.Extensions.Sample
         private static async Task RunEverything()
         {
             var bitmexOb = await StartBitmex("XBTUSD", false);
-            var bitfinexOb = await StartBitfinex("BTCUSD");
-            var binanceOb = await StartBinance("BTCUSDT");
-            var coinbaseOb = await StartCoinbase("BTC-USD");
+            var bitfinexOb = await StartBitfinex("BTCUSD", false);
+            var binanceOb = await StartBinance("BTCUSDT", false);
+            var coinbaseOb = await StartCoinbase("BTC-USD", false);
 
             Log.Information("Waiting for price change...");
 
@@ -117,9 +121,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
             if (optimized)
             {
-                source.BufferEnabled = true;
-                source.BufferInterval = TimeSpan.FromMilliseconds(0);
-                orderBook.DebugEnabled = true;
+                ConfigureOptimized(source, orderBook);
             }
 
             await communicator.Start();
@@ -130,7 +132,7 @@ namespace Crypto.Websocket.Extensions.Sample
             return orderBook;
         }
 
-        private static async Task<CryptoOrderBook> StartBitfinex(string pair)
+        private static async Task<CryptoOrderBook> StartBitfinex(string pair, bool optimized)
         {
             var url = BitfinexValues.ApiWebsocketUrl;
             var communicator = new BitfinexWebsocketCommunicator(url) { Name = "Bitfinex" };
@@ -138,6 +140,12 @@ namespace Crypto.Websocket.Extensions.Sample
 
             var source = new BitfinexOrderBookSource(client);
             var orderBook = new CryptoOrderBook(pair, source);
+
+            if (optimized)
+            {
+                ConfigureOptimized(source, orderBook);
+            }
+
             await communicator.Start();
 
             // Send subscription request to order book data
@@ -146,7 +154,7 @@ namespace Crypto.Websocket.Extensions.Sample
             return orderBook;
         }
 
-        private static async Task<CryptoOrderBook> StartBinance(string pair)
+        private static async Task<CryptoOrderBook> StartBinance(string pair, bool optimized)
         {
             var url = BinanceValues.ApiWebsocketUrl;
             var communicator = new BinanceWebsocketCommunicator(url) { Name = "Binance" };
@@ -159,6 +167,11 @@ namespace Crypto.Websocket.Extensions.Sample
             var source = new BinanceOrderBookSource(client);
             var orderBook = new CryptoOrderBook(pair, source);
 
+            if (optimized)
+            {
+                ConfigureOptimized(source, orderBook);
+            }
+
             await communicator.Start();
 
             // Binance is special
@@ -168,7 +181,7 @@ namespace Crypto.Websocket.Extensions.Sample
             return orderBook;
         }
 
-        private static async Task<CryptoOrderBook> StartCoinbase(string pair)
+        private static async Task<CryptoOrderBook> StartCoinbase(string pair, bool optimized)
         {
             var url = CoinbaseValues.ApiWebsocketUrl;
             var communicator = new CoinbaseWebsocketCommunicator(url) { Name = "Coinbase" };
@@ -176,6 +189,12 @@ namespace Crypto.Websocket.Extensions.Sample
 
             var source = new CoinbaseOrderBookSource(client);
             var orderBook = new CryptoOrderBook(pair, source);
+
+            if (optimized)
+            {
+                ConfigureOptimized(source, orderBook);
+            }
+
             await communicator.Start();
 
             // Send subscription request to order book data
@@ -185,6 +204,15 @@ namespace Crypto.Websocket.Extensions.Sample
             ));
 
             return orderBook;
+        }
+
+        private static void ConfigureOptimized(IOrderBookLevel2Source source, CryptoOrderBook orderBook)
+        {
+            source.BufferEnabled = true;
+            source.BufferInterval = TimeSpan.FromMilliseconds(0);
+
+            orderBook.DebugEnabled = false;
+            orderBook.ValidityCheckEnabled = false;
         }
 
 

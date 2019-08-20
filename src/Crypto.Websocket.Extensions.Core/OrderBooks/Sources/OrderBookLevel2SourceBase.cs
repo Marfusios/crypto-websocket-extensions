@@ -15,10 +15,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
     public abstract class OrderBookLevel2SourceBase : IOrderBookLevel2Source
     {
         private static readonly ILog LogBase = LogProvider.GetCurrentClassLogger();
+
+        private readonly object _bufferLocker = new object();
         private readonly CryptoAsyncLock _locker = new CryptoAsyncLock();
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
 
-        private List<object> _dataBuffer = new List<object>();
+        private readonly Queue<object> _dataBuffer = new Queue<object>();
         private bool _bufferEnabled = true;
 
         /// <summary>
@@ -130,7 +132,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         {
             if (_bufferEnabled)
             {
-                _dataBuffer.Add(data);
+                lock (_bufferLocker)
+                {
+                    _dataBuffer.Enqueue(data);
+                }
                 return;
             }
             
@@ -175,11 +180,14 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 
         private void StreamData()
         {
-            var data = _dataBuffer;
-            _dataBuffer = new List<object>();
-            var dataArr = data.ToArray();
-
-            ConvertAndStream(dataArr);
+            object[] data;
+            lock (_bufferLocker)
+            {
+                data = _dataBuffer.ToArray();
+                _dataBuffer.Clear();
+            }
+           
+            ConvertAndStream(data);
         }
 
         private void ConvertAndStream(object[] dataArr)

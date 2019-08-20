@@ -360,7 +360,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
             if (sw != null)
             {
-                LogDebug($"Diff processing took {sw.ElapsedMilliseconds} ms");
+                var levels = forThis.SelectMany(x => x.Levels).Count();
+                LogDebug($"Diff ({forThis.Length} bulks, {levels} levels) processing took {sw.ElapsedMilliseconds} ms");
             }
         }
 
@@ -403,7 +404,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 return;
             }
 
-            LogDebug($"Handling diff, bulk {currentBulk}/{totalBulks}: {bulk.Action} {correctLevels.Length} levels");
+            //LogDebug($"Handling diff, bulk {currentBulk}/{totalBulks}: {bulk.Action} {correctLevels.Length} levels");
             switch (bulk.Action)
             {
                 case OrderBookAction.Insert:
@@ -448,19 +449,15 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                     continue;
                 }
 
-                var clone = new OrderBookLevel(
-                    existing.Id,
-                    existing.Side,
-                    level.Price ?? existing.Price,
-                    level.Amount ?? existing.Amount,
-                    level.Count ?? existing.Count,
-                    level.Pair ?? existing.Pair
-                    );
-                InsertToCollection(collection, clone);
+                existing.Price = level.Price ?? existing.Price;
+                existing.Amount = level.Amount ?? existing.Amount;
+                existing.Count = level.Count ?? existing.Count;
+                existing.Pair = level.Pair ?? existing.Pair;
+                InsertToCollection(collection, existing);
             }
         }
 
-        private void InsertToCollection(SortedDictionary<double, OrderBookLevel> collection, OrderBookLevel level)
+        private void InsertToCollection(IDictionary<double, OrderBookLevel> collection, OrderBookLevel level)
         {
             if (collection == null)
                 return;
@@ -523,7 +520,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             return _askLevels.Values.ToArray();
         }
 
-        private SortedDictionary<double, OrderBookLevel> GetLevelsCollection(CryptoOrderSide side)
+        private IDictionary<double, OrderBookLevel> GetLevelsCollection(CryptoOrderSide side)
         {
             if (side == CryptoOrderSide.Undefined)
                 return null;
