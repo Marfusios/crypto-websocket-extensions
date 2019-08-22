@@ -313,6 +313,9 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Null(orderBook2.FindAskLevelByPrice(901.1));
         }
 
+
+#if DEBUG
+
         [Fact]
         public async Task StreamingData_ShouldNotifyCorrectly()
         {
@@ -412,7 +415,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(500.2, secondChange.Levels.Last().Price);
         }
 
-#if DEBUG
+
         [Fact]
         public async Task StreamingData_ShouldNotifyOneByOne()
         {
