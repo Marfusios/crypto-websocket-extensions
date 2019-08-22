@@ -361,7 +361,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             if (sw != null)
             {
                 var levels = forThis.SelectMany(x => x.Levels).Count();
-                LogDebug($"Diff ({forThis.Length} bulks, {levels} levels) processing took {sw.ElapsedMilliseconds} ms");
+                LogDebug($"Diff ({forThis.Length} bulks, {levels} levels) processing took {sw.ElapsedMilliseconds} ms, {sw.ElapsedTicks} ticks");
             }
         }
 

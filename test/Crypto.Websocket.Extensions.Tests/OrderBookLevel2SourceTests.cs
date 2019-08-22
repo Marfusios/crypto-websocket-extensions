@@ -26,6 +26,7 @@ namespace Crypto.Websocket.Extensions.Tests
             };
 
             var source = GetMock(snapshot, bulks);
+            source.BufferInterval = TimeSpan.FromMilliseconds(100);
 
             OrderBookLevel[] receivedSnapshot = null;
             OrderBookLevelBulk[] receivedBulks = null;

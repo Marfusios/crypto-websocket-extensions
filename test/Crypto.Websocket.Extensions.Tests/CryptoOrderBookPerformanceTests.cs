@@ -165,7 +165,7 @@ namespace Crypto.Websocket.Extensions.Tests
             _output.WriteLine(msg);
 
             Assert.True(elapsedEnd < 5000, msgInserting);
-            Assert.True(elapsedInsertingMs < 100, msgInserting);
+            Assert.True(elapsedInsertingMs < 1000, msgInserting);
         }
 
         [Fact]
@@ -199,7 +199,7 @@ namespace Crypto.Websocket.Extensions.Tests
             _output.WriteLine(msg);
 
             Assert.True(elapsedEnd < 5000, msgInserting);
-            Assert.True(elapsedInsertingMs < 100, msgInserting);
+            Assert.True(elapsedInsertingMs < 1000, msgInserting);
         }
 
         private static long StreamLevels(string pair, OrderBookSourceMock source, int iterations, int maxBidPrice, int maxAskCount, bool slowDown = false)

@@ -17,11 +17,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         private static readonly ILog LogBase = LogProvider.GetCurrentClassLogger();
 
         private readonly object _bufferLocker = new object();
-        private readonly CryptoAsyncLock _locker = new CryptoAsyncLock();
+        private readonly CryptoAsyncLock _snapshotLocker = new CryptoAsyncLock();
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
 
         private readonly Queue<object> _dataBuffer = new Queue<object>();
         private bool _bufferEnabled = true;
+        private readonly ManualResetEvent _bufferPauseEvent = new ManualResetEvent(false);
 
         /// <summary>
         /// Use this subject to stream order book snapshot data
@@ -82,7 +83,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// <inheritdoc />
         public async Task LoadSnapshot(string pair, int count = 1000)
         {
-            using (await _locker.LockAsync())
+            using (await _snapshotLocker.LockAsync())
             {
                 OrderBookLevel[] data = null;
                 try
@@ -136,6 +137,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
                 {
                     _dataBuffer.Enqueue(data);
                 }
+
+                // unblock waiting
+                _bufferPauseEvent.Set();
                 return;
             }
             
@@ -156,9 +160,19 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 
         private async Task ProcessData()
         {
+            var bufferIntervalMs = BufferInterval.TotalMilliseconds;
+
             while (!_cancellation.IsCancellationRequested && _bufferEnabled)
             {
-                await Task.Delay(BufferInterval);
+                if (bufferIntervalMs > 0)
+                {
+                    // delay only if enabled
+                    await Task.Delay(BufferInterval);
+                }
+
+                // wait when there is no message
+                _bufferPauseEvent.WaitOne();
+
                 StreamDataSynchronized();
             }
         }
@@ -167,7 +181,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         {
             if (LoadSnapshotEnabled)
             {
-                using (_locker.Lock())
+                using (_snapshotLocker.Lock())
                 {
                     StreamData();
                 }
@@ -185,8 +199,15 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
             {
                 data = _dataBuffer.ToArray();
                 _dataBuffer.Clear();
+
+                if (data.Length <= 0)
+                {
+                    // no message in buffer, enable waiting
+                    _bufferPauseEvent.Reset();
+                    return;
+                }
             }
-           
+
             ConvertAndStream(data);
         }
 
