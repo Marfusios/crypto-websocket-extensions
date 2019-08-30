@@ -56,7 +56,7 @@ namespace Crypto.Websocket.Extensions.Sample
             Log.Debug("====================================");
 
             RunEverything().Wait();
-            //RunOnlyBitmex().Wait();
+            //RunOnlyOne().Wait();
 
             ExitEvent.WaitOne();
 
@@ -85,15 +85,18 @@ namespace Crypto.Websocket.Extensions.Sample
                 .Subscribe(HandleQuoteChanged);
         }
 
-        private static async Task RunOnlyBitmex()
+        private static async Task RunOnlyOne()
         {
-            var bitmexOb = await StartBitmex("XBTUSD", true);
+            var ob = await StartBitmex("XBTUSD", true);
+            //var ob = await StartBinance("BTCUSDT", true);
+            //var ob = await StartBitfinex("BTCUSD", true);
+            //var ob = await StartCoinbase("BTC-USD", true);
 
             Log.Information("Waiting for price change...");
 
             Observable.CombineLatest(new[]
                 {
-                    bitmexOb.BidAskUpdatedStream
+                    ob.BidAskUpdatedStream
                 })
                 .Subscribe(HandleQuoteChanged);
         }
@@ -101,7 +104,7 @@ namespace Crypto.Websocket.Extensions.Sample
         private static void HandleQuoteChanged(IList<IOrderBookChangeInfo> quotes)
         {
             var formattedMessages = quotes
-                .Select(x => $"{x.ExchangeName.ToUpper()} {x.Quotes.Bid + "/" + x.Quotes.Ask,16}")
+                .Select(x => $"{x.ExchangeName.ToUpper()} {x.Quotes.Bid.ToString("#.00#") + "/" + x.Quotes.Ask.ToString("#.00#"),16}")
                 .Select(x => $"{x,30}")
                 .ToArray();
 
@@ -211,7 +214,8 @@ namespace Crypto.Websocket.Extensions.Sample
             source.BufferEnabled = true;
             source.BufferInterval = TimeSpan.FromMilliseconds(0);
 
-            orderBook.DebugEnabled = false;
+            orderBook.DebugEnabled = true;
+            orderBook.DebugLogEnabled = true;
             orderBook.ValidityCheckEnabled = false;
         }
 

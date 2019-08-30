@@ -124,7 +124,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Time interval for validity checking.
+        /// It forces snapshot reloading whenever invalid state. 
+        /// Default 5 sec. 
+        /// </summary>
         public TimeSpan ValidityCheckTimeout
         {
             get => _validityCheckTimeout;
@@ -135,10 +139,17 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// How many times it should check validity before processing snapshot reload.
+        /// Default 6 times (which is 6 * 5sec = 30sec).
+        /// </summary>
         public int ValidityCheckLimit { get; set; } = 6;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Whenever validity checking feature is enabled.
+        /// It forces snapshot reloading whenever invalid state. 
+        /// Enabled by default
+        /// </summary>
         public bool ValidityCheckEnabled
         {
             get => _validityCheckEnabled;
@@ -154,6 +165,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// Disabled by default
         /// </summary>
         public bool DebugEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Logs more info (state, performance) whenever enabled. 
+        /// Disabled by default
+        /// </summary>
+        public bool DebugLogEnabled { get; set; } = false;
 
         /// <summary>
         /// Streams data when top level bid or ask price was updated
@@ -210,7 +227,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// </summary>
         public double AskAmount => AskLevels.FirstOrDefault()?.Amount ?? 0;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Returns true if order book is in valid state
+        /// </summary>
         public bool IsValid()
         {
             var isPriceValid = BidPrice <= AskPrice;
@@ -371,7 +390,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             _askLevels.Clear();
             _allLevels.Clear();
 
-            LogDebug($"Handling snapshot: {levels.Length} levels");
+            LogAlways($"Handling snapshot: {levels.Length} levels");
             foreach (var level in levels)
             {
                 var price = level.Price;
@@ -676,7 +695,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         private void LogDebug(string msg)
         {
-            if (!DebugEnabled)
+            if (!DebugLogEnabled)
                 return;
             LogAlways(msg);
         }

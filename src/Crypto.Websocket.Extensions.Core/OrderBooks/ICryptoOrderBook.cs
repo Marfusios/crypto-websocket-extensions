@@ -64,6 +64,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         bool DebugEnabled { get; set; }
 
         /// <summary>
+        /// Logs more info (state, performance) whenever enabled. 
+        /// Disabled by default
+        /// </summary>
+        bool DebugLogEnabled { get; set; }
+
+        /// <summary>
         /// Streams data when top level bid or ask price was updated
         /// </summary>
         IObservable<IOrderBookChangeInfo> BidAskUpdatedStream { get; }
