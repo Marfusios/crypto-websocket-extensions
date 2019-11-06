@@ -26,9 +26,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         private IDisposable _subscription;
 
         /// <inheritdoc />
-        public BitmexOrderBookSource(BitmexWebsocketClient client)
+        public BitmexOrderBookSource(BitmexWebsocketClient client, bool isTestnet = false)
         {
-            _httpClient.BaseAddress = new Uri("https://www.bitmex.com");
+            _httpClient.BaseAddress = isTestnet ? 
+                new Uri("https://testnet.bitmex.com") : 
+                new Uri("https://www.bitmex.com");
 
             ChangeClient(client);
         }

@@ -87,10 +87,10 @@ namespace Crypto.Websocket.Extensions.Sample
 
         private static async Task RunOnlyOne()
         {
-            var ob = await StartBitmex("XBTUSD", true);
+            //var ob = await StartBitmex("XBTUSD", true);
             //var ob = await StartBinance("BTCUSDT", true);
             //var ob = await StartBitfinex("BTCUSD", true);
-            //var ob = await StartCoinbase("BTC-USD", true);
+            var ob = await StartCoinbase("BTC-USD", true);
 
             Log.Information("Waiting for price change...");
 
@@ -215,14 +215,14 @@ namespace Crypto.Websocket.Extensions.Sample
             source.BufferInterval = TimeSpan.FromMilliseconds(0);
 
             orderBook.DebugEnabled = true;
-            orderBook.DebugLogEnabled = true;
+            orderBook.DebugLogEnabled = false;
             orderBook.ValidityCheckEnabled = false;
         }
 
 
         private static void InitLogging()
         {
-            var executingDir = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            var executingDir = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
             var logPath = Path.Combine(executingDir, "logs", "verbose.log");
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Verbose()
