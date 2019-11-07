@@ -6,6 +6,7 @@
     public enum CryptoOrderStatus
     {
         Undefined,
+        New,
         Active,
         Executed,
         PartiallyFilled,

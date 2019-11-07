@@ -19,14 +19,13 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private readonly CryptoOrderCollection _currentOrders;
+        private readonly CryptoOrderCollection _partiallyFilledOrders = new CryptoOrderCollection();
         private BitmexWebsocketClient _client;
         private IDisposable _subscription;
 
         /// <inheritdoc />
-        public BitmexOrderSource(BitmexWebsocketClient client, CryptoOrderCollection currentOrders)
+        public BitmexOrderSource(BitmexWebsocketClient client)
         {
-            _currentOrders = currentOrders ?? new CryptoOrderCollection();
             ChangeClient(client);
         }
 
@@ -47,7 +46,19 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
         private void Subscribe()
         {
-            _subscription = _client.Streams.OrderStream.Subscribe(HandleOrders);
+            _subscription = _client.Streams.OrderStream.Subscribe(HandleOrdersSafe);
+        }
+
+        private void HandleOrdersSafe(OrderResponse response)
+        {
+            try
+            {
+                HandleOrders(response);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, $"[Bitmex] Failed to handle order info, error: '{e.Message}'");
+            }
         }
 
         private void HandleOrders(OrderResponse response)
@@ -69,7 +80,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
             foreach (var order in orders)
             {
-                if(response.Action == BitmexAction.Insert)
+                if (response.Action == BitmexAction.Insert)
                     OrderCreatedSubject.OnNext(order);
                 else
                     OrderUpdatedSubject.OnNext(order);
@@ -92,11 +103,12 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         public CryptoOrder ConvertOrder(Order order)
         {
             var id = order.OrderId;
-            var existing = _currentOrders.ContainsKey(id) ? _currentOrders[id] : null;
+            var existingCurrent = ExistingOrders.ContainsKey(id) ? ExistingOrders[id] : null;
+            var existingPartial = _partiallyFilledOrders.ContainsKey(id) ? _partiallyFilledOrders[id] : null;
+            var existing = existingPartial ?? existingCurrent;
 
-
-            var price = Math.Abs(FirstNonZero(order.Price, order.AvgPx, existing?.Price, 0));
-            var priceAvg = Math.Abs(FirstNonZero(order.AvgPx, existing?.PriceAverage, 0));
+            var price = Math.Abs(FirstNonZero(order.Price, order.AvgPx, existing?.Price) ?? 0);
+            var priceAvg = Math.Abs(FirstNonZero(order.AvgPx, existing?.PriceAverage) ?? 0);
 
             var isPartial = order.OrdStatus == OrderStatus.Undefined ?
                 existing?.OrderStatus == CryptoOrderStatus.PartiallyFilled :
@@ -105,23 +117,44 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             var beforePartialFilledAmount =
                 existing?.OrderStatus == CryptoOrderStatus.PartiallyFilled ? Abs(existing.AmountFilledCumulative) : 0;
 
-            var orderQtyContracts = Abs(ConvertFromContracts(order.OrderQty, price));
-            var cumQtyContracts = Abs(ConvertFromContracts(order.CumQty, price));
-            var leavesQtyContracts = Abs(ConvertFromContracts(order.LeavesQty, price));
+            var beforePartialFilledAmountQuote =
+                existing?.OrderStatus == CryptoOrderStatus.PartiallyFilled ? Abs(existing.AmountFilledCumulativeQuote) : 0;
+
+            var orderQtyQuote = Abs(order.OrderQty ?? existing?.AmountOrigQuote);
+            var cumQtyQuote = Abs(order.CumQty ?? existing?.AmountFilledCumulativeQuote);
+            var leavesQtyQuote = Abs(order.LeavesQty);
+
+            var orderQtyBase = Abs(ConvertFromContracts(orderQtyQuote, price));
+            var cumQtyBase = Abs(ConvertFromContracts(cumQtyQuote, price));
+            var leavesQtyBase = Abs(ConvertFromContracts(order.LeavesQty, price));
 
             var amountFilledCumulative = FirstNonZero(
-                    cumQtyContracts,
+                    cumQtyBase,
                     existing?.AmountFilledCumulative);
 
+            var amountFilledCumulativeQuote = FirstNonZero(
+                cumQtyQuote,
+                existing?.AmountFilledCumulativeQuote);
+
             var amountFilled = FirstNonZero(
-                    cumQtyContracts - beforePartialFilledAmount, // Bitmex doesn't send partial difference when filled
+                    cumQtyBase - beforePartialFilledAmount, // Bitmex doesn't send partial difference when filled
                     existing?.AmountFilled);
 
+            var amountFilledQuote = FirstNonZero(
+                cumQtyQuote - beforePartialFilledAmountQuote, // Bitmex doesn't send partial difference when filled
+                existing?.AmountFilledQuote);
+
             var amountOrig = isPartial
-                ? (cumQtyContracts ?? 0) + (leavesQtyContracts ?? 0)
+                ? (cumQtyBase ?? 0) + (leavesQtyBase ?? 0)
                 : FirstNonZero(
-                    orderQtyContracts,
+                    orderQtyBase,
                     existing?.AmountOrig);
+
+            var amountOrigQuote = isPartial
+                ? (cumQtyQuote ?? 0) + (leavesQtyQuote ?? 0)
+                : FirstNonZero(
+                    orderQtyQuote,
+                    existing?.AmountOrigQuote);
 
             if ((!order.Side.HasValue || order.Side == BitmexSide.Undefined) && existing != null)
             {
@@ -129,7 +162,8 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             }
 
             var currentStatus = existing != null &&
-                                existing.OrderStatus != CryptoOrderStatus.Undefined &&
+                                existing.OrderStatus != CryptoOrderStatus.Undefined && 
+                                existing.OrderStatus != CryptoOrderStatus.New &&
                                 order.OrdStatus == OrderStatus.Undefined ?
                 existing.OrderStatus :
                 ConvertOrderStatus(order);
@@ -144,6 +178,9 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 AmountFilled = amountFilled,
                 AmountFilledCumulative = amountFilledCumulative,
                 AmountOrig = amountOrig,
+                AmountFilledQuote = amountFilledQuote,
+                AmountFilledCumulativeQuote = amountFilledCumulativeQuote,
+                AmountOrigQuote = amountOrigQuote,
                 Created = order.TransactTime ?? existing?.Created,
                 Updated = order.Timestamp ?? existing?.Updated,
                 Price = price,
@@ -155,12 +192,10 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             };
 
 
-            if (existing != null &&
-                (currentStatus == CryptoOrderStatus.PartiallyFilled ||
-                currentStatus == CryptoOrderStatus.Executed))
+            if (currentStatus == CryptoOrderStatus.PartiallyFilled)
             {
-                // update order cache with new data
-                _currentOrders[newOrder.Id] = newOrder;
+                // save partially filled orders
+                _partiallyFilledOrders[newOrder.Id] = newOrder;
             }
 
             return newOrder;
@@ -180,8 +215,14 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                     return CryptoOrderType.Market;
                 case "stop":
                     return CryptoOrderType.Stop;
+                case "stoplimit":
+                    return CryptoOrderType.StopLimit;
                 case "limit":
                     return CryptoOrderType.Limit;
+                case "limitiftouched":
+                    return CryptoOrderType.TakeProfitLimit;
+                case "marketiftouched":
+                    return CryptoOrderType.TakeProfitMarket;
                 default:
                     return CryptoOrderType.Undefined;
             }
@@ -204,6 +245,14 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         }
 
         /// <summary>
+        /// Convert to base from contracts
+        /// </summary>
+        public static double? ConvertFromContracts(double? contracts, double price)
+        {
+            return contracts / price;
+        }
+
+        /// <summary>
         /// Convert order status
         /// </summary>
         public static CryptoOrderStatus ConvertOrderStatus(Order order)
@@ -212,7 +261,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             switch (status)
             {
                 case OrderStatus.New:
-                    return CryptoOrderStatus.Active;
+                    return order.WorkingIndicator ?? false ? CryptoOrderStatus.Active : CryptoOrderStatus.New;
                 case OrderStatus.PartiallyFilled:
                     return CryptoOrderStatus.PartiallyFilled;
                 case OrderStatus.Filled:
@@ -225,7 +274,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         }
 
 
-        private static double FirstNonZero(params double?[] numbers)
+        private static double? FirstNonZero(params double?[] numbers)
         {
             foreach (var number in numbers)
             {
@@ -233,7 +282,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                     return number.Value;
             }
 
-            return 0;
+            return null;
         }
 
         private static double? Abs(double? value)

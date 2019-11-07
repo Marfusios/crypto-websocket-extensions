@@ -29,6 +29,16 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         string ClientIdPrefixString { get; }
 
         /// <summary>
+        /// Target pair for this orders data (other orders will be filtered out)
+        /// </summary>
+        string TargetPair { get; }
+
+        /// <summary>
+        /// Originally provided target pair for this orders data
+        /// </summary>
+        string TargetPairOriginal { get; }
+
+        /// <summary>
         /// Last executed (or partially filled) buy order
         /// </summary>
         CryptoOrder LastExecutedBuyOrder { get; }
@@ -87,5 +97,15 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// Returns true if client id matches prefix
         /// </summary>
         bool IsOurOrder(string clientId);
+
+        /// <summary>
+        /// Track selected order (use immediately after placing an order via REST call)
+        /// </summary>
+        void TrackOrder(CryptoOrder order);
+
+        /// <summary>
+        /// Clean internal orders cache, remove canceled orders
+        /// </summary>
+        void RemoveCanceled();
     }
 }

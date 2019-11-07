@@ -27,5 +27,10 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
         /// Stream on every status change of the order
         /// </summary>
         IObservable<CryptoOrder> OrderUpdatedStream { get; }
+
+        /// <summary>
+        /// Set collection of existing orders (to correctly handle orders state)
+        /// </summary>
+        void SetExistingOrders(CryptoOrderCollection orders);
     }
 }

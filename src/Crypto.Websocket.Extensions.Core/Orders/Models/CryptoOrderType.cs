@@ -12,5 +12,7 @@
         TrailingStop,
         Fok,
         StopLimit,
+        TakeProfitLimit,
+        TakeProfitMarket
     }
 }

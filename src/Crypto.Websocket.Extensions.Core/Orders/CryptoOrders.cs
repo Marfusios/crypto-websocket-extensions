@@ -7,6 +7,7 @@ using Crypto.Websocket.Extensions.Core.Logging;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
 using Crypto.Websocket.Extensions.Core.Orders.Sources;
+using Crypto.Websocket.Extensions.Core.Utils;
 using Crypto.Websocket.Extensions.Core.Validations;
 
 namespace Crypto.Websocket.Extensions.Core.Orders
@@ -31,11 +32,15 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         /// <param name="source">Orders source</param>
         /// <param name="orderPrefix">Select prefix if you want to distinguish orders</param>
-        public CryptoOrders(ICryptoOrderSource source, int? orderPrefix = null)
+        /// <param name="targetPair">Select target pair, if you want to filter monitored orders</param>
+        public CryptoOrders(ICryptoOrderSource source, int? orderPrefix = null, string targetPair = null)
         {
             CryptoValidations.ValidateInput(source, nameof(source));
 
             _source = source;
+            TargetPair = targetPair != null ? CryptoPairsHelper.Clean(targetPair) : null;
+            TargetPairOriginal = targetPair;
+            _source.SetExistingOrders(_idToOrder);
             _orderPrefix = orderPrefix;
 
             Subscribe();
@@ -63,6 +68,16 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         public string ClientIdPrefixString => ClientIdPrefix?.ToString() ?? string.Empty;
 
         /// <summary>
+        /// Target pair for this orders data (other orders will be filtered out)
+        /// </summary>
+        public string TargetPair { get; private set; }
+
+        /// <summary>
+        /// Originally provided target pair for this orders data
+        /// </summary>
+        public string TargetPairOriginal { get; private set; }
+
+        /// <summary>
         /// Last executed (or partially filled) buy order
         /// </summary>
         public CryptoOrder LastExecutedBuyOrder { get; private set; }
@@ -78,7 +93,10 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public long GenerateClientId()
         {
-            return Interlocked.Increment(ref _cidCounter);
+            var counter = Interlocked.Increment(ref _cidCounter);
+            if (ClientIdPrefix.HasValue)
+                return ClientIdPrefix.Value + counter;
+            return counter;
         }
 
         /// <summary>
@@ -168,9 +186,47 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public bool IsOurOrder(string clientId)
         {
-            return clientId.StartsWith(ClientIdPrefixString);
+            if (ClientIdPrefixString == null)
+                return true;
+
+            // if prefix is set, also client id has to be set to compare prefixes
+            if (clientId == null)
+                return false;
+
+            return clientId.StartsWith($"{ClientIdPrefixString}0");
         }
 
+        /// <summary>
+        /// Track selected order (use immediately after placing an order via REST call)
+        /// </summary>
+        public void TrackOrder(CryptoOrder order)
+        {
+            CryptoValidations.ValidateInput(order, nameof(order));
+
+            if (IsFilteredOut(order))
+            {
+                // order for different pair, ignore
+                return;
+            }
+
+            _idToOrder[order.Id] = order;
+        }
+
+        /// <summary>
+        /// Clean internal orders cache, remove canceled orders
+        /// </summary>
+        public void RemoveCanceled()
+        {
+            var canceled = _idToOrder.Where(x =>
+                    x.Value.OrderStatus == CryptoOrderStatus.Canceled ||
+                    x.Value.OrderStatus == CryptoOrderStatus.Undefined)
+                .ToArray();
+            foreach (var order in canceled)
+            {
+                if (_idToOrder.ContainsKey(order.Key))
+                    _idToOrder.TryRemove(order.Key, out CryptoOrder _);
+            }
+        }
 
 
         private void Subscribe()
@@ -196,7 +252,6 @@ namespace Crypto.Websocket.Extensions.Core.Orders
             if (order == null) 
                 return;
 
-            _idToOrder[order.Id] = order;
             HandleOrderUpdated(order);
         }
 
@@ -210,22 +265,19 @@ namespace Crypto.Websocket.Extensions.Core.Orders
                 Log.Debug($"[ORDERS] Received order with weird status ({order.ClientId} - {order.PriceGrouped}/{order.AmountGrouped})");
             }
 
-            if (order.OrderStatus == CryptoOrderStatus.Canceled || order.OrderStatus == CryptoOrderStatus.Undefined)
-            {
-                if (_idToOrder.ContainsKey(order.Id))
-                {
-                    _idToOrder.TryRemove(order.Id, out CryptoOrder _);
-                }
-            }
-            else
-            {
-                _idToOrder[order.Id] = order;
-            }
             HandleOrderUpdated(order);
         }
 
         private void HandleOrderUpdated(CryptoOrder order)
         {
+            if (IsFilteredOut(order))
+            {
+                // order for different pair, etc. Ignore.
+                return;
+            }
+
+            _idToOrder[order.Id] = order;
+
             if (order.OrderStatus == CryptoOrderStatus.Executed || order.OrderStatus == CryptoOrderStatus.PartiallyFilled)
             {
                 if (order.Side == CryptoOrderSide.Ask)
@@ -238,6 +290,18 @@ namespace Crypto.Websocket.Extensions.Core.Orders
 
             if(IsOurOrder(order))
                 _ourOrderChanged.OnNext(order);
+        }
+
+        private bool IsFilteredOut(CryptoOrder order)
+        {
+            if (order == null)
+                return true;
+
+            // filter out by selected pair
+            if (TargetPair != null && !TargetPair.Equals(order.PairClean))
+                return true;
+
+            return false;
         }
     }
 }

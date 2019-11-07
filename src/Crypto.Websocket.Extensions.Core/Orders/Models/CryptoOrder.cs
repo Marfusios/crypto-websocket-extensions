@@ -13,8 +13,11 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
     {
         private CryptoOrderSide _side;
         private double? _amountFilledCumulative;
+        private double? _amountFilledCumulativeQuote;
         private double? _amountFilled;
+        private double? _amountFilledQuote;
         private double? _amountOrig;
+        private double? _amountOrigQuote;
 
         /// <summary>
         /// Unique order id (provided by exchange)
@@ -75,7 +78,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         }
 
         /// <summary>
-        /// Filled amount for this single order
+        /// Filled amount for this single order in base currency
         /// </summary>
         public double? AmountFilled
         {
@@ -84,7 +87,16 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         }
 
         /// <summary>
-        /// Cumulative filled amount for this particular order (all partial fills together)
+        /// Filled amount for this single order in quote currency
+        /// </summary>
+        public double? AmountFilledQuote
+        {
+            get => _amountFilledQuote;
+            set => _amountFilledQuote = WithCorrectSign(value);
+        }
+
+        /// <summary>
+        /// Cumulative filled amount for this particular order (all partial fills together) in base currency
         /// </summary>
         public double? AmountFilledCumulative
         {
@@ -93,12 +105,30 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         }
 
         /// <summary>
-        /// Original base order amount (stable)
+        /// Cumulative filled amount for this particular order (all partial fills together) in quote currency
+        /// </summary>
+        public double? AmountFilledCumulativeQuote
+        {
+            get => _amountFilledCumulativeQuote;
+            set => _amountFilledCumulativeQuote = WithCorrectSign(value);
+        }
+
+        /// <summary>
+        /// Original order amount (stable) in base currency
         /// </summary>
         public double? AmountOrig
         {
             get => (_amountOrig);
             set => _amountOrig = WithCorrectSign(value);
+        }
+
+        /// <summary>
+        /// Original order amount (stable) in quote currency
+        /// </summary>
+        public double? AmountOrigQuote
+        {
+            get => (_amountOrigQuote);
+            set => _amountOrigQuote = WithCorrectSign(value);
         }
 
         /// <summary>
@@ -151,7 +181,9 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
 
         private double? WithCorrectSign(double? value)
         {
-            return !value.HasValue ? (double?)null : Math.Abs(value.Value) * (_side == CryptoOrderSide.Bid ? 1 : -1);
+            if (!value.HasValue || _side == CryptoOrderSide.Undefined)
+                return value;
+            return Math.Abs(value.Value) * (_side == CryptoOrderSide.Bid ? 1 : -1);
         }
 
         private double FirstNotNull(params double?[] numbers)
@@ -171,6 +203,8 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         /// </summary>
         public static CryptoOrderSide RecognizeSide(double amount)
         {
+            if (CryptoMathUtils.IsSame(amount, 0))
+                return CryptoOrderSide.Undefined;
             return amount >= 0 ? CryptoOrderSide.Bid : CryptoOrderSide.Ask;
         }
 
@@ -179,7 +213,9 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         /// </summary>
         public static CryptoOrderSide RecognizeSide(double? amount)
         {
-            return !amount.HasValue || amount >= 0 ? CryptoOrderSide.Bid : CryptoOrderSide.Ask;
+            if (!amount.HasValue || CryptoMathUtils.IsSame(amount.Value, 0))
+                return CryptoOrderSide.Undefined;
+            return amount >= 0 ? CryptoOrderSide.Bid : CryptoOrderSide.Ask;
         }
 
         /// <summary>

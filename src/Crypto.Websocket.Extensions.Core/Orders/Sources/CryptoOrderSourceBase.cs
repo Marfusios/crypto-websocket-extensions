@@ -14,6 +14,8 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
         protected readonly Subject<CryptoOrder> OrderCreatedSubject = new Subject<CryptoOrder>();
         protected readonly Subject<CryptoOrder> OrderUpdatedSubject = new Subject<CryptoOrder>();
 
+        protected CryptoOrderCollection ExistingOrders = new CryptoOrderCollection();
+
         /// <summary>
         /// Origin exchange name
         /// </summary>
@@ -33,5 +35,13 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
         /// Stream on every status change of the order
         /// </summary>
         public virtual IObservable<CryptoOrder> OrderUpdatedStream => OrderUpdatedSubject.AsObservable();
+
+        /// <summary>
+        /// Set collection of existing orders (to correctly handle orders state)
+        /// </summary>
+        public void SetExistingOrders(CryptoOrderCollection orders)
+        {
+            ExistingOrders = orders ?? new CryptoOrderCollection();
+        }
     }
 }
