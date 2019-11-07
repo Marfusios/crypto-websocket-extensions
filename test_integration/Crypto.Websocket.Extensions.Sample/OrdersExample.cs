@@ -5,16 +5,21 @@ using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Websockets;
 using Crypto.Websocket.Extensions.Core.Orders;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
+using Crypto.Websocket.Extensions.Core.Wallets.Models;
 using Crypto.Websocket.Extensions.Orders.Sources;
+using Crypto.Websocket.Extensions.Wallets.Sources;
 using Serilog;
 
 namespace Crypto.Websocket.Extensions.Sample
 {
     public static class OrdersExample
     {
+        private static readonly string API_KEY = "";
+        private static readonly string API_SECRET = "";
+
         public static async Task RunEverything()
         {
-            var ordBitmex = await StartBitmex(true, HandleOrderChanged);
+            var ordBitmex = await StartBitmex(true, HandleOrderChanged, HandleWalletsChanged);
 
             Log.Information("Waiting for orders...");
         }
@@ -28,32 +33,48 @@ namespace Crypto.Websocket.Extensions.Sample
                             $"Status: {order.OrderStatus}");
         }
 
-
-
-
-        private static async Task<ICryptoOrders> StartBitmex(bool isTestnet, Action<CryptoOrder> handler)
+        private static void HandleWalletsChanged(CryptoWallet[] wallets)
         {
-            var key = "r6GfUxQKEjoxZIayHOe9hYWq";
-            var secret = "yeXzg7sBqSDNdpwPo5UzclDd2L-4DwgDkVgYnYoDMEMOjhtg";
+            foreach (var wallet in wallets)
+            {
+                HandleWalletChanged(wallet);
+            }
+        }
 
+        private static void HandleWalletChanged(CryptoWallet wallet)
+        {
+            Log.Information($"Wallet '{wallet.Type}' " +
+                            $"Balance: {wallet.Balance} {wallet.Currency}, " +
+                            $"Available: {wallet.BalanceAvailable} {wallet.Currency}, " +
+                            $"Pnl: {wallet.RealizedPnl:#.#####}/{wallet.UnrealizedPnl:#.#####}");
+        }
+
+
+        private static async Task<ICryptoOrders> StartBitmex(bool isTestnet, Action<CryptoOrder> handler, 
+            Action<CryptoWallet[]> walletHandler)
+        {
             var url = isTestnet ? BitmexValues.ApiWebsocketTestnetUrl : BitmexValues.ApiWebsocketUrl;
             var communicator = new BitmexWebsocketCommunicator(url) { Name = "Bitmex" };
             var client = new BitmexWebsocketClient(communicator);
 
             var source = new BitmexOrderSource(client);
             var orders = new CryptoOrders(source);
-
             orders.OrderChangedStream.Subscribe(handler);
+
+            var walletSource = new BitmexWalletSource(client);
+            walletSource.WalletChangedStream.Subscribe(walletHandler);
 
             client.Streams.AuthenticationStream.Subscribe(x =>
             {
                 Log.Information($"[Bitmex] Authenticated '{x.Success}'");
+                client.Send(new Bitmex.Client.Websocket.Requests.WalletSubscribeRequest()).Wait();
+                client.Send(new Bitmex.Client.Websocket.Requests.MarginSubscribeRequest()).Wait();
                 client.Send(new Bitmex.Client.Websocket.Requests.OrderSubscribeRequest()).Wait();
             });
 
             communicator.ReconnectionHappened.Subscribe(x =>
             {
-                client.Authenticate(key, secret).Wait();
+                client.Authenticate(API_KEY, API_SECRET).Wait();
             });
 
             await communicator.Start();

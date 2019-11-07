@@ -129,9 +129,6 @@ namespace Crypto.Websocket.Extensions.Tests
             source.StreamData();
             await Task.Delay(2200);
             Assert.Equal(2, receivedCount);
-
-            await Task.Delay(2200);
-            Assert.Equal(3, receivedCount);
         }
 #endif
 

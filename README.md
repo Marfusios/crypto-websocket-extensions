@@ -37,6 +37,7 @@ It helps to unify data models and usage of more clients together.
 * provides streams:
     * `OrderBookUpdatedStream` - streams on an every order book update
     * `BidAskUpdatedStream` - streams when bid or ask price changed (top level of the order book)
+	* `TopLevelUpdatedStream` - streams when bid or ask price/amount changed (top level of the order book)
 * provides properties and methods:
     * `BidLevels` and `AskLevels` - ordered array of current state of the order book
     * `FindLevelByPrice` and `FindLevelById` - returns specific order book level
@@ -66,7 +67,17 @@ orderBook.OrderBookUpdatedStream.Subscribe(quotes =>
 await communicator.Start();
 ```
 
+#### Orders (authenticated)
+
+* `CryptoOrders` class - unified orders status across all exchanges
+
+#### Wallet (authenticated)
+
+* `IWalletSource` - unified wallet status across all exchanges
+
+
 More usage examples:
+* unit tests ([link](test/Crypto.Websocket.Extensions.Tests))
 * integration tests ([link](test_integration/Crypto.Websocket.Extensions.Tests.Integration))
 * console sample ([link](test_integration/Crypto.Websocket.Extensions.Sample/Program.cs))
 

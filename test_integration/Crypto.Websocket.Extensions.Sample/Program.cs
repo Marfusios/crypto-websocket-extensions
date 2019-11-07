@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Runtime;
 using System.Runtime.Loader;
 using System.Threading;
-using System.Threading.Tasks;
 using Serilog;
 using Serilog.Events;
 
@@ -35,10 +34,10 @@ namespace Crypto.Websocket.Extensions.Sample
 
 
 
-            //OrderBookExample.RunEverything().Wait();
+            OrderBookExample.RunEverything().Wait();
             //OrderBookExample.RunOnlyOne().Wait();
 
-            OrdersExample.RunEverything().Wait();
+            //OrdersExample.RunEverything().Wait();
 
 
 

@@ -19,13 +19,13 @@ namespace Crypto.Websocket.Extensions.Core.Orders
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private readonly ICryptoOrderSource _source;
+        private readonly IOrderSource _source;
         private readonly int? _orderPrefix;
         private readonly Subject<CryptoOrder> _orderChanged = new Subject<CryptoOrder>();
         private readonly Subject<CryptoOrder> _ourOrderChanged = new Subject<CryptoOrder>();
         private readonly CryptoOrderCollection _idToOrder = new CryptoOrderCollection();
 
-        private long _cidCounter = 0;
+        private long _cidCounter;
 
         /// <summary>
         /// Orders manager
@@ -33,7 +33,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <param name="source">Orders source</param>
         /// <param name="orderPrefix">Select prefix if you want to distinguish orders</param>
         /// <param name="targetPair">Select target pair, if you want to filter monitored orders</param>
-        public CryptoOrders(ICryptoOrderSource source, int? orderPrefix = null, string targetPair = null)
+        public CryptoOrders(IOrderSource source, int? orderPrefix = null, string targetPair = null)
         {
             CryptoValidations.ValidateInput(source, nameof(source));
 
@@ -59,7 +59,16 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Selected client id prefix
         /// </summary>
-        public long? ClientIdPrefix => _orderPrefix * 1000000;
+        public long? ClientIdPrefix => _orderPrefix * ClientIdPrefixExponent;
+
+        /// <summary>
+        /// Client id exponent when prefix is selected.
+        /// For example:
+        ///   prefix = 333
+        ///   exponent = 1000000
+        ///   generated client id = 333000001
+        /// </summary>
+        public long ClientIdPrefixExponent { get; set; } = 10000000;
 
 
         /// <summary>

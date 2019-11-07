@@ -29,6 +29,15 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         string ClientIdPrefixString { get; }
 
         /// <summary>
+        /// Client id exponent when prefix is selected.
+        /// For example:
+        /// prefix = 333
+        /// exponent = 1000000
+        /// generated client id = 333000001
+        /// </summary>
+        long ClientIdPrefixExponent { get; set; }
+
+        /// <summary>
         /// Target pair for this orders data (other orders will be filtered out)
         /// </summary>
         string TargetPair { get; }

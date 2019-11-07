@@ -8,7 +8,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
     /// <summary>
     /// Source that provides current orders info 
     /// </summary>
-    public abstract class CryptoOrderSourceBase : ICryptoOrderSource
+    public abstract class OrderSourceBase : IOrderSource
     {
         protected readonly Subject<CryptoOrder[]> OrderSnapshotSubject = new Subject<CryptoOrder[]>();
         protected readonly Subject<CryptoOrder> OrderCreatedSubject = new Subject<CryptoOrder>();

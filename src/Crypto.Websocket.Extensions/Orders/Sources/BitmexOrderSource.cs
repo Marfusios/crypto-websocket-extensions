@@ -15,7 +15,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
     /// <summary>
     /// Bitmex orders source
     /// </summary>
-    public class BitmexOrderSource : CryptoOrderSourceBase
+    public class BitmexOrderSource : OrderSourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 

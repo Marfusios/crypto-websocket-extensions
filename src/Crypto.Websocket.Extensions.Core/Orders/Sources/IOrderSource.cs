@@ -6,7 +6,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
     /// <summary>
     /// Source that provides current orders info 
     /// </summary>
-    public interface ICryptoOrderSource
+    public interface IOrderSource
     {
         /// <summary>
         /// Origin exchange name
