@@ -65,17 +65,17 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Returns only our active orders (based on client id prefix)
         /// </summary>
-        CryptoOrderCollectionReadonly GetOurActiveOrders();
+        CryptoOrderCollectionReadonly GetActiveOrders();
 
         /// <summary>
         /// Returns only our orders (based on client id prefix)
         /// </summary>
-        CryptoOrderCollectionReadonly GetOurOrders();
+        CryptoOrderCollectionReadonly GetOrders();
 
         /// <summary>
-        /// Returns all orders
+        /// Returns all orders (ignore prefix for client id)
         /// </summary>
-        CryptoOrderCollectionReadonly GetOrders();
+        CryptoOrderCollectionReadonly GetAllOrders();
 
         /// <summary>
         /// Find active order by provided unique id

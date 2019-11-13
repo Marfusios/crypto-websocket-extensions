@@ -20,7 +20,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
         private readonly IOrderSource _source;
-        private readonly int? _orderPrefix;
+        private readonly long? _orderPrefix;
         private readonly Subject<CryptoOrder> _orderChanged = new Subject<CryptoOrder>();
         private readonly Subject<CryptoOrder> _ourOrderChanged = new Subject<CryptoOrder>();
         private readonly CryptoOrderCollection _idToOrder = new CryptoOrderCollection();
@@ -33,12 +33,12 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <param name="source">Orders source</param>
         /// <param name="orderPrefix">Select prefix if you want to distinguish orders</param>
         /// <param name="targetPair">Select target pair, if you want to filter monitored orders</param>
-        public CryptoOrders(IOrderSource source, int? orderPrefix = null, string targetPair = null)
+        public CryptoOrders(IOrderSource source, long? orderPrefix = null, string targetPair = null)
         {
             CryptoValidations.ValidateInput(source, nameof(source));
 
             _source = source;
-            TargetPair = targetPair != null ? CryptoPairsHelper.Clean(targetPair) : null;
+            TargetPair = CryptoPairsHelper.Clean(targetPair);
             TargetPairOriginal = targetPair;
             _source.SetExistingOrders(_idToOrder);
             _orderPrefix = orderPrefix;
@@ -74,7 +74,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Selected client id prefix as string
         /// </summary>
-        public string ClientIdPrefixString => ClientIdPrefix?.ToString() ?? string.Empty;
+        public string ClientIdPrefixString => _orderPrefix?.ToString() ?? string.Empty;
 
         /// <summary>
         /// Target pair for this orders data (other orders will be filtered out)
@@ -111,7 +111,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Returns only our active orders (based on client id prefix)
         /// </summary>
-        public CryptoOrderCollectionReadonly GetOurActiveOrders()
+        public CryptoOrderCollectionReadonly GetActiveOrders()
         {
             var orders = _idToOrder
                 .Where(x =>
@@ -126,7 +126,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Returns only our orders (based on client id prefix)
         /// </summary>
-        public CryptoOrderCollectionReadonly GetOurOrders()
+        public CryptoOrderCollectionReadonly GetOrders()
         {
             var orders = _idToOrder
                 .Where(x => IsOurOrder(x.Value.ClientId))
@@ -135,9 +135,9 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         }
 
         /// <summary>
-        /// Returns all orders
+        /// Returns all orders (ignore prefix for client id)
         /// </summary>
-        public CryptoOrderCollectionReadonly GetOrders()
+        public CryptoOrderCollectionReadonly GetAllOrders()
         {
             var orders = _idToOrder
                 .ToDictionary(x => x.Key, y => y.Value);
@@ -149,7 +149,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public CryptoOrder FindActiveOrder(string id)
         {
-            if (GetOurActiveOrders().ContainsKey(id))
+            if (GetActiveOrders().ContainsKey(id))
                 return _idToOrder[id];
             return null;
         }
@@ -169,7 +169,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public CryptoOrder FindActiveOrderByClientId(string clientId)
         {
-            var item = GetOurActiveOrders().FirstOrDefault(x => x.Value.ClientId == clientId);
+            var item = GetActiveOrders().FirstOrDefault(x => x.Value.ClientId == clientId);
             return item.Value;
         }
 
@@ -195,11 +195,11 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public bool IsOurOrder(string clientId)
         {
-            if (ClientIdPrefixString == null)
+            if (string.IsNullOrWhiteSpace(ClientIdPrefixString))
                 return true;
 
             // if prefix is set, also client id has to be set to compare prefixes
-            if (clientId == null)
+            if (string.IsNullOrWhiteSpace(clientId))
                 return false;
 
             return clientId.StartsWith($"{ClientIdPrefixString}0");
@@ -210,15 +210,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public void TrackOrder(CryptoOrder order)
         {
-            CryptoValidations.ValidateInput(order, nameof(order));
-
-            if (IsFilteredOut(order))
-            {
-                // order for different pair, ignore
-                return;
-            }
-
-            _idToOrder[order.Id] = order;
+            OnOrderUpdated(order);
         }
 
         /// <summary>
@@ -307,7 +299,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
                 return true;
 
             // filter out by selected pair
-            if (TargetPair != null && !TargetPair.Equals(order.PairClean))
+            if (!string.IsNullOrWhiteSpace(TargetPair) && !TargetPair.Equals(order.PairClean))
                 return true;
 
             return false;

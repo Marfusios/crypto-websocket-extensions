@@ -12,7 +12,12 @@ namespace Crypto.Websocket.Extensions.Core.Utils
         /// </summary>
         public static bool IsSame(double first, double second)
         {
-            return Math.Abs(first - second) < 1E-8;
+            return Math.Abs(first - second) < EqualTolerance;
         }
+
+        /// <summary>
+        /// Tolerance used for comparing float numbers
+        /// </summary>
+        public static double EqualTolerance => 1E-8;
     }
 }
