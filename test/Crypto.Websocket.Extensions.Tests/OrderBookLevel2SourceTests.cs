@@ -10,6 +10,7 @@ namespace Crypto.Websocket.Extensions.Tests
 {
     public class OrderBookLevel2SourceTests
     {
+#if DEBUG
         [Fact]
         public async Task Buffering_ShouldBeEnabledByDefault_StreamDataAfterSomeTime()
         {
@@ -45,6 +46,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.NotNull(receivedSnapshot);
             Assert.NotNull(receivedBulks);
         }
+#endif
 
         [Fact]
         public async Task Buffering_Disable_ShouldWork()
