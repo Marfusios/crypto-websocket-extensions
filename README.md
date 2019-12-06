@@ -1,4 +1,4 @@
-﻿![Logo](cwe_logo.png)
+![Logo](cwe_logo.png)
 # Cryptocurrency websocket extensions [![Build Status](https://travis-ci.org/Marfusios/crypto-websocket-extensions.svg?branch=master)](https://travis-ci.org/Marfusios/crypto-websocket-extensions) [![NuGet version](https://badge.fury.io/nu/Crypto.Websocket.Extensions.svg)](https://badge.fury.io/nu/Crypto.Websocket.Extensions)
 
 This is a library that provides extensions to cryptocurrency websocket exchange clients. 
@@ -28,9 +28,9 @@ It helps to unify data models and usage of more clients together.
 | [![binance](https://user-images.githubusercontent.com/1294454/29604020-d5483cdc-87ee-11e7-94c7-d1a8d9169293.jpg)](https://www.binance.com/?ref=21773680)  | [Binance](https://www.binance.com/?ref=21773680)  | [binance-client-websocket](https://github.com/Marfusios/binance-client-websocket) |
 | [![coinbase](https://user-images.githubusercontent.com/1294454/41764625-63b7ffde-760a-11e8-996d-a6328fa9347a.jpg)](https://www.coinbase.com/join/kotas_4)  | [Coinbase](https://www.coinbase.com/join/kotas_4)  | [coinbase-client-websocket](https://github.com/Marfusios/coinbase-client-websocket) |
 
-### Extensions
+## Extensions
 
-#### Order book
+### Order book
 
 * `CryptoOrderBook` class - unified order book across all exchanges
 * support for level2 market data (only differences in order book)
@@ -67,14 +67,17 @@ orderBook.OrderBookUpdatedStream.Subscribe(quotes =>
 await communicator.Start();
 ```
 
-#### Orders (authenticated)
+### Orders (authenticated)
 
 * `CryptoOrders` class - unified orders status across all exchanges
 
-#### Wallet (authenticated)
+### Wallet (authenticated)
 
 * `IWalletSource` - unified wallet status across all exchanges
 
+
+
+---
 
 More usage examples:
 * unit tests ([link](test/Crypto.Websocket.Extensions.Tests))
