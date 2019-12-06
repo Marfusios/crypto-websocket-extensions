@@ -6,7 +6,6 @@ using Bitfinex.Client.Websocket.Requests.Subscriptions;
 using Bitfinex.Client.Websocket.Utils;
 using Bitfinex.Client.Websocket.Websockets;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
-using Crypto.Websocket.Extensions.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Xunit;
 
@@ -28,7 +27,7 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
                     var orderBook = new CryptoOrderBook(pair, source);
                     
                     await communicator.Start();
-                    await client.Send(new BookSubscribeRequest(pair, BitfinexPrecision.P0, BitfinexFrequency.Realtime, "100"));
+                    client.Send(new BookSubscribeRequest(pair, BitfinexPrecision.P0, BitfinexFrequency.Realtime, "100"));
 
                     await Task.Delay(TimeSpan.FromSeconds(5));
 

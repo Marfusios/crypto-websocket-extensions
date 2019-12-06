@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Responses.Books;
+using Binance.Client.Websocket.Websockets;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
@@ -37,6 +38,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private readonly HttpClient _httpClient = new HttpClient();
         private BinanceWebsocketClient _client;
+        private IDisposable _subscriptionSnapshot;
         private IDisposable _subscription;
 
         /// <inheritdoc />
@@ -62,9 +64,35 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             Subscribe();
         }
 
+        /// <summary>
+        /// Request a new order book snapshot, will be fakely streamed via communicator (WebsocketClient)
+        /// Method doesn't throw exception, just logs it
+        /// </summary>
+        /// <param name="communicator">Target communicator</param>
+        /// <param name="pair">Target pair</param>
+        /// <param name="count">Max level count</param>
+        public async Task LoadSnapshot(BinanceWebsocketCommunicator communicator, string pair, int count = 1000)
+        {
+            CryptoValidations.ValidateInput(communicator, nameof(communicator));
+
+            var snapshot = await LoadSnapshotRaw(pair, count);
+            if (snapshot == null)
+                return;
+
+            OrderBookPartialResponse.StreamFakeSnapshot(snapshot, communicator);
+        }
+
         private void Subscribe()
         {
+            _subscriptionSnapshot = _client.Streams.OrderBookPartialStream.Subscribe(HandleSnapshot);
             _subscription = _client.Streams.OrderBookDiffStream.Subscribe(HandleDiff);
+        }
+
+        private void HandleSnapshot(OrderBookPartialResponse response)
+        {
+            // received snapshot, convert and stream
+            var levels = ConvertSnapshot(response.Data);
+            StreamSnapshot(levels);
         }
 
         private void HandleDiff(OrderBookDiffResponse response)
@@ -100,7 +128,16 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <inheritdoc />
         protected override async Task<OrderBookLevel[]> LoadSnapshotInternal(string pair, int count)
         {
-            OrderBookPartial parsed = null;
+            var snapshot = await LoadSnapshotRaw(pair, count);
+            if (snapshot == null)
+                return null;
+
+            var levels = ConvertSnapshot(snapshot);
+            return levels;
+        }
+
+        private async Task<OrderBookPartial> LoadSnapshotRaw(string pair, int count)
+        {
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
             var countSafe = count > 1000 ? 1000 : count;
             var result = string.Empty;
@@ -112,22 +149,20 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                 using (HttpContent content = response.Content)
                 {
                     result = await content.ReadAsStringAsync();
-                    parsed = JsonConvert.DeserializeObject<OrderBookPartial>(result);
+                    var parsed = JsonConvert.DeserializeObject<OrderBookPartial>(result);
                     if (parsed == null)
                         return null;
 
                     parsed.Symbol = pairSafe;
+                    return parsed;
                 }
             }
             catch (Exception e)
             {
                 Log.Debug($"[ORDER BOOK {ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
-                         $"Error: '{e.Message}'.  Content: '{result}'");
+                          $"Error: '{e.Message}'.  Content: '{result}'");
                 return null;
             }
-
-            var levels = ConvertSnapshot(parsed);
-            return levels;
         }
 
         private OrderBookLevel[] ConvertSnapshot(OrderBookPartial response)

@@ -27,7 +27,7 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
                     var orderBook = new CryptoOrderBook(pair, source);
                     
                     await communicator.Start();
-                    await client.Send(new BookSubscribeRequest(pair));
+                    client.Send(new BookSubscribeRequest(pair));
 
                     await Task.Delay(TimeSpan.FromSeconds(10));
 
@@ -64,7 +64,7 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
                     });
 
                     await communicator.Start();
-                    await client.Send(new BookSubscribeRequest(pair));
+                    client.Send(new BookSubscribeRequest(pair));
 
                     await Task.Delay(TimeSpan.FromSeconds(5));
                     Assert.Equal(2, called);

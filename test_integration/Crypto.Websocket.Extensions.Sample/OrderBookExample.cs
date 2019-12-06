@@ -50,8 +50,8 @@ namespace Crypto.Websocket.Extensions.Sample
 
         public static async Task RunOnlyOne()
         {
-            var ob = await StartBitmex("XBTUSD", true);
-            //var ob = await StartBinance("BTCUSDT", true);
+            //var ob = await StartBitmex("XBTUSD", true);
+            var ob = await StartBinance("BTCUSDT", true);
             //var ob = await StartBitfinex("BTCUSD", true);
             //var ob = await StartCoinbase("BTC-USD", true);
 
@@ -93,7 +93,7 @@ namespace Crypto.Websocket.Extensions.Sample
             await communicator.Start();
 
             // Send subscription request to order book data
-            await client.Send(new Bitmex.Client.Websocket.Requests.BookSubscribeRequest(pair));
+            client.Send(new Bitmex.Client.Websocket.Requests.BookSubscribeRequest(pair));
 
             return orderBook;
         }
@@ -115,7 +115,7 @@ namespace Crypto.Websocket.Extensions.Sample
             await communicator.Start();
 
             // Send subscription request to order book data
-            await client.Send(new Bitfinex.Client.Websocket.Requests.Subscriptions.BookSubscribeRequest(pair));
+            client.Send(new Bitfinex.Client.Websocket.Requests.Subscriptions.BookSubscribeRequest(pair));
 
             return orderBook;
         }
@@ -142,7 +142,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
             // Binance is special
             // We need to load snapshot in advance manually via REST call
-            await source.LoadSnapshot(pair);
+            await source.LoadSnapshot(communicator, pair);
 
             return orderBook;
         }
@@ -164,7 +164,7 @@ namespace Crypto.Websocket.Extensions.Sample
             await communicator.Start();
 
             // Send subscription request to order book data
-            await client.Send(new SubscribeRequest(
+            client.Send(new SubscribeRequest(
                 new[] { pair },
                 ChannelSubscriptionType.Level2
             ));

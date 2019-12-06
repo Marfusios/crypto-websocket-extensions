@@ -67,14 +67,14 @@ namespace Crypto.Websocket.Extensions.Sample
             client.Streams.AuthenticationStream.Subscribe(x =>
             {
                 Log.Information($"[Bitmex] Authenticated '{x.Success}'");
-                client.Send(new Bitmex.Client.Websocket.Requests.WalletSubscribeRequest()).Wait();
-                client.Send(new Bitmex.Client.Websocket.Requests.MarginSubscribeRequest()).Wait();
-                client.Send(new Bitmex.Client.Websocket.Requests.OrderSubscribeRequest()).Wait();
+                client.Send(new Bitmex.Client.Websocket.Requests.WalletSubscribeRequest());
+                client.Send(new Bitmex.Client.Websocket.Requests.MarginSubscribeRequest());
+                client.Send(new Bitmex.Client.Websocket.Requests.OrderSubscribeRequest());
             });
 
             communicator.ReconnectionHappened.Subscribe(x =>
             {
-                client.Authenticate(API_KEY, API_SECRET).Wait();
+                client.Authenticate(API_KEY, API_SECRET);
             });
 
             await communicator.Start();

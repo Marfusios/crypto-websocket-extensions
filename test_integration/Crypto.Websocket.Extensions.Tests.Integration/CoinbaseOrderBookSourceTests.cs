@@ -29,7 +29,7 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
                     
                     await communicator.Start();
 
-                    await client.Send(new SubscribeRequest(
+                    client.Send(new SubscribeRequest(
                         new []{pair},
                         ChannelSubscriptionType.Level2
                         ));
