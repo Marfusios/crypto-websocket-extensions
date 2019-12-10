@@ -67,13 +67,23 @@ orderBook.OrderBookUpdatedStream.Subscribe(quotes =>
 await communicator.Start();
 ```
 
+### Trades
+
+* `ITradeSource` - unified trade info stream across all exchanges
+
 ### Orders (authenticated)
 
-* `CryptoOrders` class - unified orders status across all exchanges
+* `CryptoOrders` class - unified orders status across all exchanges with features:
+    * orders view and searching - only executed, search by id, client id, etc.
+    * our vs all orders - using client id prefix to distinguish between orders
+
+### Position (authenticated)
+
+* `IPositionSource` - unified position info stream across all exchanges
 
 ### Wallet (authenticated)
 
-* `IWalletSource` - unified wallet status across all exchanges
+* `IWalletSource` - unified wallet status stream across all exchanges
 
 
 

@@ -10,6 +10,9 @@ namespace Crypto.Websocket.Extensions.Core.Wallets.Sources
     /// </summary>
     public abstract class WalletSourceBase : IWalletSource
     {
+        /// <summary>
+        /// Wallet subject
+        /// </summary>
         protected readonly Subject<CryptoWallet[]> WalletChangedSubject = new Subject<CryptoWallet[]>();
 
 

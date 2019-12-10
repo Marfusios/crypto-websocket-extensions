@@ -34,11 +34,12 @@ namespace Crypto.Websocket.Extensions.Sample
 
 
 
-            OrderBookExample.RunEverything().Wait();
+            //OrderBookExample.RunEverything().Wait();
             //OrderBookExample.RunOnlyOne().Wait();
 
-            //OrdersExample.RunEverything().Wait();
+            //TradesExample.RunEverything().Wait();
 
+            OrdersExample.RunEverything().Wait();
 
 
             ExitEvent.WaitOne();

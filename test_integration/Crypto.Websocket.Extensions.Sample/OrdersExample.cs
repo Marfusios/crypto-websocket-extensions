@@ -5,8 +5,10 @@ using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Websockets;
 using Crypto.Websocket.Extensions.Core.Orders;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
+using Crypto.Websocket.Extensions.Core.Positions.Models;
 using Crypto.Websocket.Extensions.Core.Wallets.Models;
 using Crypto.Websocket.Extensions.Orders.Sources;
+using Crypto.Websocket.Extensions.Positions.Sources;
 using Crypto.Websocket.Extensions.Wallets.Sources;
 using Serilog;
 
@@ -19,7 +21,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
         public static async Task RunEverything()
         {
-            var ordBitmex = await StartBitmex(true, HandleOrderChanged, HandleWalletsChanged);
+            var ordBitmex = await StartBitmex(false, HandleOrderChanged, HandleWalletsChanged, HandlePositionsChanged);
 
             Log.Information("Waiting for orders...");
         }
@@ -49,9 +51,26 @@ namespace Crypto.Websocket.Extensions.Sample
                             $"Pnl: {wallet.RealizedPnl:#.#####}/{wallet.UnrealizedPnl:#.#####}");
         }
 
+        private static void HandlePositionsChanged(CryptoPosition[] positions)
+        {
+            foreach (var pos in positions)
+            {
+                HandlePositionChanged(pos);
+            }
+        }
+
+        private static void HandlePositionChanged(CryptoPosition pos)
+        {
+            Log.Information($"Position '{pos.Pair}' [{pos.Side}], " +
+                            $"price: {pos.LastPrice:0.00######}, amount: {pos.Amount}/{pos.AmountQuote}, " +
+                            $"leverage: {pos.Leverage}x, " +
+                            $"pnl realized: {pos.RealizedPnl:0.00######}, unrealized: {pos.UnrealizedPnl:0.00######}, " +
+                            $"liquidation: {pos.LiquidationPrice:0.00######}");
+        }
+
 
         private static async Task<ICryptoOrders> StartBitmex(bool isTestnet, Action<CryptoOrder> handler, 
-            Action<CryptoWallet[]> walletHandler)
+            Action<CryptoWallet[]> walletHandler, Action<CryptoPosition[]> positionHandler)
         {
             var url = isTestnet ? BitmexValues.ApiWebsocketTestnetUrl : BitmexValues.ApiWebsocketUrl;
             var communicator = new BitmexWebsocketCommunicator(url) { Name = "Bitmex" };
@@ -64,11 +83,15 @@ namespace Crypto.Websocket.Extensions.Sample
             var walletSource = new BitmexWalletSource(client);
             walletSource.WalletChangedStream.Subscribe(walletHandler);
 
+            var positionSource = new BitmexPositionSource(client);
+            positionSource.PositionsStream.Subscribe(positionHandler);
+
             client.Streams.AuthenticationStream.Subscribe(x =>
             {
                 Log.Information($"[Bitmex] Authenticated '{x.Success}'");
                 client.Send(new Bitmex.Client.Websocket.Requests.WalletSubscribeRequest());
                 client.Send(new Bitmex.Client.Websocket.Requests.MarginSubscribeRequest());
+                client.Send(new Bitmex.Client.Websocket.Requests.PositionSubscribeRequest());
                 client.Send(new Bitmex.Client.Websocket.Requests.OrderSubscribeRequest());
             });
 

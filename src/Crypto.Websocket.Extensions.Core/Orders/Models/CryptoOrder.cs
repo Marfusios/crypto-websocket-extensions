@@ -65,15 +65,12 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
             {
                 _side = value;
 
-                if (_amountOrig.HasValue)
-                {
-                    _amountOrig = WithCorrectSign(_amountOrig);
-                }
-
-                if (_amountFilled.HasValue)
-                {
-                    _amountFilled = WithCorrectSign(_amountFilled);
-                }
+                FixAmountSign(ref _amountFilledCumulative);
+                FixAmountSign(ref _amountFilledCumulativeQuote);
+                FixAmountSign(ref _amountFilled);
+                FixAmountSign(ref _amountFilledQuote);
+                FixAmountSign(ref _amountOrig);
+                FixAmountSign(ref _amountOrigQuote);
             }
         }
 
@@ -184,6 +181,14 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
             if (!value.HasValue || _side == CryptoOrderSide.Undefined)
                 return value;
             return Math.Abs(value.Value) * (_side == CryptoOrderSide.Bid ? 1 : -1);
+        }
+
+        private void FixAmountSign(ref double? amount)
+        {
+            if (amount.HasValue)
+            {
+                amount = WithCorrectSign(amount);
+            }
         }
 
         private double FirstNotNull(params double?[] numbers)
