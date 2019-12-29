@@ -67,7 +67,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             {
                 // received snapshot, convert and stream
                 var levels = ConvertLevels(bookResponse.Data);
-                StreamSnapshot(levels);
+                var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels)
+                {
+                    ExchangeName = ExchangeName
+                };
+                StreamSnapshot(bulk);
                 return;
             }
 
@@ -119,7 +123,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevel[]> LoadSnapshotInternal(string pair, int count)
+        protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
         {
             BookLevel[] parsed = null;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
@@ -146,13 +150,21 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             }
 
             // received snapshot, convert and stream
-            return ConvertLevels(parsed);
+            var levels = ConvertLevels(parsed);
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels)
+            {
+                ExchangeName = ExchangeName
+            };
+            return bulk;
         }
 
         private OrderBookLevelBulk ConvertDiff(BookResponse response)
         {
             var action = ConvertAction(response.Action);
-            var bulk = new OrderBookLevelBulk(action, ConvertLevels(response.Data));
+            var bulk = new OrderBookLevelBulk(action, ConvertLevels(response.Data))
+            {
+                ExchangeName = ExchangeName
+            };
             return bulk;
         }
 

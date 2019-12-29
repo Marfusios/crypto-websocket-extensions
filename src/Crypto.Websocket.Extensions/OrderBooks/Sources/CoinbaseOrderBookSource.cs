@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Coinbase.Client.Websocket.Client;
+using Coinbase.Client.Websocket.Responses;
 using Coinbase.Client.Websocket.Responses.Books;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
@@ -63,7 +64,9 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         {
             // received snapshot, convert and stream
             var levels = ConvertSnapshot(snapshot);
-            StreamSnapshot(levels);
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels);
+            FillBulk(snapshot, bulk);
+            StreamSnapshot(bulk);
         }
 
         private OrderBookLevel[] ConvertSnapshot(OrderBookSnapshotResponse snapshot)
@@ -116,7 +119,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevel[]> LoadSnapshotInternal(string pair, int count)
+        protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count = 1000)
         {
             OrderBookSnapshotDto parsed = null;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
@@ -144,7 +147,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             var bids = ConvertLevels(pair, parsed.Bids);
             var asks = ConvertLevels(pair, parsed.Asks);
             var levels = bids.Concat(asks).ToArray();
-            return levels;
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels);
+            return bulk;
         }
 
         private IEnumerable<OrderBookLevelBulk> ConvertDiff(OrderBookUpdateResponse update)
@@ -156,8 +160,16 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             foreach (var actionGroup in group)
             {
                 var bulk = new OrderBookLevelBulk(actionGroup.Key, actionGroup.ToArray());
+                FillBulk(update, bulk);
                 yield return bulk;
             }
+        }
+
+        private void FillBulk(ResponseBase response, OrderBookLevelBulk bulk)
+        {
+            bulk.ExchangeName = ExchangeName;
+            bulk.ServerSequence = response.Sequence;
+            bulk.ServerTimestamp = response.Time;
         }
 
         /// <inheritdoc />

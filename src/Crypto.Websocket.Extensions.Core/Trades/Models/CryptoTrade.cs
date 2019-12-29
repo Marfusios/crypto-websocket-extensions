@@ -9,7 +9,7 @@ namespace Crypto.Websocket.Extensions.Core.Trades.Models
     /// Executed trade info
     /// </summary>
     [DebuggerDisplay("Trade: {Id} - {Pair} - {Price} {Amount}/{AmountQuote}")]
-    public class CryptoTrade
+    public class CryptoTrade : CryptoChangeInfo
     {
         private CryptoTradeSide _side;
         private double _amount;

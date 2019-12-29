@@ -2,6 +2,7 @@
 using System.Reactive.Linq;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Responses.Trades;
+using Bitmex.Client.Websocket.Utils;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
@@ -78,6 +79,9 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
                 Pair = trade.Symbol,
                 MakerOrderId = trade.IsBuyerMaker ? trade.BuyerOrderId.ToString() : trade.SellerOrderId.ToString(),
                 TakerOrderId = trade.IsBuyerMaker ? trade.SellerOrderId.ToString() : trade.BuyerOrderId.ToString(),
+
+                ExchangeName = ExchangeName,
+                ServerTimestamp = trade.EventTime
             };
             return data;
         }

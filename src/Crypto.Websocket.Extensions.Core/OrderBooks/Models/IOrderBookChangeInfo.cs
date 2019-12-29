@@ -5,13 +5,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
     /// <summary>
     /// Info about changed order book
     /// </summary>
-    public interface IOrderBookChangeInfo
+    public interface IOrderBookChangeInfo : ICryptoChangeInfo
     {
-        /// <summary>
-        /// Origin exchange name
-        /// </summary>
-        string ExchangeName { get; }
-
         /// <summary>
         /// Target pair for this quotes
         /// </summary>
@@ -32,5 +27,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         /// Streamed only when debug mode is enabled. 
         /// </summary>
         OrderBookLevel[] Levels { get; }
+
+        /// <summary>
+        /// Source bulks that caused this update (all levels)
+        /// </summary>
+        OrderBookLevelBulk[] Sources { get; }
     }
 }

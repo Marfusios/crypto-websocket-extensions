@@ -56,7 +56,8 @@ namespace Crypto.Websocket.Extensions.Sample
                     var side = $"[{x.Side}]";
                     var price = $"{x.Price:0.00}";
                     var amount = $"{x.Amount:0.00000000}/{x.AmountQuote:0}";
-                    Log.Information($"{source.ExchangeName,10} {x.PairClean,7} {side,6} " +
+                    var time = $"{x.Timestamp:ss.ffffff} {x.ServerTimestamp:ss.ffffff}";
+                    Log.Information($"{time,20} | {source.ExchangeName,10} {x.PairClean,7} {side,6} " +
                                     $" price: {price,10},  amount: {amount,20} " +
                                     $"({group})");
                 });

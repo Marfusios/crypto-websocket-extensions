@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Bitfinex.Client.Websocket.Client;
+using Bitfinex.Client.Websocket.Responses;
 using Bitfinex.Client.Websocket.Responses.Books;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
@@ -60,7 +61,10 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         {
             // received snapshot, convert and stream
             var levels = ConvertLevels(books);
-            StreamSnapshot(levels);
+            var last = books.LastOrDefault();
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels);
+            FillBulk(last, bulk);
+            StreamSnapshot(bulk);
         }
 
         private void HandleBook(Book book)
@@ -105,7 +109,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevel[]> LoadSnapshotInternal(string pair, int count)
+        protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
         {
             Book[] parsed = null;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
@@ -138,7 +142,10 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             }
 
             var levels = ConvertLevels(parsed);
-            return levels;
+            var last = parsed.LastOrDefault();
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels);
+            FillBulk(last, bulk);
+            return bulk;
         }
 
         private OrderBookLevelBulk ConvertDiff(Book book)
@@ -146,7 +153,18 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             var converted = ConvertLevel(book);
             var action = RecognizeAction(book);
             var bulk = new OrderBookLevelBulk(action, new[] {converted});
+            FillBulk(book, bulk);
             return bulk;
+        }
+
+        private void FillBulk(ResponseBase response, OrderBookLevelBulk bulk)
+        {
+            if (response == null)
+                return;
+
+            bulk.ExchangeName = ExchangeName;
+            bulk.ServerTimestamp = response.ServerTimestamp;
+            bulk.ServerSequence = response.ServerSequence;
         }
 
         /// <inheritdoc />

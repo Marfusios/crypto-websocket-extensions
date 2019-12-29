@@ -298,8 +298,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 .Subscribe(HandleDiffSynchronized);
         }
 
-        private void HandleSnapshotSynchronized(OrderBookLevel[] levels)
+        private void HandleSnapshotSynchronized(OrderBookLevelBulk bulk)
         {
+            if (bulk == null)
+                return;
+
+            var levels = bulk.Levels;
             var levelsForThis = levels
                 .Where(x => TargetPair.Equals(x.Pair))
                 .ToArray();
@@ -324,9 +328,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
 
             NotifyAboutBookChange(
-            oldBid, oldAsk, 
-            oldBidAmount, oldAskAmount,
-            levelsForThis);
+                oldBid, oldAsk, 
+                oldBidAmount, oldAskAmount,
+                levelsForThis, 
+                new[] {bulk}
+            );
         }
 
         private void HandleDiffSynchronized(OrderBookLevelBulk[] bulks)
@@ -356,17 +362,13 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 oldBidAmount = BidAmount;
                 oldAskAmount = AskAmount;
                 
-                var counter = 0;
-                var totalBulks = forThis.Length;
-
                 foreach (var bulk in forThis)
                 {
-                    counter++;
                     var levelsForThis = bulk.Levels
                         .Where(x => TargetPair.Equals(x.Pair))
                         .ToArray();
                     allLevels.AddRange(levelsForThis);
-                    HandleDiff(bulk, levelsForThis, counter, totalBulks);
+                    HandleDiff(bulk, levelsForThis);
                 }
 
                 RecomputeAfterChange();
@@ -375,7 +377,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             NotifyAboutBookChange(
                 oldBid, oldAsk, 
                 oldBidAmount, oldAskAmount,
-                allLevels.ToArray());
+                allLevels.ToArray(),
+                forThis
+                );
 
             if (sw != null)
             {
@@ -414,7 +418,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             _isSnapshotLoaded = true;
         }
 
-        private void HandleDiff(OrderBookLevelBulk bulk, OrderBookLevel[] correctLevels, int currentBulk, int totalBulks)
+        private void HandleDiff(OrderBookLevelBulk bulk, OrderBookLevel[] correctLevels)
         {
             if (!_isSnapshotLoaded)
             {
@@ -550,16 +554,23 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         private void NotifyAboutBookChange(double oldBid, double oldAsk, 
             double oldBidAmount, double oldAskAmount,
-            OrderBookLevel[] levels)
+            OrderBookLevel[] levels, OrderBookLevelBulk[] sources)
         {
             var quotes = new CryptoQuotes(BidPrice, AskPrice, BidAmount, AskAmount);
             var clonedLevels = DebugEnabled ? levels.Select(x => x.Clone()).ToArray() : new OrderBookLevel[0];
+            var lastSource = sources.LastOrDefault();
             var change = new OrderBookChangeInfo(
-                _source.ExchangeName, 
                 TargetPair, 
                 TargetPairOriginal,
                 quotes, 
-                clonedLevels);
+                clonedLevels,
+                sources
+                )
+            {
+                ExchangeName = lastSource?.ExchangeName,
+                ServerSequence = lastSource?.ServerSequence,
+                ServerTimestamp = lastSource?.ServerTimestamp
+            };
 
             _orderBookUpdated.OnNext(change);
             NotifyIfBidAskChanged(oldBid, oldAsk, change);

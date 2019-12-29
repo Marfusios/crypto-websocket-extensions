@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
+using Crypto.Websocket.Extensions.Core.Utils;
 using Xunit;
 
 namespace Crypto.Websocket.Extensions.Tests
@@ -14,22 +15,40 @@ namespace Crypto.Websocket.Extensions.Tests
         [Fact]
         public async Task Buffering_ShouldBeEnabledByDefault_StreamDataAfterSomeTime()
         {
-            var snapshot = new[]
+            var now = CryptoDateUtils.ConvertFromUnixSeconds(1577575307.123451);
+
+            var snapshotLevels = new[]
             {
                 new OrderBookLevel("1", CryptoOrderSide.Bid, 100, 5, 1, "BTCUSD"),
                 new OrderBookLevel("2", CryptoOrderSide.Ask, 101, 50, 2, "BTCUSD"),
             };
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, snapshotLevels)
+            {
+                ServerSequence = 3,
+                ServerTimestamp = now,
+                ExchangeName = "test"
+            };
 
             var bulks = new[]
             {
-                new OrderBookLevelBulk(OrderBookAction.Update, snapshot),
-                new OrderBookLevelBulk(OrderBookAction.Delete, snapshot)
+                new OrderBookLevelBulk(OrderBookAction.Update, snapshotLevels)
+                {
+                    ServerSequence = 4,
+                    ServerTimestamp = now.AddMilliseconds(1),
+                    ExchangeName = "test"
+                },
+                new OrderBookLevelBulk(OrderBookAction.Delete, snapshotLevels)
+                {
+                    ServerSequence = 5,
+                    ServerTimestamp = now.AddMilliseconds(2),
+                    ExchangeName = "test"
+                }
             };
 
             var source = GetMock(snapshot, bulks);
             source.BufferInterval = TimeSpan.FromMilliseconds(100);
 
-            OrderBookLevel[] receivedSnapshot = null;
+            OrderBookLevelBulk receivedSnapshot = null;
             OrderBookLevelBulk[] receivedBulks = null;
 
             source.OrderBookSnapshotStream.Subscribe(x => receivedSnapshot = x);
@@ -39,34 +58,59 @@ namespace Crypto.Websocket.Extensions.Tests
             source.StreamData();
 
             Assert.NotNull(receivedSnapshot);
+            Assert.Equal("test", receivedSnapshot.ExchangeName);
+            Assert.Equal(3, receivedSnapshot.ServerSequence);
+            Assert.Equal(now, receivedSnapshot.ServerTimestamp);
             Assert.Null(receivedBulks);
 
             await Task.Delay(500);
 
             Assert.NotNull(receivedSnapshot);
             Assert.NotNull(receivedBulks);
+
+            Assert.Equal("test", receivedBulks[1].ExchangeName);
+            Assert.Equal(5, receivedBulks[1].ServerSequence);
+            Assert.Equal("1577575307.125451", receivedBulks[1].ServerTimestamp.ToUnixSecondsString());
         }
 #endif
 
         [Fact]
         public async Task Buffering_Disable_ShouldWork()
         {
-            var snapshot = new[]
+            var now = CryptoDateUtils.ConvertFromUnixSeconds(1577575307.123451);
+
+            var snapshotLevels = new[]
             {
                 new OrderBookLevel("1", CryptoOrderSide.Bid, 100, 5, 1, "BTCUSD"),
                 new OrderBookLevel("2", CryptoOrderSide.Ask, 101, 50, 2, "BTCUSD"),
             };
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, snapshotLevels)
+            {
+                ServerSequence = 3,
+                ServerTimestamp = now,
+                ExchangeName = "test"
+            };
 
             var bulks = new[]
             {
-                new OrderBookLevelBulk(OrderBookAction.Update, snapshot),
-                new OrderBookLevelBulk(OrderBookAction.Delete, snapshot)
+                new OrderBookLevelBulk(OrderBookAction.Update, snapshotLevels)
+                {
+                    ServerSequence = 4,
+                    ServerTimestamp = now.AddMilliseconds(1),
+                    ExchangeName = "test"
+                },
+                new OrderBookLevelBulk(OrderBookAction.Delete, snapshotLevels)
+                {
+                    ServerSequence = 5,
+                    ServerTimestamp = now.AddMilliseconds(2),
+                    ExchangeName = "test"
+                }
             };
 
             var source = GetMock(snapshot, bulks);
             source.BufferEnabled = false;
 
-            OrderBookLevel[] receivedSnapshot = null;
+            OrderBookLevelBulk receivedSnapshot = null;
             OrderBookLevelBulk[] receivedBulks = null;
 
             source.OrderBookSnapshotStream.Subscribe(x => receivedSnapshot = x);
@@ -77,28 +121,54 @@ namespace Crypto.Websocket.Extensions.Tests
 
             Assert.NotNull(receivedSnapshot);
             Assert.NotNull(receivedBulks);
+
+            Assert.Equal("test", receivedSnapshot.ExchangeName);
+            Assert.Equal(3, receivedSnapshot.ServerSequence);
+            Assert.Equal(now, receivedSnapshot.ServerTimestamp);
+
+            Assert.Equal("test", receivedBulks[1].ExchangeName);
+            Assert.Equal(5, receivedBulks[1].ServerSequence);
+            Assert.Equal("1577575307.125451", receivedBulks[1].ServerTimestamp.ToUnixSecondsString());
         }
 
 #if DEBUG
         [Fact]
         public async Task Buffering_ShouldStreamOneByOne()
         {
-            var snapshot = new[]
+            var now = CryptoDateUtils.ConvertFromUnixSeconds(1577575307.123456);
+
+            var snapshotLevels = new[]
             {
                 new OrderBookLevel("1", CryptoOrderSide.Bid, 100, 5, 1, "BTCUSD"),
                 new OrderBookLevel("2", CryptoOrderSide.Ask, 101, 50, 2, "BTCUSD"),
             };
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, snapshotLevels)
+            {
+                ServerSequence = 3,
+                ServerTimestamp = now,
+                ExchangeName = "test"
+            };
 
             var bulks = new[]
             {
-                new OrderBookLevelBulk(OrderBookAction.Update, snapshot),
-                new OrderBookLevelBulk(OrderBookAction.Delete, snapshot)
+                new OrderBookLevelBulk(OrderBookAction.Update, snapshotLevels)
+                {
+                    ServerSequence = 4,
+                    ServerTimestamp = now.AddMilliseconds(1),
+                    ExchangeName = "test"
+                },
+                new OrderBookLevelBulk(OrderBookAction.Delete, snapshotLevels)
+                {
+                    ServerSequence = 5,
+                    ServerTimestamp = now.AddMilliseconds(2),
+                    ExchangeName = "test"
+                }
             };
 
             var source = GetMock(snapshot, bulks);
             source.BufferInterval = TimeSpan.FromMilliseconds(50);
 
-            OrderBookLevel[] receivedSnapshot = null;
+            OrderBookLevelBulk receivedSnapshot = null;
             OrderBookLevelBulk[] receivedBulks = null;
             var receivedCount = 0;
 
@@ -134,7 +204,7 @@ namespace Crypto.Websocket.Extensions.Tests
         }
 #endif
 
-        private MockSource GetMock(OrderBookLevel[] snapshot, OrderBookLevelBulk[] bulks)
+        private MockSource GetMock(OrderBookLevelBulk snapshot, OrderBookLevelBulk[] bulks)
         {
             return new MockSource(snapshot, bulks);
         }
@@ -142,20 +212,20 @@ namespace Crypto.Websocket.Extensions.Tests
 
     public class MockSource : OrderBookLevel2SourceBase
     {
-        private readonly OrderBookLevel[] _snapshotLevels;
+        private readonly OrderBookLevelBulk _snapshot;
         private readonly OrderBookLevelBulk[] _bulks;
 
-        public MockSource(OrderBookLevel[] snapshotLevels, OrderBookLevelBulk[] bulks)
+        public MockSource(OrderBookLevelBulk snapshot, OrderBookLevelBulk[] bulks)
         {
-            _snapshotLevels = snapshotLevels;
+            _snapshot = snapshot;
             _bulks = bulks;
         }
 
         public override string ExchangeName => "mock";
 
-        protected override Task<OrderBookLevel[]> LoadSnapshotInternal(string pair, int count = 1000)
+        protected override Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count = 1000)
         {
-            return Task.FromResult(_snapshotLevels);
+            return Task.FromResult(_snapshot);
         }
 
         protected override OrderBookLevelBulk[] ConvertData(object[] data)

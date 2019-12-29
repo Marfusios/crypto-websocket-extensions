@@ -75,7 +75,11 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
                 Id = trade.Id.ToString(),
                 Price = trade.Price,
                 Timestamp = trade.Mts,
-                Pair = trade.Pair
+                Pair = trade.Pair,
+
+                ExchangeName = ExchangeName,
+                ServerSequence = trade.ServerSequence,
+                ServerTimestamp = trade.ServerTimestamp
             };
             return data;
         }

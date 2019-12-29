@@ -39,7 +39,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// <summary>
         /// Streams initial snapshot of the order book
         /// </summary>
-        IObservable<OrderBookLevel[]> OrderBookSnapshotStream { get; }
+        IObservable<OrderBookLevelBulk> OrderBookSnapshotStream { get; }
 
         /// <summary>
         /// Streams every update to the order book

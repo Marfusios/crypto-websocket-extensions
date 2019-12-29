@@ -77,8 +77,12 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
                 Timestamp = trade.Time,
                 Pair = trade.ProductId,
                 MakerOrderId = trade.MakerOrderId,
-                TakerOrderId = trade.TakerOrderId
-            };
+                TakerOrderId = trade.TakerOrderId,
+
+                ExchangeName = ExchangeName,
+                ServerSequence = trade.Sequence,
+                ServerTimestamp = trade.Time
+        };
             return data;
         }
 

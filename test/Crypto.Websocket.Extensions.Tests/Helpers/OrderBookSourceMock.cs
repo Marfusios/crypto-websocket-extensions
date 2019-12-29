@@ -8,7 +8,7 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
 {
     public class OrderBookSourceMock : OrderBookLevel2SourceBase
     {
-        private readonly OrderBookLevel[] _snapshot;
+        private readonly OrderBookLevelBulk _snapshot;
         private readonly OrderBookLevelBulk[] _bulks;
 
         public int SnapshotCalledCount { get; private set; }
@@ -19,7 +19,7 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
             BufferInterval = TimeSpan.FromMilliseconds(10);
         }
 
-        public OrderBookSourceMock(params OrderBookLevel[] snapshot)
+        public OrderBookSourceMock(OrderBookLevelBulk snapshot)
         {
             BufferInterval = TimeSpan.FromMilliseconds(10);
             _snapshot = snapshot;
@@ -34,6 +34,11 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
         public void StreamSnapshot()
         {
             StreamSnapshot(_snapshot);
+        }
+
+        public void StreamSnapshotRaw(OrderBookLevelBulk snapshot)
+        {
+            StreamSnapshot(snapshot);
         }
 
         public void StreamBulks()
@@ -51,12 +56,14 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
 
         public override string ExchangeName => "mock";
 
-        protected override Task<OrderBookLevel[]> LoadSnapshotInternal(string pair, int count = 1000)
+        protected override Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count = 1000)
         {
             SnapshotCalledCount++;
             SnapshotLastPair = pair;
 
-            return Task.FromResult(new OrderBookLevel[0]);
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, new OrderBookLevel[0]);
+
+            return Task.FromResult(bulk);
         }
 
         protected override OrderBookLevelBulk[] ConvertData(object[] data)

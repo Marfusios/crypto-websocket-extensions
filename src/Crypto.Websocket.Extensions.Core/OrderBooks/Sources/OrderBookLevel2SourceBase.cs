@@ -27,14 +27,16 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// <summary>
         /// Use this subject to stream order book snapshot data
         /// </summary>
-        private readonly Subject<OrderBookLevel[]> _orderBookSnapshotSubject = new Subject<OrderBookLevel[]>();
+        private readonly Subject<OrderBookLevelBulk> _orderBookSnapshotSubject = new Subject<OrderBookLevelBulk>();
 
         /// <summary>
         /// Use this subject to stream order book data (level difference)
         /// </summary>
         private readonly Subject<OrderBookLevelBulk[]> _orderBookSubject = new Subject<OrderBookLevelBulk[]>();
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Hidden constructor
+        /// </summary>
         protected OrderBookLevel2SourceBase()
         {
             StartProcessingFromBufferThread();
@@ -75,7 +77,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         public TimeSpan BufferInterval { get; set; } = TimeSpan.FromMilliseconds(10);
 
         /// <inheritdoc />
-        public IObservable<OrderBookLevel[]> OrderBookSnapshotStream => _orderBookSnapshotSubject.AsObservable();
+        public IObservable<OrderBookLevelBulk> OrderBookSnapshotStream => _orderBookSnapshotSubject.AsObservable();
 
         /// <inheritdoc />
         public IObservable<OrderBookLevelBulk[]> OrderBookStream => _orderBookSubject.AsObservable();
@@ -85,7 +87,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         {
             using (await _snapshotLocker.LockAsync())
             {
-                OrderBookLevel[] data = null;
+                OrderBookLevelBulk data = null;
                 try
                 {
                     data = await LoadSnapshotInternal(pair, count);
@@ -112,14 +114,14 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// <summary>
         /// Implement snapshot loading, it should not throw an exception
         /// </summary>
-        protected abstract Task<OrderBookLevel[]> LoadSnapshotInternal(string pair, int count = 1000);
+        protected abstract Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count = 1000);
 
         /// <summary>
         /// Check null and empty, then stream snapshot
         /// </summary>
-        protected void StreamSnapshot(OrderBookLevel[] data)
+        protected void StreamSnapshot(OrderBookLevelBulk data)
         {
-            if (data != null && data.Any())
+            if (data?.Levels != null && data.Levels.Any())
             {
                 _orderBookSnapshotSubject.OnNext(data);
             }

@@ -92,7 +92,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         {
             // received snapshot, convert and stream
             var levels = ConvertSnapshot(response.Data);
-            StreamSnapshot(levels);
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels)
+            {
+                ExchangeName = ExchangeName,
+                ServerSequence = response.Data.LastUpdateId
+            };
+            StreamSnapshot(bulk);
         }
 
         private void HandleDiff(OrderBookDiffResponse response)
@@ -126,14 +131,19 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevel[]> LoadSnapshotInternal(string pair, int count)
+        protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
         {
             var snapshot = await LoadSnapshotRaw(pair, count);
             if (snapshot == null)
                 return null;
 
             var levels = ConvertSnapshot(snapshot);
-            return levels;
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels)
+            {
+                ExchangeName = ExchangeName,
+                ServerSequence = snapshot.LastUpdateId
+            };
+            return bulk;
         }
 
         private async Task<OrderBookPartial> LoadSnapshotRaw(string pair, int count)
@@ -189,13 +199,23 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
             if (toDelete.Any())
             {
-                var bulk = new OrderBookLevelBulk(OrderBookAction.Delete, toDelete);
+                var bulk = new OrderBookLevelBulk(OrderBookAction.Delete, toDelete)
+                {
+                    ExchangeName = ExchangeName,
+                    ServerTimestamp = response.Data?.EventTime,
+                    ServerSequence = response.Data?.LastUpdateId
+                };
                 result.Add(bulk);
             }
 
             if (toUpdate.Any())
             {
-                var bulk = new OrderBookLevelBulk(OrderBookAction.Update, toUpdate);
+                var bulk = new OrderBookLevelBulk(OrderBookAction.Update, toUpdate)
+                {
+                    ExchangeName = ExchangeName,
+                    ServerTimestamp = response.Data?.EventTime,
+                    ServerSequence = response.Data?.LastUpdateId
+                };
                 result.Add(bulk);
             }
 

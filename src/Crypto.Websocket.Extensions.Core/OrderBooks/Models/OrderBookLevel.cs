@@ -11,7 +11,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
     [DebuggerDisplay("OrderBookLevel [{Pair}] {Amount} @ {Price}")]
     public class OrderBookLevel
     {
-        /// <inheritdoc />
+        /// <summary>
+        /// Level constructor
+        /// </summary>
         public OrderBookLevel(string id, CryptoOrderSide side, double? price, double? amount, int? count, string pair)
         {
             Id = id;
@@ -71,14 +73,14 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
                 );
         }
 
-        private double? Abs(double? value)
+        private static double? Abs(double? value)
         {
             if (value.HasValue)
                 return Math.Abs(value.Value);
             return null;
         }
 
-        private int? Abs(int? value)
+        private static int? Abs(int? value)
         {
             if (value.HasValue)
                 return Math.Abs(value.Value);

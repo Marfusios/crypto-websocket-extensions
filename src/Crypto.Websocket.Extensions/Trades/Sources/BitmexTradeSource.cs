@@ -82,7 +82,9 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
                 Id = trade.TrdMatchId,
                 Price = trade.Price,
                 Timestamp = trade.Timestamp,
-                Pair = trade.Symbol
+                Pair = trade.Symbol,
+
+                ExchangeName = ExchangeName
             };
             return data;
         }

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Binance.Client.Websocket;
 using Binance.Client.Websocket.Client;
@@ -10,6 +9,8 @@ using Binance.Client.Websocket.Subscriptions;
 using Binance.Client.Websocket.Websockets;
 using Bitfinex.Client.Websocket;
 using Bitfinex.Client.Websocket.Client;
+using Bitfinex.Client.Websocket.Requests.Configurations;
+using Bitfinex.Client.Websocket.Utils;
 using Bitfinex.Client.Websocket.Websockets;
 using Bitmex.Client.Websocket;
 using Bitmex.Client.Websocket.Client;
@@ -31,10 +32,10 @@ namespace Crypto.Websocket.Extensions.Sample
     {
         public static async Task RunEverything()
         {
-            var bitmexOb = await StartBitmex("XBTUSD", false);
-            var bitfinexOb = await StartBitfinex("BTCUSD", false);
-            var binanceOb = await StartBinance("BTCUSDT", false);
-            var coinbaseOb = await StartCoinbase("BTC-USD", false);
+            var bitmexOb = await StartBitmex("XBTUSD", true);
+            var bitfinexOb = await StartBitfinex("BTCUSD", true);
+            var binanceOb = await StartBinance("BTCUSDT", true);
+            var coinbaseOb = await StartCoinbase("BTC-USD", true);
 
             Log.Information("Waiting for price change...");
 
@@ -51,9 +52,9 @@ namespace Crypto.Websocket.Extensions.Sample
         public static async Task RunOnlyOne()
         {
             //var ob = await StartBitmex("XBTUSD", true);
-            var ob = await StartBinance("BTCUSDT", true);
+            //var ob = await StartBinance("BTCUSDT", true);
             //var ob = await StartBitfinex("BTCUSD", true);
-            //var ob = await StartCoinbase("BTC-USD", true);
+            var ob = await StartCoinbase("BTC-USD", true);
 
             Log.Information("Waiting for price change...");
 
@@ -67,7 +68,21 @@ namespace Crypto.Websocket.Extensions.Sample
         private static void HandleQuoteChanged(IList<IOrderBookChangeInfo> quotes)
         {
             var formattedMessages = quotes
-                .Select(x => $"{x.ExchangeName.ToUpper()} {x.Quotes.Bid.ToString("#.00#") + "/" + x.Quotes.Ask.ToString("#.00#"),16}")
+                .Select(x =>
+                {
+                    string time = string.Empty;
+                    if (x.ServerTimestamp != null)
+                    {
+                        time = $" {x.ServerTimestamp:ss.ffffff}";
+                    }
+
+                    var metaString = $" (" +
+                                   $"{x.Sources.Length} " +
+                                   $"{x.Sources.Sum(y => y.Levels.Length)}" +
+                                   $"{time})";
+                    return
+                            $"{x.ExchangeName.ToUpper()}{metaString} {x.Quotes.Bid.ToString("#.00#") + "/" + x.Quotes.Ask.ToString("#.00#"),16}";
+                })
                 .Select(x => $"{x,30}")
                 .ToArray();
 
@@ -114,8 +129,12 @@ namespace Crypto.Websocket.Extensions.Sample
 
             await communicator.Start();
 
+            // Send configuration request to enable server timestamps
+            client.Send(new ConfigurationRequest(ConfigurationFlag.Sequencing | ConfigurationFlag.Timestamp));
+
             // Send subscription request to order book data
-            client.Send(new Bitfinex.Client.Websocket.Requests.Subscriptions.BookSubscribeRequest(pair));
+            client.Send(new Bitfinex.Client.Websocket.Requests.Subscriptions.BookSubscribeRequest(pair, 
+                BitfinexPrecision.P0, BitfinexFrequency.Realtime, "100"));
 
             return orderBook;
         }
@@ -177,7 +196,7 @@ namespace Crypto.Websocket.Extensions.Sample
             source.BufferEnabled = true;
             source.BufferInterval = TimeSpan.FromMilliseconds(0);
 
-            orderBook.DebugEnabled = true;
+            orderBook.DebugEnabled = false;
             orderBook.DebugLogEnabled = false;
             orderBook.ValidityCheckEnabled = false;
         }
