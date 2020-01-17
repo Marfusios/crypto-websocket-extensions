@@ -51,10 +51,10 @@ namespace Crypto.Websocket.Extensions.Sample
 
         public static async Task RunOnlyOne()
         {
-            //var ob = await StartBitmex("XBTUSD", true);
+            var ob = await StartBitmex("XBTUSD", true);
             //var ob = await StartBinance("BTCUSDT", true);
             //var ob = await StartBitfinex("BTCUSD", true);
-            var ob = await StartCoinbase("BTC-USD", true);
+            //var ob = await StartCoinbase("BTC-USD", true);
 
             Log.Information("Waiting for price change...");
 

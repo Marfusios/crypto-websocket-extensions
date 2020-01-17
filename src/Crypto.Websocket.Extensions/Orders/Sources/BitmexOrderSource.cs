@@ -156,7 +156,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                     orderQtyQuote,
                     existing?.AmountOrigQuote);
 
-            if ((!order.Side.HasValue || order.Side == BitmexSide.Undefined) && existing != null)
+            if (order.Side == BitmexSide.Undefined && existing != null)
             {
                 order.Side = existing.AmountGrouped < 0 ? BitmexSide.Sell : BitmexSide.Buy;
             }
