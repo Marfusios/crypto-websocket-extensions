@@ -8,7 +8,7 @@ namespace Crypto.Websocket.Extensions.Core.Positions.Models
     /// <summary>
     /// Information about currently open position
     /// </summary>
-    [DebuggerDisplay("Position: {Pair} - {LastPrice} {Amount}/{AmountQuote} - pnl: {UnrealizedPnl}")]
+    [DebuggerDisplay("Position: {Pair} - {EntryPrice} {Amount}/{AmountQuote} - pnl: {UnrealizedPnl}")]
     public class CryptoPosition
     {
         private CryptoPositionSide _side;
@@ -36,12 +36,17 @@ namespace Crypto.Websocket.Extensions.Core.Positions.Models
         public DateTime? CurrentTimestamp { get; set; }
 
         /// <summary>
-        /// Position's last price
+        /// Position's entry price
+        /// </summary>
+        public double EntryPrice { get; set; }
+
+        /// <summary>
+        /// Market's last price
         /// </summary>
         public double LastPrice { get; set; }
 
         /// <summary>
-        /// Position's mark price - used for liquidation
+        /// Market's mark price - used for liquidation
         /// </summary>
         public double MarkPrice { get; set; }
 

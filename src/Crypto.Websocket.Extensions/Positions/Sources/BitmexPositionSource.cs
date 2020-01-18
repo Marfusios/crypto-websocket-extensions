@@ -88,6 +88,7 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
                 CurrentTimestamp = position.CurrentTimestamp ?? existing?.CurrentTimestamp,
                 OpeningTimestamp = position.OpeningTimestamp ?? existing?.OpeningTimestamp,
 
+                EntryPrice = position.AvgEntryPrice ?? existing?.EntryPrice ?? 0,
                 LastPrice = position.LastPrice ?? existing?.LastPrice ?? 0,
                 MarkPrice = position.MarkPrice ?? existing?.MarkPrice ?? 0,
                 LiquidationPrice = position.LiquidationPrice ?? existing?.LiquidationPrice ?? 0,
