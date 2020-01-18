@@ -30,4 +30,10 @@
     <PackageReference Include="System.Reactive" Version="4.3.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Crypto.Websocket.Extensions.Core, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\..\..\Crypto.Arbitrage\crypto-websocket-extensions\src\Crypto.Websocket.Extensions.Core\bin\Debug\netstandard2.0\Crypto.Websocket.Extensions.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

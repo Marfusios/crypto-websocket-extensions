@@ -13,6 +13,9 @@
         Fok,
         StopLimit,
         TakeProfitLimit,
-        TakeProfitMarket
+        TakeProfitMarket,
+        ExchangeLimit,
+        ExchangeMarket,
+        ExchangeTrailingStop
     }
 }

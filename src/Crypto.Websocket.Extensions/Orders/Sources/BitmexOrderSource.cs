@@ -8,6 +8,7 @@ using Crypto.Websocket.Extensions.Core.Orders;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
 using Crypto.Websocket.Extensions.Core.Orders.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
+using Crypto.Websocket.Extensions.Core.Wallets.Models;
 using Crypto.Websocket.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Orders.Sources
@@ -90,7 +91,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         /// <summary>
         /// Convert Bitmex orders to crypto orders
         /// </summary>
-        public CryptoOrder[] ConvertOrders(Order[] orders)
+        public CryptoWallet[] ConvertOrders(Order[] orders)
         {
             return orders
                 .Select(ConvertOrder)
@@ -100,7 +101,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         /// <summary>
         /// Convert Bitmex order to crypto order
         /// </summary>
-        public CryptoOrder ConvertOrder(Order order)
+        public CryptoWallet ConvertOrder(Order order)
         {
             var id = order.OrderId;
             var existingCurrent = ExistingOrders.ContainsKey(id) ? ExistingOrders[id] : null;
@@ -168,7 +169,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 existing.OrderStatus :
                 ConvertOrderStatus(order);
 
-            var newOrder = new CryptoOrder
+            var newOrder = new CryptoWallet
             {
                 Id = id,
                 GroupId = existing?.GroupId ?? null,

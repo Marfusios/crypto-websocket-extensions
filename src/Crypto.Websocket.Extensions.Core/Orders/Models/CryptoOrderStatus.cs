@@ -10,6 +10,7 @@
         Active,
         Executed,
         PartiallyFilled,
-        Canceled
+        Canceled,
+        Pending
     }
 }
