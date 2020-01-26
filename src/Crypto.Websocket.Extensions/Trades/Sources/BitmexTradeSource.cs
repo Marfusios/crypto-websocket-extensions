@@ -76,7 +76,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
         {
             var data = new CryptoTrade()
             {
-                Amount = trade.HomeNotional ?? 0,
+                Amount = trade.Size / trade.Price,
                 AmountQuote = trade.Size,
                 Side = ConvertSide(trade.Side),
                 Id = trade.TrdMatchId,
