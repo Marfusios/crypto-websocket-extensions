@@ -11,12 +11,12 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Order was changed stream
         /// </summary>
-        IObservable<CryptoOrder> OrderChangedStream { get; }
+        IObservable<Models.CryptoOrder> OrderChangedStream { get; }
 
         /// <summary>
         /// Order was changed stream (only ours, based on client id prefix)
         /// </summary>
-        IObservable<CryptoOrder> OurOrderChangedStream { get; }
+        IObservable<Models.CryptoOrder> OurOrderChangedStream { get; }
 
         /// <summary>
         /// Selected client id prefix
@@ -50,12 +50,12 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Last executed (or partially filled) buy order
         /// </summary>
-        CryptoOrder LastExecutedBuyOrder { get; }
+        Models.CryptoOrder LastExecutedBuyOrder { get; }
 
         /// <summary>
         /// Last executed (or partially filled) sell order
         /// </summary>
-        CryptoOrder LastExecutedSellOrder { get; }
+        Models.CryptoOrder LastExecutedSellOrder { get; }
 
         /// <summary>
         /// Generate a new client id (with prefix)
@@ -80,22 +80,22 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Find active order by provided unique id
         /// </summary>
-        CryptoOrder FindActiveOrder(string id);
+        Models.CryptoOrder FindActiveOrder(string id);
 
         /// <summary>
         /// Find order by provided unique id
         /// </summary>
-        CryptoOrder FindOrder(string id);
+        Models.CryptoOrder FindOrder(string id);
 
         /// <summary>
         /// Find active order by provided client id
         /// </summary>
-        CryptoOrder FindActiveOrderByClientId(string clientId);
+        Models.CryptoOrder FindActiveOrderByClientId(string clientId);
 
         /// <summary>
         /// Find order by provided client id
         /// </summary>
-        CryptoOrder FindOrderByClientId(string clientId);
+        Models.CryptoOrder FindOrderByClientId(string clientId);
 
         /// <summary>
         /// Returns true if client id matches prefix

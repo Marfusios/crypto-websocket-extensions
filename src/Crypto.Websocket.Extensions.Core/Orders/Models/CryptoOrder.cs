@@ -1,8 +1,8 @@
-﻿using System;
+﻿
+using System;
 using System.Diagnostics;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Utils;
-
 
 namespace Crypto.Websocket.Extensions.Core.Orders.Models
 {

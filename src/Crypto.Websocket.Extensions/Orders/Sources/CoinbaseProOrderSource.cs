@@ -1,17 +1,18 @@
-﻿using CoinbasePro.Client.Websocket.Client;
-using CoinbasePro.Client.Websocket.Models.Users;
-using CoinbasePro.Client.Websocket.Types;
-
-
-using Crypto.Websocket.Extensions.Core.Validations;
-using Crypto.Websocket.Extensions.Logging;
+﻿
 using System;
 using System.Linq;
+using System.Reactive;
+using CoinbasePro.Client.Websocket.Client;
+using CoinbasePro.Client.Websocket.Models.Users;
+using CoinbasePro.Client.Websocket.Types;
+using Crypto.Exchange.Extensions.Utils;
+using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Orders;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
 using Crypto.Websocket.Extensions.Core.Orders.Sources;
-using CryptoOrder = Crypto.Websocket.Extensions.Core.Orders.CryptoOrder;
-using OrderStatus = CoinbasePro.Client.Websocket.Types.OrderStatus;
+using Crypto.Websocket.Extensions.Core.Validations;
+using Crypto.Websocket.Extensions.Logging;
+
 
 namespace Crypto.Websocket.Extensions.Orders.Sources
 {
@@ -98,7 +99,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             }
         }
 
-        private CryptoWallet[] ConvertOrders(User[] data)
+        private CryptoOrder[] ConvertOrders(User[] data)
         {
             return data
                 .Select(ConvertOrder)
@@ -130,7 +131,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             {
                 Pair = CryptoPairsHelper.Clean(order.Pair),
                 Price = price,
-                Amount = amount,
+                //Amount = amount,
                 AmountOrig = amountOrig,
                 Side = ConvertSide(order.Side),
                 OrderStatus = ConvertOrderStatus(order),

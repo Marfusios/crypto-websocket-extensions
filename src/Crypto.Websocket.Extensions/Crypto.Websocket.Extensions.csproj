@@ -35,6 +35,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Crypto.Arbitrage\bitstamp-client-websocket\src\Bitstamp.Client.Websocket\Bitstamp.Client.Websocket.csproj" />
     <ProjectReference Include="..\..\..\..\Crypto.Arbitrage\coinbasePro-client-websocket\src\CoinbasePro.Client.Websocket\CoinbasePro.Client.Websocket.csproj" />
+    <ProjectReference Include="..\..\..\..\Crypto.Arbitrage\crypto-exchange-extensions\src\Crypto.Exchange.Extensions\Crypto.Exchange.Extensions.csproj" />
     <ProjectReference Include="..\Crypto.Websocket.Extensions.Core\Crypto.Websocket.Extensions.Core.csproj" />
   </ItemGroup>
 

@@ -148,7 +148,7 @@ using System.Linq;
                 
                 Pair = order.Symbol ?? existing?.Pair,
                 Price = price,
-                Amount = amount,
+                //Amount = amount,
                 AmountOrig = amountOrig,
                 Side = ConvertSide(Convert.ToDouble(order.Amount)),
                 Id = id,

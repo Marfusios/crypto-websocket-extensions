@@ -1,5 +1,5 @@
 ﻿using System.Collections.Concurrent;
-
+using Crypto.Websocket.Extensions.Core.Orders.Models;
 namespace Crypto.Websocket.Extensions.Core.Orders
 {
     /// <summary>
