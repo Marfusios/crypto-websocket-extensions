@@ -58,6 +58,11 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         public IObservable<CryptoOrder> OurOrderChangedStream => _ourOrderChanged.AsObservable();
 
         /// <summary>
+        /// Origin exchange name
+        /// </summary>
+        public string ExchangeName => _source.ExchangeName;
+        
+        /// <summary>
         ///     Selected client id prefix
         /// </summary>
         public long? ClientIdPrefix => _orderPrefix * ClientIdPrefixExponent;
