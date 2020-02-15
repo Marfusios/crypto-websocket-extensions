@@ -1,17 +1,16 @@
-﻿﻿using Bitfinex.Client.Websocket.Client;
+﻿using Bitfinex.Client.Websocket.Client;
 using Bitfinex.Client.Websocket.Responses.Orders;
- using Crypto.Websocket.Extensions.Core.Orders;
- using Crypto.Websocket.Extensions.Core.Orders.Models;
- using Crypto.Websocket.Extensions.Core.Orders.Sources;
- using Crypto.Websocket.Extensions.Core.Validations;
+using Crypto.Websocket.Extensions.Core.Orders;
+using Crypto.Websocket.Extensions.Core.Orders.Models;
+using Crypto.Websocket.Extensions.Core.Orders.Sources;
+using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Logging;
 using System;
-
 using System.Linq;
- using Crypto.Websocket.Extensions.Core.Models;
- using Crypto.Websocket.Extensions.Core.Wallets.Models;
+using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.Wallets.Models;
 
- namespace Crypto.Websocket.Extensions.Orders.Sources
+namespace Crypto.Websocket.Extensions.Orders.Sources
 {
     /// <inheritdoc />
     public class BitfinexOrderSource : OrderSourceBase
@@ -68,9 +67,8 @@ using System.Linq;
             {
                 Log.Error(e, $"[Bitmex] Failed to handle order info, error: '{e.Message}'");
             }
-            
         }
-        
+
         private void HandleOrdersSafe(Order response)
         {
             try
@@ -128,24 +126,24 @@ using System.Linq;
             var existingCurrent = ExistingOrders.ContainsKey(id) ? ExistingOrders[id] : null;
             var existingPartial = _partiallyFilledOrders.ContainsKey(id) ? _partiallyFilledOrders[id] : null;
             var existing = existingPartial ?? existingCurrent;
-            
+
             var price = Math.Abs(FirstNonZero(order.Price, existing?.Price) ?? 0);
 
             var amount = Math.Abs(FirstNonZero(order.Amount, existing?.AmountOrig) ?? 0);
 
             var amountOrig = Math.Abs(order.AmountOrig ?? 0);
-            
+
             var currentStatus = existing != null &&
-                                existing.OrderStatus != CryptoOrderStatus.Undefined && 
+                                existing.OrderStatus != CryptoOrderStatus.Undefined &&
                                 existing.OrderStatus != CryptoOrderStatus.New &&
-                                order.OrderStatus == OrderStatus.Undefined ?
-                existing.OrderStatus :
-                ConvertOrderStatus(order);
-            
+                                order.OrderStatus == OrderStatus.Undefined
+                ? existing.OrderStatus
+                : ConvertOrderStatus(order);
+
             var newOrder = new CryptoOrder
             {
                 //ExchangeName = ExchangeName,
-                
+
                 Pair = order.Symbol ?? existing?.Pair,
                 Price = price,
                 //Amount = amount,
@@ -158,7 +156,7 @@ using System.Linq;
                 Created = order.MtsCreate,
                 Updated = order.MtsUpdate
             };
-            
+
             if (currentStatus == CryptoOrderStatus.PartiallyFilled)
             {
                 // save partially filled orders
@@ -187,7 +185,7 @@ using System.Linq;
                 case "exchangelimit":
                     return CryptoOrderType.Limit;
                 case "fok":
-                case "exchangefok":  
+                case "exchangefok":
                     return CryptoOrderType.Fok;
                 case "trailingstop":
                 case "exchangetrailingstop":
@@ -196,7 +194,7 @@ using System.Linq;
                     return CryptoOrderType.Undefined;
             }
         }
-        
+
         private CryptoOrderStatus ConvertOrderStatus(OrderStatus status)
         {
             switch (status)
@@ -222,18 +220,12 @@ using System.Linq;
 
             return CryptoOrderStatus.Undefined;
         }
-        
+
         private CryptoOrderSide ConvertSide(double amount)
         {
-            if (amount > 0)
-            {
-                return CryptoOrderSide.Bid;
-            }
+            if (amount > 0) return CryptoOrderSide.Bid;
 
-            if (amount < 0)
-            {
-                return CryptoOrderSide.Ask;
-            }
+            if (amount < 0) return CryptoOrderSide.Ask;
 
             return CryptoOrderSide.Undefined;
         }
@@ -241,10 +233,8 @@ using System.Linq;
         private static double? FirstNonZero(params double?[] numbers)
         {
             foreach (var number in numbers)
-            {
                 if (number.HasValue && Math.Abs(number.Value) > 0)
                     return number.Value;
-            }
 
             return null;
         }
@@ -255,6 +245,7 @@ using System.Linq;
                 return null;
             return Math.Abs(value.Value);
         }
+
         public static CryptoOrderStatus ConvertOrderStatus(Order order)
         {
             var status = order.OrderStatus;

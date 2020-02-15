@@ -70,7 +70,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
                 Amount,
                 Count,
                 Pair
-                );
+            );
         }
 
         private static double? Abs(double? value)

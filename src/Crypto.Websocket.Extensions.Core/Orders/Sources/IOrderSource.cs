@@ -16,12 +16,12 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
         /// <summary>
         /// Stream snapshot of currently active orders
         /// </summary>
-        IObservable<Crypto.Websocket.Extensions.Core.Orders.Models.CryptoOrder[]> OrdersInitialStream { get; }
+        IObservable<CryptoOrder[]> OrdersInitialStream { get; }
 
         /// <summary>
         /// Stream info about new active order
         /// </summary>
-        IObservable<Crypto.Websocket.Extensions.Core.Orders.Models.CryptoOrder> OrderCreatedStream { get; }
+        IObservable<CryptoOrder> OrderCreatedStream { get; }
 
         /// <summary>
         /// Stream on every status change of the order

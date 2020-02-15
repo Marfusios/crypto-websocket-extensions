@@ -128,8 +128,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             try
             {
                 var url = $"/products/{pairSafe}/book?level=2";
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                using (HttpContent content = response.Content)
+                using (var response = await _httpClient.GetAsync(url))
+                using (var content = response.Content)
                 {
                     result = await content.ReadAsStringAsync();
                     parsed = JsonConvert.DeserializeObject<OrderBookSnapshotDto>(result);
@@ -140,7 +140,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             catch (Exception e)
             {
                 Log.Debug($"[ORDER BOOK {ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
-                         $"Error: '{e.Message}'.  Content: '{result}'");
+                          $"Error: '{e.Message}'.  Content: '{result}'");
                 return null;
             }
 
@@ -179,7 +179,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             foreach (var response in data)
             {
                 var responseSafe = response as OrderBookUpdateResponse;
-                if(responseSafe == null)
+                if (responseSafe == null)
                     continue;
 
                 var converted = ConvertDiff(responseSafe);
@@ -209,7 +209,6 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         public OrderBookLevelConverter()
         {
-            
         }
 
         public OrderBookLevelConverter(OrderBookSide side)

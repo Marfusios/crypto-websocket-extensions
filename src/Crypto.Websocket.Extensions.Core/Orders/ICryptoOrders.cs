@@ -57,6 +57,9 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         CryptoOrder LastExecutedSellOrder { get; }
 
+        /// <summary>
+        ///     Exchange name
+        /// </summary>
         string ExchangeName { get; }
 
         /// <summary>

@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Diagnostics;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Utils;
@@ -116,7 +115,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         /// </summary>
         public double? AmountOrig
         {
-            get => (_amountOrig);
+            get => _amountOrig;
             set => _amountOrig = WithCorrectSign(value);
         }
 
@@ -125,7 +124,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         /// </summary>
         public double? AmountOrigQuote
         {
-            get => (_amountOrigQuote);
+            get => _amountOrigQuote;
             set => _amountOrigQuote = WithCorrectSign(value);
         }
 
@@ -175,8 +174,6 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         public bool OnMargin { get; set; }
 
 
-
-
         private double? WithCorrectSign(double? value)
         {
             if (!value.HasValue || _side == CryptoOrderSide.Undefined)
@@ -186,19 +183,14 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
 
         private void FixAmountSign(ref double? amount)
         {
-            if (amount.HasValue)
-            {
-                amount = WithCorrectSign(amount);
-            }
+            if (amount.HasValue) amount = WithCorrectSign(amount);
         }
 
         private double FirstNotNull(params double?[] numbers)
         {
             foreach (var number in numbers)
-            {
                 if (number.HasValue && Math.Abs(number.Value) > 0)
                     return number.Value;
-            }
 
             return 0;
         }

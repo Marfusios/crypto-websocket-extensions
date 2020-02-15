@@ -24,12 +24,12 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
         /// <summary>
         /// Stream snapshot of currently active orders
         /// </summary>
-        public virtual IObservable<Models.CryptoOrder[]> OrdersInitialStream => OrderSnapshotSubject.AsObservable();
+        public virtual IObservable<CryptoOrder[]> OrdersInitialStream => OrderSnapshotSubject.AsObservable();
 
         /// <summary>
         /// Stream info about new active order
         /// </summary>
-        public virtual IObservable<Models.CryptoOrder> OrderCreatedStream => OrderCreatedSubject.AsObservable();
+        public virtual IObservable<CryptoOrder> OrderCreatedStream => OrderCreatedSubject.AsObservable();
 
         /// <summary>
         /// Stream on every status change of the order

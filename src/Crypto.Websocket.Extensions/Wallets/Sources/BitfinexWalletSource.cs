@@ -11,7 +11,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
     /// <summary>
     /// Bitfinex wallet source
     /// </summary>
-    public class BitfinexWalletSource: WalletSourceBase
+    public class BitfinexWalletSource : WalletSourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
@@ -19,7 +19,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
         private IDisposable _subscription;
         private IDisposable _subscriptionSnapshot;
         private CryptoWallet _lastWallet;
-        
+
         /// <inheritdoc />
         public BitfinexWalletSource(BitfinexWebsocketClient client)
         {
@@ -28,7 +28,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
 
         /// <inheritdoc />
         public override string ExchangeName => "bitfinex";
-        
+
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
@@ -47,7 +47,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
             _subscriptionSnapshot = _client.Streams.WalletsStream.Subscribe(HandleWalletSnapshotSafe);
             _subscription = _client.Streams.WalletStream.Subscribe(HandleWalletSafe);
         }
-        
+
         private void HandleWalletSafe(Wallet response)
         {
             try
@@ -59,7 +59,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
                 Log.Error(e, $"[Bitfinex] Failed to handle wallet info, error: '{e.Message}'");
             }
         }
-        
+
         private void HandleWalletSnapshotSafe(Wallet[] response)
         {
             try
@@ -76,7 +76,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
         {
             WalletChangedSubject.OnNext(new[] {ConvertWallet(response)});
         }
-        
+
         private CryptoWallet ConvertWallet(Wallet response)
         {
             //var currency = response.Currency ?? "XBt";
@@ -85,7 +85,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
             {
                 Currency = response.Currency,
                 Balance = response.Balance,
-                          //?? _lastWallet?.Balance ?? 0,
+                //?? _lastWallet?.Balance ?? 0,
                 BalanceAvailable = response.BalanceAvailable ?? _lastWallet?.BalanceAvailable ?? 0,
                 Type = response.Type.ToString()
             };

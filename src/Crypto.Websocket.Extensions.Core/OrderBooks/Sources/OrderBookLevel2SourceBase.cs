@@ -95,7 +95,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
                 catch (Exception e)
                 {
                     LogBase.Debug($"[{ExchangeName}] Failed to load orderbook snapshot for pair '{pair}'. " +
-                              $"Error: {e.Message}");
+                                  $"Error: {e.Message}");
                 }
 
                 StreamSnapshot(data);
@@ -121,10 +121,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// </summary>
         protected void StreamSnapshot(OrderBookLevelBulk data)
         {
-            if (data?.Levels != null && data.Levels.Any())
-            {
-                _orderBookSnapshotSubject.OnNext(data);
-            }
+            if (data?.Levels != null && data.Levels.Any()) _orderBookSnapshotSubject.OnNext(data);
         }
 
         /// <summary>
@@ -144,8 +141,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
                 _bufferPauseEvent.Set();
                 return;
             }
-            
-            ConvertAndStream(new []{data});
+
+            ConvertAndStream(new[] {data});
         }
 
         /// <summary>
@@ -155,8 +152,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 
         private void StartProcessingFromBufferThread()
         {
-            Task.Factory.StartNew(_ => ProcessData(), 
-                _cancellation.Token, 
+            Task.Factory.StartNew(_ => ProcessData(),
+                _cancellation.Token,
                 TaskCreationOptions.LongRunning);
         }
 
@@ -189,9 +186,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
                 }
             }
             else
-            {
                 StreamData();
-            }
         }
 
         private void StreamData()

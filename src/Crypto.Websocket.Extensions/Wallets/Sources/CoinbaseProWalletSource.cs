@@ -11,13 +11,14 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
     /// <summary>
     /// Coinbase Pro wallet source
     /// </summary>
-    public class CoinbaseProWalletSource: WalletSourceBase
+    public class CoinbaseProWalletSource : WalletSourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
         private CoinbaseProClient _client;
         private IDisposable _subscription;
         private CryptoWallet _lastWallet;
+
         /// <inheritdoc />
         public CoinbaseProWalletSource(CoinbaseProClient client)
         {
@@ -26,7 +27,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
 
         /// <inheritdoc />
         public override string ExchangeName => "coinbaseProC";
-        
+
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
@@ -43,6 +44,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
         {
             _subscription = _client.Streams.User.Subscribe(HandleWalletSafe);
         }
+
         private void HandleWalletSafe(User response)
         {
             try
@@ -54,12 +56,12 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
                 Log.Error(e, $"[Bitfinex] Failed to handle wallet info, error: '{e.Message}'");
             }
         }
-        
+
         private void HandleWallet(User response)
         {
             WalletChangedSubject.OnNext(new[] {ConvertWallet(response)});
         }
-        
+
         private CryptoWallet ConvertWallet(User response)
         {
             //var currency = response.Currency ?? "XBt";
@@ -67,7 +69,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
             var wallet = new CryptoWallet()
             {
                 Currency = response.Pair,
-                Balance = Math.Abs(response.Amount??0),
+                Balance = Math.Abs(response.Amount ?? 0),
                 //?? _lastWallet?.Balance ?? 0,
                 BalanceAvailable = response.RemainingSize ?? 0,
                 Type = response.Type.ToString()

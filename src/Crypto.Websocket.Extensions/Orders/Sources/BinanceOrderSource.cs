@@ -1,10 +1,10 @@
-﻿﻿using Binance.Client.Websocket.Client;
- using Crypto.Websocket.Extensions.Core.Orders.Sources;
+﻿using Binance.Client.Websocket.Client;
+using Crypto.Websocket.Extensions.Core.Orders.Sources;
 using Crypto.Websocket.Extensions.Logging;
 using System;
- using Crypto.Websocket.Extensions.Core.Validations;
+using Crypto.Websocket.Extensions.Core.Validations;
 
- namespace Crypto.Websocket.Extensions.Orders.Sources
+namespace Crypto.Websocket.Extensions.Orders.Sources
 {
     public class BinanceOrderSource : OrderSourceBase
     {
@@ -21,10 +21,10 @@ using System;
         {
             ChangeClient(client);
         }
-        
+
         /// <inheritdoc />
         public override string ExchangeName => "binance";
-        
+
         // <summary>
         ///     Change client and resubscribe to the new streams
         /// </summary>
@@ -42,8 +42,7 @@ using System;
 
         private void Subscribe()
         {
-throw new NotImplementedException();
+            throw new NotImplementedException();
         }
-
     }
 }

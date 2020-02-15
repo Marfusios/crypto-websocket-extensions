@@ -105,18 +105,18 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             BufferData(response);
         }
 
-        private OrderBookLevel[] ConvertLevels(Binance.Client.Websocket.Responses.Books.OrderBookLevel[] books, 
+        private OrderBookLevel[] ConvertLevels(Binance.Client.Websocket.Responses.Books.OrderBookLevel[] books,
             string pair, CryptoOrderSide side)
         {
             if (books == null)
                 return new OrderBookLevel[0];
 
             return books
-                .Select(x => ConvertLevel(x , pair, side))
+                .Select(x => ConvertLevel(x, pair, side))
                 .ToArray();
         }
 
-        private OrderBookLevel ConvertLevel(Binance.Client.Websocket.Responses.Books.OrderBookLevel x, 
+        private OrderBookLevel ConvertLevel(Binance.Client.Websocket.Responses.Books.OrderBookLevel x,
             string pair, CryptoOrderSide side)
         {
             return new OrderBookLevel
@@ -155,8 +155,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             try
             {
                 var url = $"/api/v1/depth?symbol={pairSafe}&limit={countSafe}";
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                using (HttpContent content = response.Content)
+                using (var response = await _httpClient.GetAsync(url))
+                using (var content = response.Content)
                 {
                     result = await content.ReadAsStringAsync();
                     var parsed = JsonConvert.DeserializeObject<OrderBookPartial>(result);
@@ -229,12 +229,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             foreach (var response in data)
             {
                 var responseSafe = response as OrderBookDiffResponse;
-                if(responseSafe == null)
+                if (responseSafe == null)
                     continue;
 
                 var bulks = ConvertDiff(responseSafe);
 
-                if(!bulks.Any())
+                if (!bulks.Any())
                     continue;
 
                 result.AddRange(bulks);
@@ -242,7 +242,5 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
             return result.ToArray();
         }
-
-        
     }
 }

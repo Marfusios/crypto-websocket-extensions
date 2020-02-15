@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Linq;
 using System.Reactive;
 using CoinbasePro.Client.Websocket.Client;
@@ -36,7 +35,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
         /// <inheritdoc />
         public override string ExchangeName => "coinbasePro";
-        
+
         /// <summary>
         ///     Change client and resubscribe to the new streams
         /// </summary>
@@ -48,7 +47,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             _subscription?.Dispose();
             Subscribe();
         }
-        
+
         private void Subscribe()
         {
             _subscription = _client.Streams.User.Subscribe(HandleOrdersSafe);
@@ -65,7 +64,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 Log.Error(e, $"[Coinbase] Failed to handle order info, error: '{e.Message}'");
             }
         }
-        
+
         private void HandleOrder(User response)
         {
             if (response == null)
@@ -73,7 +72,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 // weird state, do nothing
                 return;
             }
-            
+
             var orders = ConvertOrder(response);
 
             switch (response.OrderStatus)
@@ -105,29 +104,29 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 .Select(ConvertOrder)
                 .ToArray();
         }
-        
+
         private CryptoOrder ConvertOrder(User order)
         {
             var id = order.Id.ToString();
             var existingCurrent = ExistingOrders.ContainsKey(id) ? ExistingOrders[id] : null;
             var existingPartial = _partiallyFilledOrders.ContainsKey(id) ? _partiallyFilledOrders[id] : null;
             var existing = existingPartial ?? existingCurrent;
-            
+
             var price = Math.Abs(FirstNonZero(order.Price, existing?.Price) ?? 0);
 
             var amount = Math.Abs(FirstNonZero(order.Amount, existing?.AmountOrig) ?? 0);
 
             var amountOrig = Math.Abs(order.Size ?? 0);
-            
+
             var currentStatus = existing != null &&
-                                existing.OrderStatus != CryptoOrderStatus.Undefined && 
+                                existing.OrderStatus != CryptoOrderStatus.Undefined &&
                                 existing.OrderStatus != CryptoOrderStatus.New &&
-                                order.OrderStatus == OrderStatus.Undefined ?
-                existing.OrderStatus :
-                ConvertOrderStatus(order);
-            
+                                order.OrderStatus == OrderStatus.Undefined
+                ? existing.OrderStatus
+                : ConvertOrderStatus(order);
+
             var newOrder = new CryptoOrder
-            
+
             {
                 Pair = CryptoPairsHelper.Clean(order.Pair),
                 Price = price,
@@ -135,10 +134,10 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 AmountOrig = amountOrig,
                 Side = ConvertSide(order.Side),
                 OrderStatus = ConvertOrderStatus(order),
-                Type = (CryptoOrderType)order.OrderType,
+                Type = (CryptoOrderType) order.OrderType,
                 Created = Convert.ToDateTime(order.MtsCreate)
             };
-            
+
             if (currentStatus == CryptoOrderStatus.PartiallyFilled)
             {
                 // save partially filled orders
@@ -147,7 +146,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
             return newOrder;
         }
-        
+
         private CryptoOrderStatus ConvertOrderStatus(User user)
         {
             switch (user.OrderStatus)
@@ -186,15 +185,9 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
         private CryptoOrderSide ConvertSide(OrderSide side)
         {
-            if (side == OrderSide.Buy)
-            {
-                return CryptoOrderSide.Bid;
-            }
+            if (side == OrderSide.Buy) return CryptoOrderSide.Bid;
 
-            if (side == OrderSide.Sell)
-            {
-                return CryptoOrderSide.Ask;
-            }
+            if (side == OrderSide.Sell) return CryptoOrderSide.Ask;
 
             return CryptoOrderSide.Undefined;
         }
@@ -202,10 +195,8 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         private static double? FirstNonZero(params double?[] numbers)
         {
             foreach (var number in numbers)
-            {
                 if (number.HasValue && Math.Abs(number.Value) > 0)
                     return number.Value;
-            }
 
             return null;
         }

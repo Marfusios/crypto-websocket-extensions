@@ -20,7 +20,9 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
     public class BitmexPositionSource : PositionSourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-        private readonly ConcurrentDictionary<string, CryptoPosition> _positions = new ConcurrentDictionary<string, CryptoPosition>();
+
+        private readonly ConcurrentDictionary<string, CryptoPosition> _positions =
+            new ConcurrentDictionary<string, CryptoPosition>();
 
         private BitmexWebsocketClient _client;
         private IDisposable _subscription;
@@ -94,7 +96,7 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
                 LiquidationPrice = position.LiquidationPrice ?? existing?.LiquidationPrice ?? 0,
 
                 Amount = position.HomeNotional ?? existing?.Amount ?? 0,
-                AmountQuote = position.CurrentQty ?? existing?.AmountQuote ??  0,
+                AmountQuote = position.CurrentQty ?? existing?.AmountQuote ?? 0,
 
                 Side = ConvertSide(position.CurrentQty ?? existing?.AmountQuote),
 

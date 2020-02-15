@@ -111,15 +111,17 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             var price = Math.Abs(FirstNonZero(order.Price, order.AvgPx, existing?.Price) ?? 0);
             var priceAvg = Math.Abs(FirstNonZero(order.AvgPx, existing?.PriceAverage) ?? 0);
 
-            var isPartial = order.OrdStatus == OrderStatus.Undefined ?
-                existing?.OrderStatus == CryptoOrderStatus.PartiallyFilled :
-                order.OrdStatus == OrderStatus.PartiallyFilled;
+            var isPartial = order.OrdStatus == OrderStatus.Undefined
+                ? existing?.OrderStatus == CryptoOrderStatus.PartiallyFilled
+                : order.OrdStatus == OrderStatus.PartiallyFilled;
 
             var beforePartialFilledAmount =
                 existing?.OrderStatus == CryptoOrderStatus.PartiallyFilled ? Abs(existing.AmountFilledCumulative) : 0;
 
             var beforePartialFilledAmountQuote =
-                existing?.OrderStatus == CryptoOrderStatus.PartiallyFilled ? Abs(existing.AmountFilledCumulativeQuote) : 0;
+                existing?.OrderStatus == CryptoOrderStatus.PartiallyFilled
+                    ? Abs(existing.AmountFilledCumulativeQuote)
+                    : 0;
 
             var orderQtyQuote = Abs(order.OrderQty ?? existing?.AmountOrigQuote);
             var cumQtyQuote = Abs(order.CumQty ?? existing?.AmountFilledCumulativeQuote);
@@ -130,16 +132,16 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             var leavesQtyBase = Abs(ConvertFromContracts(order.LeavesQty, price));
 
             var amountFilledCumulative = FirstNonZero(
-                    cumQtyBase,
-                    existing?.AmountFilledCumulative);
+                cumQtyBase,
+                existing?.AmountFilledCumulative);
 
             var amountFilledCumulativeQuote = FirstNonZero(
                 cumQtyQuote,
                 existing?.AmountFilledCumulativeQuote);
 
             var amountFilled = FirstNonZero(
-                    cumQtyBase - beforePartialFilledAmount, // Bitmex doesn't send partial difference when filled
-                    existing?.AmountFilled);
+                cumQtyBase - beforePartialFilledAmount, // Bitmex doesn't send partial difference when filled
+                existing?.AmountFilled);
 
             var amountFilledQuote = FirstNonZero(
                 cumQtyQuote - beforePartialFilledAmountQuote, // Bitmex doesn't send partial difference when filled
@@ -163,19 +165,17 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             }
 
             var currentStatus = existing != null &&
-                                existing.OrderStatus != CryptoOrderStatus.Undefined && 
+                                existing.OrderStatus != CryptoOrderStatus.Undefined &&
                                 existing.OrderStatus != CryptoOrderStatus.New &&
-                                order.OrdStatus == OrderStatus.Undefined ?
-                existing.OrderStatus :
-                ConvertOrderStatus(order);
+                                order.OrdStatus == OrderStatus.Undefined
+                ? existing.OrderStatus
+                : ConvertOrderStatus(order);
 
             var newOrder = new CryptoOrder
             {
                 Id = id,
                 GroupId = existing?.GroupId ?? null,
-                ClientId = !string.IsNullOrWhiteSpace(order.ClOrdId) ? 
-                    order.ClOrdId :
-                    existing?.ClientId,
+                ClientId = !string.IsNullOrWhiteSpace(order.ClOrdId) ? order.ClOrdId : existing?.ClientId,
                 Pair = order.Symbol ?? existing?.Pair,
                 Side = order.Side == BitmexSide.Sell ? CryptoOrderSide.Ask : CryptoOrderSide.Bid,
                 AmountFilled = amountFilled,

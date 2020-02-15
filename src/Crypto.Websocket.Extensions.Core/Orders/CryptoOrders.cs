@@ -61,7 +61,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// Origin exchange name
         /// </summary>
         public string ExchangeName => _source.ExchangeName;
-        
+
         /// <summary>
         ///     Selected client id prefix
         /// </summary>
@@ -226,7 +226,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
                 .ToArray();
             foreach (var order in canceled)
                 if (_idToOrder.ContainsKey(order.Key))
-                    _idToOrder.TryRemove(order.Key, out var _);
+                    _idToOrder.TryRemove(order.Key, out _);
         }
 
         /// <summary>
@@ -268,8 +268,10 @@ namespace Crypto.Websocket.Extensions.Core.Orders
                 return;
 
             if (order.OrderStatus == CryptoOrderStatus.Undefined)
+            {
                 Log.Debug(
                     $"[ORDERS] Received order with weird status ({order.ClientId} - {order.PriceGrouped}/{order.AmountGrouped})");
+            }
 
             HandleOrderUpdated(order);
         }

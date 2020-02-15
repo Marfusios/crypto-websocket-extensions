@@ -63,7 +63,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
 
         private void HandleTrade(TradeResponse response)
         {
-            TradesSubject.OnNext(new[] { ConvertTrade(response.Data) });
+            TradesSubject.OnNext(new[] {ConvertTrade(response.Data)});
         }
 
         private CryptoTrade ConvertTrade(Trade trade)

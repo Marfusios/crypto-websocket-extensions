@@ -28,9 +28,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <inheritdoc />
         public BitmexOrderBookSource(BitmexWebsocketClient client, bool isTestnet = false)
         {
-            _httpClient.BaseAddress = isTestnet ? 
-                new Uri("https://testnet.bitmex.com") : 
-                new Uri("https://www.bitmex.com");
+            _httpClient.BaseAddress =
+                isTestnet ? new Uri("https://testnet.bitmex.com") : new Uri("https://www.bitmex.com");
 
             ChangeClient(client);
         }
@@ -133,8 +132,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             try
             {
                 var url = $"/api/v1/orderBook/L2?symbol={pairSafe}&depth={countSafe}";
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                using (HttpContent content = response.Content)
+                using (var response = await _httpClient.GetAsync(url))
+                using (var content = response.Content)
                 {
                     result = await content.ReadAsStringAsync();
                     parsed = JsonConvert.DeserializeObject<BookLevel[]>(result);
@@ -145,7 +144,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             catch (Exception e)
             {
                 Log.Debug($"[ORDER BOOK {ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
-                         $"Error: '{e.Message}'.  Content: '{result}'");
+                          $"Error: '{e.Message}'.  Content: '{result}'");
                 return null;
             }
 
@@ -175,7 +174,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             foreach (var response in data)
             {
                 var responseSafe = response as BookResponse;
-                if(responseSafe == null)
+                if (responseSafe == null)
                     continue;
 
                 var converted = ConvertDiff(responseSafe);

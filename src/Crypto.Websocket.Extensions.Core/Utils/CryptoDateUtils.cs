@@ -17,7 +17,7 @@ namespace Crypto.Websocket.Extensions.Core.Utils
         /// </summary>
         public static DateTime ConvertFromUnixSeconds(double timeInSec)
         {
-            var unixTimeStampInTicks = (long)(timeInSec * TimeSpan.TicksPerSecond);
+            var unixTimeStampInTicks = (long) (timeInSec * TimeSpan.TicksPerSecond);
             return new DateTime(UnixBase.Ticks + unixTimeStampInTicks, DateTimeKind.Utc);
         }
 
@@ -36,7 +36,7 @@ namespace Crypto.Websocket.Extensions.Core.Utils
         /// </summary>
         public static DateTime ConvertFromUnixSeconds(decimal timeInSec)
         {
-            var unixTimeStampInTicks = (long)(timeInSec * TimeSpan.TicksPerSecond);
+            var unixTimeStampInTicks = (long) (timeInSec * TimeSpan.TicksPerSecond);
             return new DateTime(UnixBase.Ticks + unixTimeStampInTicks, DateTimeKind.Utc);
         }
 
@@ -57,7 +57,7 @@ namespace Crypto.Websocket.Extensions.Core.Utils
         public static double ToUnixSeconds(this DateTime date)
         {
             var unixTimeStampInTicks = (date.ToUniversalTime() - UnixBase).Ticks;
-            return (double)unixTimeStampInTicks / TimeSpan.TicksPerSecond;
+            return (double) unixTimeStampInTicks / TimeSpan.TicksPerSecond;
         }
 
         /// <summary>

@@ -15,21 +15,20 @@ using OrderBookLevel = Crypto.Websocket.Extensions.Core.OrderBooks.Models.OrderB
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 {
-    public class BitstampOrderBookSource: OrderBookLevel2SourceBase
+    public class BitstampOrderBookSource : OrderBookLevel2SourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-        
+
         private readonly HttpClient _httpClient = new HttpClient();
         private BitstampWebsocketClient _client;
         private IDisposable _subscription;
         private IDisposable _subscriptionSnapshot;
         private IDisposable _subscriptionFull;
-        
-        
+
+
         /// <inheritdoc />
         public BitstampOrderBookSource(BitstampWebsocketClient client)
         {
-
             ChangeClient(client);
         }
 
@@ -64,7 +63,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels);
             FillBulk(bulk);
             StreamSnapshot(bulk);
-            
+
             // received snapshot, convert and stream
             //var levels = ConvertSnapshot(snapshot);
             //StreamSnapshot(levels);
@@ -84,7 +83,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             BufferData(update);
         }
 
-        private OrderBookLevel[] ConvertLevels(string pair, Bitstamp.Client.Websocket.Responses.Books.OrderBookLevel[] data)
+        private OrderBookLevel[] ConvertLevels(string pair,
+            Bitstamp.Client.Websocket.Responses.Books.OrderBookLevel[] data)
         {
             return data
                 .Select(x => ConvertLevel(pair, x))
@@ -106,25 +106,16 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private CryptoOrderSide ConvertSide(OrderBookSide side)
         {
-            if (side == OrderBookSide.Buy)
-            {
-                return CryptoOrderSide.Bid;
-            }
+            if (side == OrderBookSide.Buy) return CryptoOrderSide.Bid;
 
-            if (side == OrderBookSide.Sell)
-            {
-                return CryptoOrderSide.Ask;
-            }
+            if (side == OrderBookSide.Sell) return CryptoOrderSide.Ask;
 
             return CryptoOrderSide.Undefined;
         }
 
         private OrderBookAction RecognizeAction(OrderBookLevel level)
         {
-            if (level.Amount > 0)
-            {
-                return OrderBookAction.Update;
-            }
+            if (level.Amount > 0) return OrderBookAction.Update;
 
             return OrderBookAction.Delete;
         }
@@ -185,7 +176,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         {
             bulk.ExchangeName = ExchangeName;
         }
-        
+
         /// <inheritdoc />
         protected override OrderBookLevelBulk[] ConvertData(object[] data)
         {
@@ -193,10 +184,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             foreach (var response in data)
             {
                 var responseSafe = response as OrderBookFullResponse;
-                if (responseSafe == null)
-                {
-                    continue;
-                }
+                if (responseSafe == null) continue;
 
                 var converted = ConvertDiff(responseSafe);
                 result.AddRange(converted);
@@ -204,6 +192,5 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
             return result.ToArray();
         }
-
     }
 }

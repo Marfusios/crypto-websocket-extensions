@@ -60,7 +60,7 @@ namespace Crypto.Websocket.Extensions.Core.Positions.Models
         /// </summary>
         public double Amount
         {
-            get => (_amount);
+            get => _amount;
             set => _amount = WithCorrectSign(value);
         }
 
@@ -69,7 +69,7 @@ namespace Crypto.Websocket.Extensions.Core.Positions.Models
         /// </summary>
         public double AmountQuote
         {
-            get => (_amountQuote);
+            get => _amountQuote;
             set => _amountQuote = WithCorrectSign(value);
         }
 

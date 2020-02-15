@@ -8,14 +8,14 @@ namespace Crypto.Websocket.Extensions.Core.Wallets
         /// <summary>
         /// Wallet was changed stream
         /// </summary>
-        
+
         IObservable<CryptoWallet> WalletUpdatedStream { get; }
-        
+
         /// <summary>
         /// Origin exchange name
         /// </summary>
-        string ExchangeName{ get; }
-        
+        string ExchangeName { get; }
+
         /// <summary>
         /// Target pair for this orders data (other orders will be filtered out)
         /// </summary>
@@ -25,13 +25,13 @@ namespace Crypto.Websocket.Extensions.Core.Wallets
         /// Originally provided target pair for this orders data
         /// </summary>
         string TargetCurrencyOriginal { get; }
-        
+
         /// <summary>
         /// Get all wallets matching provided currency
         /// </summary>
         /// 
-        CryptoWalletCollectionReadonly  GetWallets(string symbol);
-        
+        CryptoWalletCollectionReadonly GetWallet(string symbol);
+
         //CryptoWalletCollectionReadonly  GetWallets(string symbol, string exchangeName);
 
         /// <summary>

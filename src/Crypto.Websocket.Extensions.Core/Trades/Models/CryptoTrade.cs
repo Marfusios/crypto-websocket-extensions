@@ -55,7 +55,7 @@ namespace Crypto.Websocket.Extensions.Core.Trades.Models
         /// </summary>
         public double Amount
         {
-            get => (_amount);
+            get => _amount;
             set => _amount = WithCorrectSign(value);
         }
 
@@ -64,7 +64,7 @@ namespace Crypto.Websocket.Extensions.Core.Trades.Models
         /// </summary>
         public double AmountQuote
         {
-            get => (_amountQuote);
+            get => _amountQuote;
             set => _amountQuote = WithCorrectSign(value);
         }
 
@@ -84,14 +84,11 @@ namespace Crypto.Websocket.Extensions.Core.Trades.Models
         }
 
 
-
         private double WithCorrectSign(double value)
         {
             if (_side == CryptoTradeSide.Undefined)
                 return value;
             return Math.Abs(value) * (_side == CryptoTradeSide.Buy ? 1 : -1);
         }
-
-
     }
 }
