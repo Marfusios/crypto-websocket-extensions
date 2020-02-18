@@ -67,7 +67,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
 
         private CryptoTrade ConvertTrade(Trade trade)
         {
-            var data = new CryptoTrade()
+            var data = new CryptoTrade
             {
                 Amount = trade.Amount,
                 AmountQuote = trade.Amount * trade.Price,

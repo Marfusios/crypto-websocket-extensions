@@ -19,8 +19,8 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
         private BitmexWebsocketClient _client;
-        private IDisposable _subscription;
         private CryptoWallet _lastWallet;
+        private IDisposable _subscription;
 
         /// <inheritdoc />
         public BitmexWalletSource(BitmexWebsocketClient client)
@@ -71,7 +71,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
         {
             var currency = margin.Currency ?? "XBt";
 
-            var wallet = new CryptoWallet()
+            var wallet = new CryptoWallet
             {
                 Currency = "BTC",
                 Balance = ConvertToBtc(currency, margin.WalletBalance) ?? _lastWallet?.Balance ?? 0,
@@ -87,8 +87,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
 
         private double? ConvertToBtc(string currency, long? value)
         {
-            if (!value.HasValue)
-                return null;
+            if (!value.HasValue) return null;
 
             return BitmexConverter.ConvertToBtc(currency, value.Value);
         }

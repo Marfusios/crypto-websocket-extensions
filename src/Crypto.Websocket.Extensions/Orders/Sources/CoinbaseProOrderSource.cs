@@ -1,17 +1,15 @@
 ﻿using System;
 using System.Linq;
-using System.Reactive;
 using CoinbasePro.Client.Websocket.Client;
 using CoinbasePro.Client.Websocket.Models.Users;
 using CoinbasePro.Client.Websocket.Types;
-using Crypto.Exchange.Extensions.Utils;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Orders;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
 using Crypto.Websocket.Extensions.Core.Orders.Sources;
+using Crypto.Websocket.Extensions.Core.Utils;
 using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Logging;
-
 
 namespace Crypto.Websocket.Extensions.Orders.Sources
 {
@@ -27,17 +25,14 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         /// <inheritdoc />
         public CoinbaseProOrderSource(CoinbaseProClient client)
         {
-            CryptoValidations.ValidateInput(client, nameof(client));
-
-            _client = client;
-            Subscribe();
+            ChangeClient(client);
         }
 
         /// <inheritdoc />
         public override string ExchangeName => "coinbasePro";
 
         /// <summary>
-        ///     Change client and resubscribe to the new streams
+        /// Change client and resubscribe to the new streams
         /// </summary>
         public void ChangeClient(CoinbaseProClient client)
         {
@@ -203,8 +198,8 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
         private static double? Abs(double? value)
         {
-            if (!value.HasValue)
-                return null;
+            if (!value.HasValue) return null;
+
             return Math.Abs(value.Value);
         }
     }

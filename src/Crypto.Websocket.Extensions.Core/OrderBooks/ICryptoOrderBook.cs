@@ -6,7 +6,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 {
     /// <summary>
     /// Cryptocurrency order book.
-    /// Process order book data from one source (exchange) and one target pair. 
+    /// Process order book data from one source (exchange) and one target pair.
     /// </summary>
     public interface ICryptoOrderBook : IDisposable
     {
@@ -27,7 +27,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         /// <summary>
         /// Time interval for auto snapshot reloading.
-        /// Default 1 min. 
+        /// Default 1 min.
         /// </summary>
         TimeSpan SnapshotReloadTimeout { get; set; }
 
@@ -39,8 +39,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         /// <summary>
         /// Time interval for validity checking.
-        /// It forces snapshot reloading whenever invalid state. 
-        /// Default 5 sec. 
+        /// It forces snapshot reloading whenever invalid state.
+        /// Default 5 sec.
         /// </summary>
         TimeSpan ValidityCheckTimeout { get; set; }
 
@@ -52,19 +52,19 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         /// <summary>
         /// Whenever validity checking feature is enabled.
-        /// It forces snapshot reloading whenever invalid state. 
+        /// It forces snapshot reloading whenever invalid state.
         /// Enabled by default
         /// </summary>
         bool ValidityCheckEnabled { get; set; }
 
         /// <summary>
-        /// Provide more info (on every change) whenever enabled. 
+        /// Provide more info (on every change) whenever enabled.
         /// Disabled by default
         /// </summary>
         bool DebugEnabled { get; set; }
 
         /// <summary>
-        /// Logs more info (state, performance) whenever enabled. 
+        /// Logs more info (state, performance) whenever enabled.
         /// Disabled by default
         /// </summary>
         bool DebugLogEnabled { get; set; }

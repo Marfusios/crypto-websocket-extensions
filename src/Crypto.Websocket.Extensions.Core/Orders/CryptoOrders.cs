@@ -10,11 +10,10 @@ using Crypto.Websocket.Extensions.Core.Orders.Sources;
 using Crypto.Websocket.Extensions.Core.Utils;
 using Crypto.Websocket.Extensions.Core.Validations;
 
-
 namespace Crypto.Websocket.Extensions.Core.Orders
 {
     /// <summary>
-    ///     Orders manager
+    /// Orders manager
     /// </summary>
     public class CryptoOrders : ICryptoOrders
     {
@@ -29,7 +28,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         private long _cidCounter;
 
         /// <summary>
-        ///     Orders manager
+        /// Orders manager
         /// </summary>
         /// <param name="source">Orders source</param>
         /// <param name="orderPrefix">Select prefix if you want to distinguish orders</param>
@@ -48,12 +47,12 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         }
 
         /// <summary>
-        ///     Order was changed stream
+        /// Order was changed stream
         /// </summary>
         public IObservable<CryptoOrder> OrderChangedStream => _orderChanged.AsObservable();
 
         /// <summary>
-        ///     Order was changed stream (only ours, based on client id prefix)
+        /// Order was changed stream (only ours, based on client id prefix)
         /// </summary>
         public IObservable<CryptoOrder> OurOrderChangedStream => _ourOrderChanged.AsObservable();
 
@@ -63,59 +62,59 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         public string ExchangeName => _source.ExchangeName;
 
         /// <summary>
-        ///     Selected client id prefix
+        /// Selected client id prefix
         /// </summary>
         public long? ClientIdPrefix => _orderPrefix * ClientIdPrefixExponent;
 
         /// <summary>
-        ///     Client id exponent when prefix is selected.
-        ///     For example:
-        ///     prefix = 333
-        ///     exponent = 1000000
-        ///     generated client id = 333000001
+        /// Client id exponent when prefix is selected.
+        /// For example:
+        /// prefix = 333
+        /// exponent = 1000000
+        /// generated client id = 333000001
         /// </summary>
         public long ClientIdPrefixExponent { get; set; } = 10000000;
 
 
         /// <summary>
-        ///     Selected client id prefix as string
+        /// Selected client id prefix as string
         /// </summary>
         public string ClientIdPrefixString => _orderPrefix?.ToString() ?? string.Empty;
 
         /// <summary>
-        ///     Target pair for this orders data (other orders will be filtered out)
+        /// Target pair for this orders data (other orders will be filtered out)
         /// </summary>
         public string TargetPair { get; }
 
         /// <summary>
-        ///     Originally provided target pair for this orders data
+        /// Originally provided target pair for this orders data
         /// </summary>
         public string TargetPairOriginal { get; }
 
         /// <summary>
-        ///     Last executed (or partially filled) buy order
+        /// Last executed (or partially filled) buy order
         /// </summary>
         public CryptoOrder LastExecutedBuyOrder { get; private set; }
 
         /// <summary>
-        ///     Last executed (or partially filled) sell order
+        /// Last executed (or partially filled) sell order
         /// </summary>
         public CryptoOrder LastExecutedSellOrder { get; private set; }
 
 
         /// <summary>
-        ///     Generate a new client id (with prefix)
+        /// Generate a new client id (with prefix)
         /// </summary>
         public long GenerateClientId()
         {
             var counter = Interlocked.Increment(ref _cidCounter);
-            if (ClientIdPrefix.HasValue)
-                return ClientIdPrefix.Value + counter;
+            if (ClientIdPrefix.HasValue) return ClientIdPrefix.Value + counter;
+
             return counter;
         }
 
         /// <summary>
-        ///     Returns only our active orders (based on client id prefix)
+        /// Returns only our active orders (based on client id prefix)
         /// </summary>
         public CryptoOrderCollectionReadonly GetActiveOrders()
         {
@@ -130,7 +129,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         }
 
         /// <summary>
-        ///     Returns only our orders (based on client id prefix)
+        /// Returns only our orders (based on client id prefix)
         /// </summary>
         public CryptoOrderCollectionReadonly GetOrders()
         {
@@ -141,7 +140,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         }
 
         /// <summary>
-        ///     Returns all orders (ignore prefix for client id)
+        /// Returns all orders (ignore prefix for client id)
         /// </summary>
         public CryptoOrderCollectionReadonly GetAllOrders()
         {
@@ -151,22 +150,22 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         }
 
         /// <summary>
-        ///     Find active order by provided unique id
+        /// Find active order by provided unique id
         /// </summary>
         public CryptoOrder FindActiveOrder(string id)
         {
-            if (GetActiveOrders().ContainsKey(id))
-                return _idToOrder[id];
+            if (GetActiveOrders().ContainsKey(id)) return _idToOrder[id];
+
             return null;
         }
 
         /// <summary>
-        ///     Find order by provided unique id
+        /// Find order by provided unique id
         /// </summary>
         public CryptoOrder FindOrder(string id)
         {
-            if (_idToOrder.ContainsKey(id))
-                return _idToOrder[id];
+            if (_idToOrder.ContainsKey(id)) return _idToOrder[id];
+
             return null;
         }
 
@@ -176,7 +175,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         }
 
         /// <summary>
-        ///     Find order by provided client id
+        /// Find order by provided client id
         /// </summary>
         public CryptoOrder FindOrderByClientId(string clientId)
         {
@@ -185,7 +184,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         }
 
         /// <summary>
-        ///     Returns true if client id matches prefix
+        /// Returns true if client id matches prefix
         /// </summary>
         public bool IsOurOrder(CryptoOrder order)
         {
@@ -193,22 +192,20 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         }
 
         /// <summary>
-        ///     Returns true if client id matches prefix
+        /// Returns true if client id matches prefix
         /// </summary>
         public bool IsOurOrder(string clientId)
         {
-            if (string.IsNullOrWhiteSpace(ClientIdPrefixString))
-                return true;
+            if (string.IsNullOrWhiteSpace(ClientIdPrefixString)) return true;
 
             // if prefix is set, also client id has to be set to compare prefixes
-            if (string.IsNullOrWhiteSpace(clientId))
-                return false;
+            if (string.IsNullOrWhiteSpace(clientId)) return false;
 
             return clientId.StartsWith($"{ClientIdPrefixString}0");
         }
 
         /// <summary>
-        ///     Track selected order (use immediately after placing an order via REST call)
+        /// Track selected order (use immediately after placing an order via REST call)
         /// </summary>
         public void TrackOrder(CryptoOrder order)
         {
@@ -216,7 +213,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         }
 
         /// <summary>
-        ///     Clean internal orders cache, remove canceled orders
+        /// Clean internal orders cache, remove canceled orders
         /// </summary>
         public void RemoveCanceled()
         {
@@ -230,7 +227,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         }
 
         /// <summary>
-        ///     Find active order by provided client id
+        /// Find active order by provided client id
         /// </summary>
         public CryptoOrder FindActiveOrderByClientId(string clientId)
         {
@@ -248,24 +245,21 @@ namespace Crypto.Websocket.Extensions.Core.Orders
 
         private void OnOrdersUpdated(CryptoOrder[] orders)
         {
-            if (orders == null)
-                return;
+            if (orders == null) return;
 
             foreach (var order in orders) OnOrderUpdated(order);
         }
 
         private void OnOrderCreated(CryptoOrder order)
         {
-            if (order == null)
-                return;
+            if (order == null) return;
 
             HandleOrderUpdated(order);
         }
 
         private void OnOrderUpdated(CryptoOrder order)
         {
-            if (order == null)
-                return;
+            if (order == null) return;
 
             if (order.OrderStatus == CryptoOrderStatus.Undefined)
             {
@@ -297,18 +291,15 @@ namespace Crypto.Websocket.Extensions.Core.Orders
 
             _orderChanged.OnNext(order);
 
-            if (IsOurOrder(order))
-                _ourOrderChanged.OnNext(order);
+            if (IsOurOrder(order)) _ourOrderChanged.OnNext(order);
         }
 
         private bool IsFilteredOut(CryptoOrder order)
         {
-            if (order == null)
-                return true;
+            if (order == null) return true;
 
             // filter out by selected pair
-            if (!string.IsNullOrWhiteSpace(TargetPair) && !TargetPair.Equals(order.PairClean))
-                return true;
+            if (!string.IsNullOrWhiteSpace(TargetPair) && !TargetPair.Equals(order.PairClean)) return true;
 
             return false;
         }

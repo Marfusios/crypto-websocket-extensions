@@ -94,17 +94,17 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private CryptoOrderSide ConvertSide(double amount)
         {
-            if (amount > 0)
-                return CryptoOrderSide.Bid;
-            if (amount < 0)
-                return CryptoOrderSide.Ask;
+            if (amount > 0) return CryptoOrderSide.Bid;
+
+            if (amount < 0) return CryptoOrderSide.Ask;
+
             return CryptoOrderSide.Undefined;
         }
 
         private OrderBookAction RecognizeAction(Book book)
         {
-            if (book.Count > 0)
-                return OrderBookAction.Update;
+            if (book.Count > 0) return OrderBookAction.Update;
+
             return OrderBookAction.Delete;
         }
 
@@ -125,8 +125,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                 {
                     result = await content.ReadAsStringAsync();
                     parsed = JsonConvert.DeserializeObject<Book[]>(result);
-                    if (parsed == null || !parsed.Any())
-                        return null;
+                    if (parsed == null || !parsed.Any()) return null;
 
                     foreach (var book in parsed) book.Pair = pair;
                 }
@@ -156,8 +155,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private void FillBulk(ResponseBase response, OrderBookLevelBulk bulk)
         {
-            if (response == null)
-                return;
+            if (response == null) return;
 
             bulk.ExchangeName = ExchangeName;
             bulk.ServerTimestamp = response.ServerTimestamp;
@@ -171,8 +169,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             foreach (var response in data)
             {
                 var responseSafe = response as Book;
-                if (responseSafe == null)
-                    continue;
+                if (responseSafe == null) continue;
 
                 var converted = ConvertDiff(responseSafe);
                 result.Add(converted);

@@ -4,7 +4,7 @@ using Crypto.Websocket.Extensions.Core.Orders.Models;
 namespace Crypto.Websocket.Extensions.Core.Orders.Sources
 {
     /// <summary>
-    /// Source that provides current orders info 
+    /// Source that provides current orders info
     /// </summary>
     public interface IOrderSource
     {

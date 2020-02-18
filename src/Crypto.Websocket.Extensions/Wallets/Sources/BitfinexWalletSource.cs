@@ -16,9 +16,9 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
         private BitfinexWebsocketClient _client;
+        private CryptoWallet _lastWallet;
         private IDisposable _subscription;
         private IDisposable _subscriptionSnapshot;
-        private CryptoWallet _lastWallet;
 
         /// <inheritdoc />
         public BitfinexWalletSource(BitfinexWebsocketClient client)
@@ -81,7 +81,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
         {
             //var currency = response.Currency ?? "XBt";
 
-            var wallet = new CryptoWallet()
+            var wallet = new CryptoWallet
             {
                 Currency = response.Currency,
                 Balance = response.Balance,

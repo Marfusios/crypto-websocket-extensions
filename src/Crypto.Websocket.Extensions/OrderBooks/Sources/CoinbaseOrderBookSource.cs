@@ -14,8 +14,8 @@ using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OrderBookLevel = Crypto.Websocket.Extensions.Core.OrderBooks.Models.OrderBookLevel;
 using CoinbaseOrderBookLevel = Coinbase.Client.Websocket.Responses.Books.OrderBookLevel;
+using OrderBookLevel = Crypto.Websocket.Extensions.Core.OrderBooks.Models.OrderBookLevel;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 {
@@ -104,17 +104,17 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private CryptoOrderSide ConvertSide(OrderBookSide side)
         {
-            if (side == OrderBookSide.Buy)
-                return CryptoOrderSide.Bid;
-            if (side == OrderBookSide.Sell)
-                return CryptoOrderSide.Ask;
+            if (side == OrderBookSide.Buy) return CryptoOrderSide.Bid;
+
+            if (side == OrderBookSide.Sell) return CryptoOrderSide.Ask;
+
             return CryptoOrderSide.Undefined;
         }
 
         private OrderBookAction RecognizeAction(OrderBookLevel level)
         {
-            if (level.Amount > 0)
-                return OrderBookAction.Update;
+            if (level.Amount > 0) return OrderBookAction.Update;
+
             return OrderBookAction.Delete;
         }
 
@@ -133,8 +133,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                 {
                     result = await content.ReadAsStringAsync();
                     parsed = JsonConvert.DeserializeObject<OrderBookSnapshotDto>(result);
-                    if (parsed == null)
-                        return null;
+                    if (parsed == null) return null;
                 }
             }
             catch (Exception e)
@@ -179,8 +178,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             foreach (var response in data)
             {
                 var responseSafe = response as OrderBookUpdateResponse;
-                if (responseSafe == null)
-                    continue;
+                if (responseSafe == null) continue;
 
                 var converted = ConvertDiff(responseSafe);
                 result.AddRange(converted);
@@ -216,6 +214,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             _side = side;
         }
 
+        public override bool CanWrite => false;
+
         public override bool CanConvert(Type objectType)
         {
             return objectType == typeof(double[][]);
@@ -227,8 +227,6 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             var array = JArray.Load(reader);
             return JArrayToTradingTicker(array);
         }
-
-        public override bool CanWrite => false;
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
@@ -242,10 +240,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             {
                 var array = item.ToArray();
 
-                var level = new CoinbaseOrderBookLevel();
-                level.Price = (double) array[0];
-                level.Amount = (double) array[1];
-                level.Side = _side;
+                var level = new CoinbaseOrderBookLevel
+                {
+                    Price = (double) array[0],
+                    Amount = (double) array[1],
+                    Side = _side
+                };
 
                 result.Add(level);
             }

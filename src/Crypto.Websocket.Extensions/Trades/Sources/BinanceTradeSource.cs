@@ -2,7 +2,6 @@
 using System.Reactive.Linq;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Responses.Trades;
-using Bitmex.Client.Websocket.Utils;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
@@ -68,7 +67,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
 
         private CryptoTrade ConvertTrade(Trade trade)
         {
-            var data = new CryptoTrade()
+            var data = new CryptoTrade
             {
                 Amount = trade.Quantity,
                 AmountQuote = trade.Quantity * trade.Price,

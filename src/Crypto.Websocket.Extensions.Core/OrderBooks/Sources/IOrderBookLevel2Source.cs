@@ -15,15 +15,15 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         string ExchangeName { get; }
 
         /// <summary>
-        /// Enable or disable snapshot loading (used by auto snapshot reload feature on OrderBook). 
-        /// Disabled by default. 
+        /// Enable or disable snapshot loading (used by auto snapshot reload feature on OrderBook).
+        /// Disabled by default.
         /// </summary>
         bool LoadSnapshotEnabled { get; set; }
 
         /// <summary>
         /// Whenever messages should be buffered before processing.
         /// Use property `BufferInterval` to configure buffering interval.
-        /// Enabled by default. 
+        /// Enabled by default.
         /// </summary>
         bool BufferEnabled { get; set; }
 
@@ -31,7 +31,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// Time interval for buffering received order book data updates.
         /// Higher it for data intensive sources (Bitmex, etc.)
         /// Lower - more realtime data, high CPU load.
-        /// Higher - less realtime data, less CPU intensive. 
+        /// Higher - less realtime data, less CPU intensive.
         /// Default: 10 ms
         /// </summary>
         TimeSpan BufferInterval { get; set; }

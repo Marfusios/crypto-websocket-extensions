@@ -12,7 +12,6 @@ using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Logging;
 using Newtonsoft.Json;
-using OrderBookLevel = Crypto.Websocket.Extensions.Core.OrderBooks.Models.OrderBookLevel;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 {
@@ -137,8 +136,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                 {
                     result = await content.ReadAsStringAsync();
                     parsed = JsonConvert.DeserializeObject<BookLevel[]>(result);
-                    if (parsed == null || !parsed.Any())
-                        return null;
+                    if (parsed == null || !parsed.Any()) return null;
                 }
             }
             catch (Exception e)
@@ -174,8 +172,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             foreach (var response in data)
             {
                 var responseSafe = response as BookResponse;
-                if (responseSafe == null)
-                    continue;
+                if (responseSafe == null) continue;
 
                 var converted = ConvertDiff(responseSafe);
                 result.Add(converted);

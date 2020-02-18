@@ -23,6 +23,6 @@
         /// <summary>
         /// Delete order book level
         /// </summary>
-        Delete,
+        Delete
     }
 }

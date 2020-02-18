@@ -31,12 +31,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         /// <summary>
         /// Unique identification of this level
         /// </summary>
-        public string Id { get; private set; }
+        public string Id { get; }
 
         /// <summary>
         /// Side of this order book level
         /// </summary>
-        public CryptoOrderSide Side { get; private set; }
+        public CryptoOrderSide Side { get; }
 
         /// <summary>
         /// Price level
@@ -49,7 +49,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         public int? Count { get; internal set; }
 
         /// <summary>
-        /// Total amount available at that price level. 
+        /// Total amount available at that price level.
         /// </summary>
         public double? Amount { get; internal set; }
 
@@ -75,15 +75,15 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
 
         private static double? Abs(double? value)
         {
-            if (value.HasValue)
-                return Math.Abs(value.Value);
+            if (value.HasValue) return Math.Abs(value.Value);
+
             return null;
         }
 
         private static int? Abs(int? value)
         {
-            if (value.HasValue)
-                return Math.Abs(value.Value);
+            if (value.HasValue) return Math.Abs(value.Value);
+
             return null;
         }
     }

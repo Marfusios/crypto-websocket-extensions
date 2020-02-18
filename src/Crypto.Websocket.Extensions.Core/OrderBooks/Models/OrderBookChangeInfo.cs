@@ -35,7 +35,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
 
         /// <summary>
         /// Order book levels that caused the change.
-        /// Streamed only when debug mode is enabled. 
+        /// Streamed only when debug mode is enabled.
         /// </summary>
         public OrderBookLevel[] Levels { get; }
 

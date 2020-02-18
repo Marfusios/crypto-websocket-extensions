@@ -29,7 +29,6 @@ namespace Crypto.Websocket.Extensions.Core.Wallets
         /// <summary>
         /// Get all wallets matching provided currency
         /// </summary>
-        /// 
         CryptoWalletCollectionReadonly GetWallet(string symbol);
 
         //CryptoWalletCollectionReadonly  GetWallets(string symbol, string exchangeName);

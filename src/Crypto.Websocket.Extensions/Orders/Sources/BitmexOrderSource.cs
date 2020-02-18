@@ -8,7 +8,6 @@ using Crypto.Websocket.Extensions.Core.Orders;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
 using Crypto.Websocket.Extensions.Core.Orders.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
-using Crypto.Websocket.Extensions.Core.Wallets.Models;
 using Crypto.Websocket.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Orders.Sources
@@ -80,12 +79,10 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             }
 
             foreach (var order in orders)
-            {
                 if (response.Action == BitmexAction.Insert)
                     OrderCreatedSubject.OnNext(order);
                 else
                     OrderUpdatedSubject.OnNext(order);
-            }
         }
 
         /// <summary>
@@ -160,9 +157,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                     existing?.AmountOrigQuote);
 
             if (order.Side == BitmexSide.Undefined && existing != null)
-            {
                 order.Side = existing.AmountGrouped < 0 ? BitmexSide.Sell : BitmexSide.Buy;
-            }
 
             var currentStatus = existing != null &&
                                 existing.OrderStatus != CryptoOrderStatus.Undefined &&
@@ -280,18 +275,16 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         private static double? FirstNonZero(params double?[] numbers)
         {
             foreach (var number in numbers)
-            {
                 if (number.HasValue && Math.Abs(number.Value) > 0)
                     return number.Value;
-            }
 
             return null;
         }
 
         private static double? Abs(double? value)
         {
-            if (!value.HasValue)
-                return null;
+            if (!value.HasValue) return null;
+
             return Math.Abs(value.Value);
         }
     }

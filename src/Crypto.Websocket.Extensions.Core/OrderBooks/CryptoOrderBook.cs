@@ -17,45 +17,46 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 {
     /// <summary>
     /// Cryptocurrency order book.
-    /// Process order book data from one source and one target pair. 
+    /// Process order book data from one source and one target pair.
     /// </summary>
     [DebuggerDisplay(
         "CryptoOrderBook [{TargetPair}] bid: {BidPrice} ({_bidLevels.Count}) ask: {AskPrice} ({_askLevels.Count})")]
     public class CryptoOrderBook : ICryptoOrderBook
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-        private readonly object _locker = new object();
 
-        private readonly IOrderBookLevel2Source _source;
-
-        private readonly Subject<OrderBookChangeInfo> _bidAskUpdated = new Subject<OrderBookChangeInfo>();
-        private readonly Subject<OrderBookChangeInfo> _topLevelUpdated = new Subject<OrderBookChangeInfo>();
-        private readonly Subject<OrderBookChangeInfo> _orderBookUpdated = new Subject<OrderBookChangeInfo>();
-
-        private readonly SortedDictionary<double, OrderBookLevel> _bidLevels =
-            new SortedDictionary<double, OrderBookLevel>(new DescendingComparer<double>());
+        private readonly Dictionary<string, OrderBookLevel> _allLevels = new Dictionary<string, OrderBookLevel>(20000);
 
         private readonly SortedDictionary<double, OrderBookLevel> _askLevels =
             new SortedDictionary<double, OrderBookLevel>();
 
-        private readonly Dictionary<string, OrderBookLevel> _allLevels = new Dictionary<string, OrderBookLevel>(20000);
+        private readonly Subject<OrderBookChangeInfo> _bidAskUpdated = new Subject<OrderBookChangeInfo>();
+
+        private readonly SortedDictionary<double, OrderBookLevel> _bidLevels =
+            new SortedDictionary<double, OrderBookLevel>(new DescendingComparer<double>());
+
+        private readonly object _locker = new object();
+        private readonly Subject<OrderBookChangeInfo> _orderBookUpdated = new Subject<OrderBookChangeInfo>();
+
+        private readonly IOrderBookLevel2Source _source;
+        private readonly Subject<OrderBookChangeInfo> _topLevelUpdated = new Subject<OrderBookChangeInfo>();
 
         private bool _isSnapshotLoaded;
-        private Timer _snapshotReloadTimer;
-        private TimeSpan _snapshotReloadTimeout = TimeSpan.FromMinutes(1);
         private bool _snapshotReloadEnabled;
-
-        private Timer _validityCheckTimer;
-        private TimeSpan _validityCheckTimeout = TimeSpan.FromSeconds(5);
-        private bool _validityCheckEnabled = true;
-        private int _validityCheckCounter;
+        private TimeSpan _snapshotReloadTimeout = TimeSpan.FromMinutes(1);
+        private Timer _snapshotReloadTimer;
 
         private IDisposable _subscriptionDiff;
         private IDisposable _subscriptionSnapshot;
+        private int _validityCheckCounter;
+        private bool _validityCheckEnabled = true;
+        private TimeSpan _validityCheckTimeout = TimeSpan.FromSeconds(5);
+
+        private Timer _validityCheckTimer;
 
         /// <summary>
         /// Cryptocurrency order book.
-        /// Process order book data from one source per one target pair. 
+        /// Process order book data from one source per one target pair.
         /// </summary>
         /// <param name="targetPair">Select target pair</param>
         /// <param name="source">Provide level 2 source data</param>
@@ -102,7 +103,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         /// <summary>
         /// Time interval for auto snapshot reloading.
-        /// Default 1 min. 
+        /// Default 1 min.
         /// </summary>
         public TimeSpan SnapshotReloadTimeout
         {
@@ -130,8 +131,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         /// <summary>
         /// Time interval for validity checking.
-        /// It forces snapshot reloading whenever invalid state. 
-        /// Default 5 sec. 
+        /// It forces snapshot reloading whenever invalid state.
+        /// Default 5 sec.
         /// </summary>
         public TimeSpan ValidityCheckTimeout
         {
@@ -151,7 +152,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         /// <summary>
         /// Whenever validity checking feature is enabled.
-        /// It forces snapshot reloading whenever invalid state. 
+        /// It forces snapshot reloading whenever invalid state.
         /// Enabled by default
         /// </summary>
         public bool ValidityCheckEnabled
@@ -165,13 +166,13 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         }
 
         /// <summary>
-        /// Provide more info (on every change) whenever enabled. 
+        /// Provide more info (on every change) whenever enabled.
         /// Disabled by default
         /// </summary>
         public bool DebugEnabled { get; set; } = false;
 
         /// <summary>
-        /// Logs more info (state, performance) whenever enabled. 
+        /// Logs more info (state, performance) whenever enabled.
         /// Disabled by default
         /// </summary>
         public bool DebugLogEnabled { get; set; } = false;
@@ -284,10 +285,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// </summary>
         public OrderBookLevel FindLevelById(string id, CryptoOrderSide side)
         {
-            if (side == CryptoOrderSide.Undefined)
-                return null;
-            if (_allLevels.ContainsKey(id))
-                return _allLevels[id];
+            if (side == CryptoOrderSide.Undefined) return null;
+
+            if (_allLevels.ContainsKey(id)) return _allLevels[id];
+
             return null;
         }
 
@@ -304,8 +305,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         private void HandleSnapshotSynchronized(OrderBookLevelBulk bulk)
         {
-            if (bulk == null)
-                return;
+            if (bulk == null) return;
 
             var levels = bulk.Levels;
             var levelsForThis = levels
@@ -410,11 +410,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                     continue;
                 }
 
-                if (level.Side == CryptoOrderSide.Bid)
-                    _bidLevels[price.Value] = level;
+                if (level.Side == CryptoOrderSide.Bid) _bidLevels[price.Value] = level;
 
-                if (level.Side == CryptoOrderSide.Ask)
-                    _askLevels[price.Value] = level;
+                if (level.Side == CryptoOrderSide.Ask) _askLevels[price.Value] = level;
 
                 _allLevels[level.Id] = level;
             }
@@ -454,8 +452,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             foreach (var level in levels)
             {
-                if (level.Side == CryptoOrderSide.Undefined)
-                    continue;
+                if (level.Side == CryptoOrderSide.Undefined) continue;
 
                 var collection = GetLevelsCollection(level.Side);
                 InsertToCollection(collection, level);
@@ -466,8 +463,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             foreach (var level in levels)
             {
-                if (level.Side == CryptoOrderSide.Undefined)
-                    continue;
+                if (level.Side == CryptoOrderSide.Undefined) continue;
 
                 var collection = GetLevelsCollection(level.Side);
 
@@ -488,8 +484,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         private void InsertToCollection(IDictionary<double, OrderBookLevel> collection, OrderBookLevel level)
         {
-            if (collection == null)
-                return;
+            if (collection == null) return;
+
             if (IsInvalidLevel(level))
             {
                 LogDebug(
@@ -514,8 +510,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             foreach (var level in levels)
             {
-                if (level.Side == CryptoOrderSide.Undefined)
-                    continue;
+                if (level.Side == CryptoOrderSide.Undefined) continue;
 
                 var price = level.Price ?? -1;
                 var collection = GetLevelsCollection(level.Side);
@@ -550,8 +545,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         private IDictionary<double, OrderBookLevel> GetLevelsCollection(CryptoOrderSide side)
         {
-            if (side == CryptoOrderSide.Undefined)
-                return null;
+            if (side == CryptoOrderSide.Undefined) return null;
+
             return side == CryptoOrderSide.Bid ? _bidLevels : _askLevels;
         }
 
@@ -705,8 +700,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         private void LogDebug(string msg)
         {
-            if (!DebugLogEnabled)
-                return;
+            if (!DebugLogEnabled) return;
+
             LogAlways(msg);
         }
 

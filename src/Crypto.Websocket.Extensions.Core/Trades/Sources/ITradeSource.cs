@@ -4,7 +4,7 @@ using Crypto.Websocket.Extensions.Core.Trades.Models;
 namespace Crypto.Websocket.Extensions.Core.Trades.Sources
 {
     /// <summary>
-    /// Source that provides info about executed trades 
+    /// Source that provides info about executed trades
     /// </summary>
     public interface ITradeSource
     {

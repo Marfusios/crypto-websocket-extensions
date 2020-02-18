@@ -11,13 +11,13 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
     [DebuggerDisplay("Order: {Id}/{ClientId} - {Pair} - {PriceGrouped} {AmountFilled}")]
     public class CryptoOrder
     {
-        private CryptoOrderSide _side;
+        private double? _amountFilled;
         private double? _amountFilledCumulative;
         private double? _amountFilledCumulativeQuote;
-        private double? _amountFilled;
         private double? _amountFilledQuote;
         private double? _amountOrig;
         private double? _amountOrigQuote;
+        private CryptoOrderSide _side;
 
         /// <summary>
         /// Unique order id (provided by exchange)
@@ -176,8 +176,8 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
 
         private double? WithCorrectSign(double? value)
         {
-            if (!value.HasValue || _side == CryptoOrderSide.Undefined)
-                return value;
+            if (!value.HasValue || _side == CryptoOrderSide.Undefined) return value;
+
             return Math.Abs(value.Value) * (_side == CryptoOrderSide.Bid ? 1 : -1);
         }
 
@@ -201,8 +201,8 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         /// </summary>
         public static CryptoOrderSide RecognizeSide(double amount)
         {
-            if (CryptoMathUtils.IsSame(amount, 0))
-                return CryptoOrderSide.Undefined;
+            if (CryptoMathUtils.IsSame(amount, 0)) return CryptoOrderSide.Undefined;
+
             return amount >= 0 ? CryptoOrderSide.Bid : CryptoOrderSide.Ask;
         }
 
@@ -211,8 +211,8 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         /// </summary>
         public static CryptoOrderSide RecognizeSide(double? amount)
         {
-            if (!amount.HasValue || CryptoMathUtils.IsSame(amount.Value, 0))
-                return CryptoOrderSide.Undefined;
+            if (!amount.HasValue || CryptoMathUtils.IsSame(amount.Value, 0)) return CryptoOrderSide.Undefined;
+
             return amount >= 0 ? CryptoOrderSide.Bid : CryptoOrderSide.Ask;
         }
 

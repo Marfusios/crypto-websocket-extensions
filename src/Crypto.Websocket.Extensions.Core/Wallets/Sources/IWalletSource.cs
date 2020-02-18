@@ -4,7 +4,7 @@ using Crypto.Websocket.Extensions.Core.Wallets.Models;
 namespace Crypto.Websocket.Extensions.Core.Wallets.Sources
 {
     /// <summary>
-    /// Source that provides current wallet info 
+    /// Source that provides current wallet info
     /// </summary>
     public interface IWalletSource
     {

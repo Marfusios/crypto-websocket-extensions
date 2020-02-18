@@ -1,14 +1,13 @@
-﻿using Bitfinex.Client.Websocket.Client;
+﻿using System;
+using System.Linq;
+using Bitfinex.Client.Websocket.Client;
 using Bitfinex.Client.Websocket.Responses.Orders;
+using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Orders;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
 using Crypto.Websocket.Extensions.Core.Orders.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Logging;
-using System;
-using System.Linq;
-using Crypto.Websocket.Extensions.Core.Models;
-using Crypto.Websocket.Extensions.Core.Wallets.Models;
 
 namespace Crypto.Websocket.Extensions.Orders.Sources
 {
@@ -35,7 +34,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         public override string ExchangeName => "bitfinex";
 
         /// <summary>
-        ///     Change client and resubscribe to the new streams
+        /// Change client and resubscribe to the new streams
         /// </summary>
         public void ChangeClient(BitfinexWebsocketClient client)
         {
@@ -241,8 +240,8 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
         private static double? Abs(double? value)
         {
-            if (!value.HasValue)
-                return null;
+            if (!value.HasValue) return null;
+
             return Math.Abs(value.Value);
         }
 

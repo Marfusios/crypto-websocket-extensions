@@ -67,7 +67,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
 
         private CryptoTrade ConvertTrade(TradeResponse trade)
         {
-            var data = new CryptoTrade()
+            var data = new CryptoTrade
             {
                 Amount = trade.Size,
                 AmountQuote = trade.Size * trade.Price,
@@ -88,8 +88,8 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
 
         private CryptoTradeSide ConvertSide(TradeSide tradeSide)
         {
-            if (tradeSide == TradeSide.Undefined)
-                return CryptoTradeSide.Undefined;
+            if (tradeSide == TradeSide.Undefined) return CryptoTradeSide.Undefined;
+
             return tradeSide == TradeSide.Buy ? CryptoTradeSide.Buy : CryptoTradeSide.Sell;
         }
     }

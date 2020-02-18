@@ -17,12 +17,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         private static readonly ILog LogBase = LogProvider.GetCurrentClassLogger();
 
         private readonly object _bufferLocker = new object();
-        private readonly CryptoAsyncLock _snapshotLocker = new CryptoAsyncLock();
+        private readonly ManualResetEvent _bufferPauseEvent = new ManualResetEvent(false);
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
 
         private readonly Queue<object> _dataBuffer = new Queue<object>();
-        private bool _bufferEnabled = true;
-        private readonly ManualResetEvent _bufferPauseEvent = new ManualResetEvent(false);
 
         /// <summary>
         /// Use this subject to stream order book snapshot data
@@ -33,6 +31,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// Use this subject to stream order book data (level difference)
         /// </summary>
         private readonly Subject<OrderBookLevelBulk[]> _orderBookSubject = new Subject<OrderBookLevelBulk[]>();
+
+        private readonly CryptoAsyncLock _snapshotLocker = new CryptoAsyncLock();
+        private bool _bufferEnabled = true;
 
         /// <summary>
         /// Hidden constructor

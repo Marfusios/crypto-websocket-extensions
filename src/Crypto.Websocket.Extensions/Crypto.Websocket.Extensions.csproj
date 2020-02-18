@@ -22,10 +22,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Binance.Client.Websocket" Version="2.0.14" />
-    <PackageReference Include="Bitfinex.Client.Websocket" Version="4.0.102" />
-    <PackageReference Include="Bitmex.Client.Websocket" Version="3.1.74" />
-    <PackageReference Include="Coinbase.Client.Websocket" Version="2.0.12" />
     <PackageReference Include="LibLog" Version="5.0.8">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
@@ -35,9 +31,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Crypto.Arbitrage\bitstamp-client-websocket\src\Bitstamp.Client.Websocket\Bitstamp.Client.Websocket.csproj" />
     <ProjectReference Include="..\..\..\..\Crypto.Arbitrage\coinbasePro-client-websocket\src\CoinbasePro.Client.Websocket\CoinbasePro.Client.Websocket.csproj" />
-    <ProjectReference Include="..\..\..\..\Crypto.Arbitrage\crypto-exchange-extensions\src\Crypto.Exchange.Extensions\Crypto.Exchange.Extensions.csproj" />
+    <ProjectReference Include="..\..\..\binance-client-websocket\src\Binance.Client.Websocket\Binance.Client.Websocket.csproj" />
+    <ProjectReference Include="..\..\..\bitfinex-client-websocket\src\Bitfinex.Client.Websocket\Bitfinex.Client.Websocket.csproj" />
+    <ProjectReference Include="..\..\..\bitmex-client-websocket\src\Bitmex.Client.Websocket\Bitmex.Client.Websocket.csproj" />
+    <ProjectReference Include="..\..\..\coinbase-client-websocket\src\Coinbase.Client.Websocket\Coinbase.Client.Websocket.csproj" />
     <ProjectReference Include="..\Crypto.Websocket.Extensions.Core\Crypto.Websocket.Extensions.Core.csproj" />
-
   </ItemGroup>
   
 </Project>

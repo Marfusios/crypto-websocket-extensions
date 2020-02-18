@@ -17,8 +17,10 @@ namespace Crypto.Websocket.Extensions.Core.Validations
         public static void ValidateInput(string value, string name)
         {
             if (string.IsNullOrWhiteSpace(value))
+            {
                 throw new CryptoBadInputException(
                     $"Input string parameter '{name}' is null or empty. Please correct it.");
+            }
         }
 
         /// <summary>
@@ -58,11 +60,16 @@ namespace Crypto.Websocket.Extensions.Core.Validations
             int maxValue = int.MaxValue)
         {
             if (value < minValue)
+            {
                 throw new CryptoBadInputException(
                     $"Input parameter '{name}' is lower than {minValue}. Please correct it.");
+            }
+
             if (value > maxValue)
+            {
                 throw new CryptoBadInputException(
                     $"Input parameter '{name}' is higher than {maxValue}. Please correct it.");
+            }
         }
 
         /// <summary>
@@ -76,11 +83,16 @@ namespace Crypto.Websocket.Extensions.Core.Validations
             long maxValue = long.MaxValue)
         {
             if (value < minValue)
+            {
                 throw new CryptoBadInputException(
                     $"Input parameter '{name}' is lower than {minValue}. Please correct it.");
+            }
+
             if (value > maxValue)
+            {
                 throw new CryptoBadInputException(
                     $"Input parameter '{name}' is higher than {maxValue}. Please correct it.");
+            }
         }
 
         /// <summary>
@@ -94,11 +106,16 @@ namespace Crypto.Websocket.Extensions.Core.Validations
             double maxValue = double.MaxValue)
         {
             if (value < minValue)
+            {
                 throw new CryptoBadInputException(
                     $"Input parameter '{name}' is lower than {minValue}. Please correct it.");
+            }
+
             if (value > maxValue)
+            {
                 throw new CryptoBadInputException(
                     $"Input parameter '{name}' is higher than {maxValue}. Please correct it.");
+            }
         }
     }
 }

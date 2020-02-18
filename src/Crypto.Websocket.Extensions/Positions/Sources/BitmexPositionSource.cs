@@ -84,7 +84,7 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
 
             var currency = position.Currency ?? "XBt";
 
-            var current = new CryptoPosition()
+            var current = new CryptoPosition
             {
                 Pair = position.Symbol ?? existing?.Pair,
                 CurrentTimestamp = position.CurrentTimestamp ?? existing?.CurrentTimestamp,
@@ -102,7 +102,7 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
 
                 Leverage = position.Leverage ?? existing?.Leverage,
                 RealizedPnl = ConvertToBtc(currency, position.RealisedPnl) ?? existing?.RealizedPnl,
-                UnrealizedPnl = ConvertToBtc(currency, position.UnrealisedPnl) ?? existing?.UnrealizedPnl,
+                UnrealizedPnl = ConvertToBtc(currency, position.UnrealisedPnl) ?? existing?.UnrealizedPnl
             };
 
             _positions[key] = current;
@@ -111,15 +111,14 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
 
         private CryptoPositionSide ConvertSide(double? amount)
         {
-            if (!amount.HasValue || CryptoMathUtils.IsSame(amount.Value, 0))
-                return CryptoPositionSide.Undefined;
+            if (!amount.HasValue || CryptoMathUtils.IsSame(amount.Value, 0)) return CryptoPositionSide.Undefined;
+
             return amount.Value >= 0 ? CryptoPositionSide.Long : CryptoPositionSide.Short;
         }
 
         private double? ConvertToBtc(string currency, double? value)
         {
-            if (!value.HasValue)
-                return null;
+            if (!value.HasValue) return null;
 
             return BitmexConverter.ConvertToBtc(currency, value.Value);
         }

@@ -26,8 +26,8 @@ namespace Crypto.Websocket.Extensions.Core.Utils
         /// </summary>
         public static DateTime? ConvertFromUnixSeconds(double? timeInSec)
         {
-            if (!timeInSec.HasValue)
-                return null;
+            if (!timeInSec.HasValue) return null;
+
             return ConvertFromUnixSeconds(timeInSec.Value);
         }
 
@@ -45,8 +45,8 @@ namespace Crypto.Websocket.Extensions.Core.Utils
         /// </summary>
         public static DateTime? ConvertFromUnixSeconds(decimal? timeInSec)
         {
-            if (!timeInSec.HasValue)
-                return null;
+            if (!timeInSec.HasValue) return null;
+
             return ConvertFromUnixSeconds(timeInSec.Value);
         }
 
@@ -65,8 +65,8 @@ namespace Crypto.Websocket.Extensions.Core.Utils
         /// </summary>
         public static double? ToUnixSeconds(this DateTime? date)
         {
-            if (!date.HasValue)
-                return null;
+            if (!date.HasValue) return null;
+
             return ToUnixSeconds(date.Value);
         }
 
@@ -84,8 +84,8 @@ namespace Crypto.Websocket.Extensions.Core.Utils
         /// </summary>
         public static decimal? ToUnixSecondsDecimal(this DateTime? date)
         {
-            if (!date.HasValue)
-                return null;
+            if (!date.HasValue) return null;
+
             return ToUnixSecondsDecimal(date.Value);
         }
 

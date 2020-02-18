@@ -1,4 +1,9 @@
-﻿using Bitstamp.Client.Websocket.Client;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Bitstamp.Client.Websocket.Client;
 using Bitstamp.Client.Websocket.Responses;
 using Bitstamp.Client.Websocket.Responses.Books;
 using Crypto.Websocket.Extensions.Core.Models;
@@ -6,11 +11,6 @@ using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using OrderBookLevel = Crypto.Websocket.Extensions.Core.OrderBooks.Models.OrderBookLevel;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
@@ -20,10 +20,10 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
         private readonly HttpClient _httpClient = new HttpClient();
+        private readonly IDisposable _subscriptionFull;
         private BitstampWebsocketClient _client;
         private IDisposable _subscription;
         private IDisposable _subscriptionSnapshot;
-        private IDisposable _subscriptionFull;
 
 
         /// <inheritdoc />
@@ -36,7 +36,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         public override string ExchangeName => "bitstamp";
 
         /// <summary>
-        ///     Change client and resubscribe to the new streams
+        /// Change client and resubscribe to the new streams
         /// </summary>
         public void ChangeClient(BitstampWebsocketClient client)
         {

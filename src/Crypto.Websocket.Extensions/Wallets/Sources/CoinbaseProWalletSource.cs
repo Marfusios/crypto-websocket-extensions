@@ -16,8 +16,8 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
         private CoinbaseProClient _client;
-        private IDisposable _subscription;
         private CryptoWallet _lastWallet;
+        private IDisposable _subscription;
 
         /// <inheritdoc />
         public CoinbaseProWalletSource(CoinbaseProClient client)
@@ -66,7 +66,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
         {
             //var currency = response.Currency ?? "XBt";
 
-            var wallet = new CryptoWallet()
+            var wallet = new CryptoWallet
             {
                 Currency = response.Pair,
                 Balance = Math.Abs(response.Amount ?? 0),
