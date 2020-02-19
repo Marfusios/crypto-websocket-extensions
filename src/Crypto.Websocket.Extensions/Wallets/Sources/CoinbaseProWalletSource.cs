@@ -26,7 +26,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
         }
 
         /// <inheritdoc />
-        public override string ExchangeName => "coinbaseProC";
+        public override string ExchangeName => "coinbasePro";
 
         /// <summary>
         /// Change client and resubscribe to the new streams
@@ -53,7 +53,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
             }
             catch (Exception e)
             {
-                Log.Error(e, $"[Bitfinex] Failed to handle wallet info, error: '{e.Message}'");
+                Log.Error(e, $"[CoinbasePro] Failed to handle wallet info, error: '{e.Message}'");
             }
         }
 

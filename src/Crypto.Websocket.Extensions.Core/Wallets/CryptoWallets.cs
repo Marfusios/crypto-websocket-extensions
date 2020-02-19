@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Crypto.Websocket.Extensions.Core.Utils;
 using Crypto.Websocket.Extensions.Core.Validations;
@@ -26,7 +27,7 @@ namespace Crypto.Websocket.Extensions.Core.Wallets
             Subscribe();
         }
 
-        public IObservable<CryptoWallet> WalletUpdatedStream { get; }
+        public IObservable<CryptoWallet> WalletUpdatedStream => _walletChanged.AsObservable();
 
         /// <summary>
         /// Origin exchange name
