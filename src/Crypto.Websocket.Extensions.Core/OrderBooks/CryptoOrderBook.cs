@@ -557,6 +557,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             var quotes = new CryptoQuotes(BidPrice, AskPrice, BidAmount, AskAmount);
             var clonedLevels = DebugEnabled ? levels.Select(x => x.Clone()).ToArray() : new OrderBookLevel[0];
             var lastSource = sources.LastOrDefault();
+            
             var change = new OrderBookChangeInfo(
                 TargetPair,
                 TargetPairOriginal,

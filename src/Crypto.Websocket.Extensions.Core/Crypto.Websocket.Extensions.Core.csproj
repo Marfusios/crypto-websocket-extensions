@@ -30,4 +30,11 @@
     <PackageReference Include="System.Reactive" Version="4.3.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Wallets\Sources\ICryptoWallets.cs" />
+    <Compile Remove="Wallets\Sources\CryptoWallets.cs" />
+    <Compile Remove="Wallets\Sources\CryptoWalletCollection.cs" />
+    <Compile Remove="Wallets\Sources\CryptoWalletCollectionReadonly.cs" />
+  </ItemGroup>
+
 </Project>

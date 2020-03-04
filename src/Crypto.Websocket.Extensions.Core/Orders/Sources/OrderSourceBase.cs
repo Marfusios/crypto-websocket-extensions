@@ -39,7 +39,8 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
         /// <summary>
         /// Set collection of existing orders (to correctly handle orders state)
         /// </summary>
-        public void SetExistingOrders(CryptoOrderCollection orders)
+        public void 
+            SetExistingOrders(CryptoOrderCollection orders)
         {
             ExistingOrders = orders ?? new CryptoOrderCollection();
         }

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq;
-using CoinbasePro.Client.Websocket.Client;
-using CoinbasePro.Client.Websocket.Models.Users;
-using CoinbasePro.Client.Websocket.Types;
+using Coinbase.Client.Websocket.Client;
+using Coinbase.Client.Websocket.Responses.Orders;
+using Coinbase.Client.Websocket.Responses.Trades;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Orders;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
@@ -14,41 +14,52 @@ using Crypto.Websocket.Extensions.Logging;
 namespace Crypto.Websocket.Extensions.Orders.Sources
 {
     /// <inheritdoc />
-    public class CoinbaseProOrderSource : OrderSourceBase
+    public class CoinbaseOrderSource : OrderSourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
         private readonly CryptoOrderCollection _partiallyFilledOrders = new CryptoOrderCollection();
 
-        private CoinbaseProClient _client;
+        private CoinbaseWebsocketClient _client;
         private IDisposable _subscription;
+        private IDisposable _subscriptionSnapshot;
 
         /// <inheritdoc />
-        public CoinbaseProOrderSource(CoinbaseProClient client)
+        public CoinbaseOrderSource(CoinbaseWebsocketClient client)
         {
             ChangeClient(client);
         }
 
         /// <inheritdoc />
-        public override string ExchangeName => "coinbasePro";
+        public override string ExchangeName => "coinbase";
 
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(CoinbaseProClient client)
+        public void ChangeClient(CoinbaseWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 
             _client = client;
+            _subscriptionSnapshot?.Dispose();
             _subscription?.Dispose();
             Subscribe();
         }
 
         private void Subscribe()
         {
-            _subscription = _client.Streams.User.Subscribe(HandleOrdersSafe);
+            _subscriptionSnapshot = _client.Streams.OrdersSnapshotStream.Subscribe(HandleSnapshot);
+            _subscription = _client.Streams.OrderStream.Subscribe(HandleOrdersSafe);
         }
 
-        private void HandleOrdersSafe(User response)
+        private void HandleSnapshot(OrdersSnapshotResponse snapshot)
+        {
+            foreach (var order in snapshot.Orders)
+            {
+                HandleOrdersSafe(order);
+            }
+        }
+
+        private void HandleOrdersSafe(OrderResponse response)
         {
             try
             {
@@ -60,7 +71,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             }
         }
 
-        private void HandleOrder(User response)
+        private void HandleOrder(OrderResponse response)
         {
             if (response == null)
             {
@@ -93,16 +104,17 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             }
         }
 
-        private CryptoOrder[] ConvertOrders(User[] data)
+        private CryptoOrder[] ConvertOrders(OrderResponse[] data)
         {
             return data
                 .Select(ConvertOrder)
                 .ToArray();
         }
 
-        private CryptoOrder ConvertOrder(User order)
+        private CryptoOrder ConvertOrder(OrderResponse order)
         {
             var id = order.Id.ToString();
+            var clientId = order.ProfileId;
             var existingCurrent = ExistingOrders.ContainsKey(id) ? ExistingOrders[id] : null;
             var existingPartial = _partiallyFilledOrders.ContainsKey(id) ? _partiallyFilledOrders[id] : null;
             var existing = existingPartial ?? existingCurrent;
@@ -123,6 +135,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             var newOrder = new CryptoOrder
 
             {
+                Id = id,
                 Pair = CryptoPairsHelper.Clean(order.Pair),
                 Price = price,
                 //Amount = amount,
@@ -130,7 +143,9 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 Side = ConvertSide(order.Side),
                 OrderStatus = ConvertOrderStatus(order),
                 Type = (CryptoOrderType) order.OrderType,
-                Created = Convert.ToDateTime(order.MtsCreate)
+                Created = ConvertToDatetime(order.MtsCreate),
+                ClientId = clientId
+                //Created = Convert.ToDateTime(order.MtsCreate)
             };
 
             if (currentStatus == CryptoOrderStatus.PartiallyFilled)
@@ -142,7 +157,13 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             return newOrder;
         }
 
-        private CryptoOrderStatus ConvertOrderStatus(User user)
+        private DateTime ConvertToDatetime(DateTimeOffset dateTimeOffset)
+        {
+            var sourceTime = new DateTimeOffset(dateTimeOffset.DateTime, TimeSpan.Zero);
+            return sourceTime.DateTime;
+        }
+
+        private CryptoOrderStatus ConvertOrderStatus(OrderResponse user)
         {
             switch (user.OrderStatus)
             {
@@ -178,11 +199,11 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             return CryptoOrderStatus.Undefined;
         }
 
-        private CryptoOrderSide ConvertSide(OrderSide side)
+        private CryptoOrderSide ConvertSide(TradeSide side)
         {
-            if (side == OrderSide.Buy) return CryptoOrderSide.Bid;
+            if (side == TradeSide.Buy) return CryptoOrderSide.Bid;
 
-            if (side == OrderSide.Sell) return CryptoOrderSide.Ask;
+            if (side == TradeSide.Sell) return CryptoOrderSide.Ask;
 
             return CryptoOrderSide.Undefined;
         }

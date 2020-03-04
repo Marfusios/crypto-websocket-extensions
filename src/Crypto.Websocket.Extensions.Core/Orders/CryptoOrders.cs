@@ -188,6 +188,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public bool IsOurOrder(CryptoOrder order)
         {
+            if (order.ClientId == null) return true;
             return IsOurOrder(order.ClientId);
         }
 
@@ -291,7 +292,9 @@ namespace Crypto.Websocket.Extensions.Core.Orders
 
             _orderChanged.OnNext(order);
 
-            if (IsOurOrder(order)) _ourOrderChanged.OnNext(order);
+            if (IsOurOrder(order))
+                
+                _ourOrderChanged.OnNext(order);
         }
 
         private bool IsFilteredOut(CryptoOrder order)

@@ -22,15 +22,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="GDAX.Api.ClientLibrary" Version="1.0.34" />
     <PackageReference Include="LibLog" Version="5.0.8">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="morelinq" Version="3.3.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Crypto.Arbitrage\bitstamp-client-websocket\src\Bitstamp.Client.Websocket\Bitstamp.Client.Websocket.csproj" />
-    <ProjectReference Include="..\..\..\..\Crypto.Arbitrage\coinbasePro-client-websocket\src\CoinbasePro.Client.Websocket\CoinbasePro.Client.Websocket.csproj" />
     <ProjectReference Include="..\..\..\binance-client-websocket\src\Binance.Client.Websocket\Binance.Client.Websocket.csproj" />
     <ProjectReference Include="..\..\..\bitfinex-client-websocket\src\Bitfinex.Client.Websocket\Bitfinex.Client.Websocket.csproj" />
     <ProjectReference Include="..\..\..\bitmex-client-websocket\src\Bitmex.Client.Websocket\Bitmex.Client.Websocket.csproj" />

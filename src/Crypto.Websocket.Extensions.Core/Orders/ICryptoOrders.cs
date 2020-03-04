@@ -105,11 +105,6 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Returns true if client id matches prefix
         /// </summary>
-        bool IsOurOrder(CryptoOrder order);
-
-        /// <summary>
-        /// Returns true if client id matches prefix
-        /// </summary>
         bool IsOurOrder(string clientId);
 
         /// <summary>

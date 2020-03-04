@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading.Tasks;
-using Bitfinex.Client.Websocket.Client;
-using Bitfinex.Client.Websocket.Responses.Wallets;
+using Coinbase.Client.Websocket.Client;
+using Coinbase.Client.Websocket.Responses.Wallets;
 using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Core.Wallets.Models;
 using Crypto.Websocket.Extensions.Core.Wallets.Sources;
@@ -10,30 +12,30 @@ using Crypto.Websocket.Extensions.Logging;
 namespace Crypto.Websocket.Extensions.Wallets.Sources
 {
     /// <summary>
-    /// Bitfinex wallet source
+    /// Coinbase Pro wallet source
     /// </summary>
-    public class BitfinexWalletSource : WalletSourceBase
+    public class CoinbaseWalletSource : WalletSourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private BitfinexWebsocketClient _client;
-        private CryptoWallet _lastWallet;
+        private CoinbaseWebsocketClient _client;
         private IDisposable _subscription;
+        private CryptoWallet _lastWallet;
         private IDisposable _subscriptionSnapshot;
 
         /// <inheritdoc />
-        public BitfinexWalletSource(BitfinexWebsocketClient client)
+        public CoinbaseWalletSource(CoinbaseWebsocketClient client)
         {
             ChangeClient(client);
         }
 
         /// <inheritdoc />
-        public override string ExchangeName => "bitfinex";
+        public override string ExchangeName => "coinbase";
 
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(BitfinexWebsocketClient client)
+        public void ChangeClient(CoinbaseWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 
@@ -45,11 +47,11 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
 
         private void Subscribe()
         {
-            _subscriptionSnapshot = _client.Streams.WalletsStream.Subscribe(HandleWalletSnapshotSafe);
+            _subscriptionSnapshot = _client.Streams.WalletsSnapshotStream.Subscribe(HandleSnapshot);
             _subscription = _client.Streams.WalletStream.Subscribe(HandleWalletSafe);
         }
 
-        private void HandleWalletSafe(Wallet response)
+        private void HandleWalletSafe(WalletResponse response)
         {
             try
             {
@@ -57,39 +59,37 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
             }
             catch (Exception e)
             {
-                Log.Error(e, $"[Bitfinex] Failed to handle wallet info, error: '{e.Message}'");
+                Log.Error(e, $"[Coinbase] Failed to handle wallet info, error: '{e.Message}'");
             }
         }
 
-        private void HandleWalletSnapshotSafe(Wallet[] response)
+        /// <summary>
+        /// Request a new order book snapshot, will be fakely streamed via communicator (WebsocketClient)
+        /// Method doesn't throw exception, just logs it
+        private void HandleSnapshot(WalletsSnapshotResponse snapshot)
         {
-            try
+            foreach (var wallet in snapshot.Wallets)
             {
-                foreach (var wallet in response) HandleWallet(wallet);
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, $"[Bitfinex] Failed to handle wallet info, error: '{e.Message}'");
+                HandleWallet(wallet);
             }
         }
 
-        private void HandleWallet(Wallet response)
+        private void HandleWallet(WalletResponse response)
         {
             WalletChangedSubject.OnNext(new[] {ConvertWallet(response)});
         }
 
-        private CryptoWallet ConvertWallet(Wallet response)
+        private CryptoWallet ConvertWallet(WalletResponse response)
         {
-            //var currency = response.Currency ?? "XBt";
+            var id = response.Currency;
 
             var wallet = new CryptoWallet
             {
                 Currency = response.Currency,
-                Balance = response.Balance,
-                //?? _lastWallet?.Balance ?? 0,
-                BalanceAvailable = response.BalanceAvailable ?? _lastWallet?.BalanceAvailable ?? 0,
-                Type = response.Type.ToString()
+                Balance = Math.Abs(response.Balance),
+                BalanceAvailable = response.Available
             };
+
             _lastWallet = wallet;
             return wallet;
         }

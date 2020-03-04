@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Responses.Margins;
 using Bitmex.Client.Websocket.Utils;
@@ -30,7 +31,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
 
         /// <inheritdoc />
         public override string ExchangeName => "bitmex";
-
+        
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
