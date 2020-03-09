@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Coinbase.Client.Websocket.Client;
 using Coinbase.Client.Websocket.Responses.Wallets;
+using Crypto.Websocket.Extensions.Core.Utils;
 using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Core.Wallets.Models;
 using Crypto.Websocket.Extensions.Core.Wallets.Sources;
@@ -85,7 +86,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
 
             var wallet = new CryptoWallet
             {
-                Currency = response.Currency,
+                Currency = CryptoPairsHelper.Clean(response.Currency),
                 Balance = Math.Abs(response.Balance),
                 BalanceAvailable = response.Available
             };

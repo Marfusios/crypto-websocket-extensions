@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Bitfinex.Client.Websocket.Client;
 using Bitfinex.Client.Websocket.Responses.Wallets;
+using Crypto.Websocket.Extensions.Core.Utils;
 using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Core.Wallets.Models;
 using Crypto.Websocket.Extensions.Core.Wallets.Sources;
@@ -84,7 +85,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
 
             var wallet = new CryptoWallet
             {
-                Currency = response.Currency,
+                Currency = CryptoPairsHelper.Clean(response.Currency),
                 Balance = response.Balance,
                 //?? _lastWallet?.Balance ?? 0,
                 BalanceAvailable = response.BalanceAvailable ?? _lastWallet?.BalanceAvailable ?? 0,

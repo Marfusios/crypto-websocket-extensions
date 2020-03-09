@@ -50,10 +50,10 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private void Subscribe()
         {
-            _subscriptionSnapshot = _client.Streams.OrderBookDetailStream.Subscribe(HandleSnapshot);
-            _subscription = _client.Streams.OrderBookFullStream.Subscribe(HandleBook);
+            //_subscriptionSnapshot = _client.Streams.OrderBookDetailStream.Subscribe(HandleSnapshot);
+            _subscription = _client.Streams.OrderBookDiffStream.Subscribe(HandleBook);
             //TODO
-            //_subscriptionFull = _client.Streams.OrderBookFullStream.Subscribe(HandleSnapshot);
+            //_subscriptionFull = _client.Streams.OrderBookDiffStream.Subscribe(HandleSnapshot);
         }
 
         private void HandleSnapshot(OrderBookDetailResponse snapshot)
@@ -78,7 +78,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return levels;
         }
 
-        private void HandleBook(OrderBookFullResponse update)
+        private void HandleBook(OrderBookDiffResponse update)
         {
             BufferData(update);
         }
@@ -155,7 +155,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             throw new NotImplementedException();
         }
 
-        private IEnumerable<OrderBookLevelBulk> ConvertDiff(OrderBookFullResponse update)
+        private IEnumerable<OrderBookLevelBulk> ConvertDiff(OrderBookDiffResponse update)
         {
             var bids = ConvertLevels(update.Symbol, update.Bids);
             var asks = ConvertLevels(update.Symbol, update.Asks);
@@ -183,7 +183,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             var result = new List<OrderBookLevelBulk>();
             foreach (var response in data)
             {
-                var responseSafe = response as OrderBookFullResponse;
+                var responseSafe = response as OrderBookDiffResponse;
                 if (responseSafe == null) continue;
 
                 var converted = ConvertDiff(responseSafe);
