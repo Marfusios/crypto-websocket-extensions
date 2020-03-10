@@ -1,5 +1,5 @@
 ![Logo](cwe_logo.png)
-# Cryptocurrency websocket extensions [![Build Status](https://travis-ci.org/Marfusios/crypto-websocket-extensions.svg?branch=master)](https://travis-ci.org/Marfusios/crypto-websocket-extensions) [![NuGet version](https://badge.fury.io/nu/Crypto.Websocket.Extensions.svg)](https://badge.fury.io/nu/Crypto.Websocket.Extensions)
+# Cryptocurrency websocket extensions [![Build Status](https://travis-ci.com/Marfusios/crypto-websocket-extensions.svg?branch=master)](https://travis-ci.com/Marfusios/crypto-websocket-extensions) [![NuGet version](https://badge.fury.io/nu/Crypto.Websocket.Extensions.svg)](https://badge.fury.io/nu/Crypto.Websocket.Extensions)
 
 This is a library that provides extensions to cryptocurrency websocket exchange clients. 
 
