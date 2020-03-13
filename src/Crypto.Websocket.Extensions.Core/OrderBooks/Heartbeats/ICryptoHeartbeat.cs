@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Crypto.Websocket.Extensions.Core.OrderBooks.HeartBeats
+namespace Crypto.Websocket.Extensions.Core.OrderBooks.Heartbeats
 {
     public interface ICryptoHeartbeat
     {

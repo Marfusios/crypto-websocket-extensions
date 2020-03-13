@@ -1,5 +1,4 @@
 ﻿using System;
-using Crypto.Websocket.Extensions.Core.OrderBooks.HeartBeats;
 
 namespace Crypto.Websocket.Extensions.Core.OrderBooks.Heartbeats
 {
