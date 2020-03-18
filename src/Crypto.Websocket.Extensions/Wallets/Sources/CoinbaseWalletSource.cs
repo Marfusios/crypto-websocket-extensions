@@ -86,6 +86,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
 
             var wallet = new CryptoWallet
             {
+                Type = "Exchange",
                 Currency = CryptoPairsHelper.Clean(response.Currency),
                 Balance = Math.Abs(response.Balance),
                 BalanceAvailable = response.Available
