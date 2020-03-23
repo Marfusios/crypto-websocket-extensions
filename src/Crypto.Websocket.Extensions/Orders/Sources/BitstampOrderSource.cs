@@ -2,6 +2,7 @@
 using System.Linq;
 using Bitstamp.Client.Websocket.Client;
 using Bitstamp.Client.Websocket.Responses;
+using Bitstamp.Client.Websocket.Responses.Orders;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Orders;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
@@ -137,7 +138,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
             {
                 Id = id,
-                Pair = CryptoPairsHelper.Clean(order.Data.Symbol),
+                Pair = CryptoPairsHelper.Clean(order.Symbol),
                 Price = price,
                 //Amount = amount,
                 AmountOrig = amountOrig,
@@ -156,7 +157,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
             return newOrder;
         }
-   
+
         private CryptoOrderSide ConvertSide(double orderAmount)
         {
             if (orderAmount < 0) return CryptoOrderSide.Ask;

@@ -18,6 +18,5 @@ namespace Crypto.Websocket.Extensions.Core.Wallets.Sources
         /// Stream info about wallet changes (balance, transactions, etc)
         /// </summary>
         IObservable<CryptoWallet[]> WalletChangedStream { get; }
-
     }
 }

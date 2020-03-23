@@ -11,10 +11,10 @@ namespace Crypto.Websocket.Extensions.Core.Utils
         string Passphrase { get; }
 
         string ComputeSignature(
-            HttpMethod httpMethod, 
-            string secret, 
-            double timestamp, 
-            string requestUri, 
+            HttpMethod httpMethod,
+            string secret,
+            double timestamp,
+            string requestUri,
             string contentBody = "");
     }
 }

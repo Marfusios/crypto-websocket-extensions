@@ -1,5 +1,4 @@
-﻿
-using Crypto.Websocket.Extensions.Core.Logging;
+﻿using Crypto.Websocket.Extensions.Core.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +16,7 @@ namespace Crypto.Websocket.Extensions.Core.Wallets.Sources
     public abstract class WalletSourceBase : IWalletSource
     {
         private static readonly ILog LogBase = LogProvider.GetCurrentClassLogger();
+
         /// <summary>
         /// Origin exchange name
         /// </summary>
@@ -31,6 +31,5 @@ namespace Crypto.Websocket.Extensions.Core.Wallets.Sources
         /// Stream info about wallet changes (balance, transactions, etc)
         /// </summary>
         public virtual IObservable<CryptoWallet[]> WalletChangedStream => WalletChangedSubject.AsObservable();
-        
     }
 }

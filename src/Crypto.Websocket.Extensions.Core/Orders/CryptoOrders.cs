@@ -293,7 +293,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
             _orderChanged.OnNext(order);
 
             if (IsOurOrder(order))
-                
+
                 _ourOrderChanged.OnNext(order);
         }
 

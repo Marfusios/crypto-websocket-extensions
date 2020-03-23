@@ -53,10 +53,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
         private void HandleSnapshot(OrdersSnapshotResponse snapshot)
         {
-            foreach (var order in snapshot.Orders)
-            {
-                HandleOrdersSafe(order);
-            }
+            foreach (var order in snapshot.Orders) HandleOrdersSafe(order);
         }
 
         private void HandleOrdersSafe(OrderResponse response)

@@ -31,7 +31,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
 
         /// <inheritdoc />
         public override string ExchangeName => "bitmex";
-        
+
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>

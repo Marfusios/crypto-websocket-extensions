@@ -69,10 +69,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
         /// Method doesn't throw exception, just logs it
         private void HandleSnapshot(WalletsSnapshotResponse snapshot)
         {
-            foreach (var wallet in snapshot.Wallets)
-            {
-                HandleWallet(wallet);
-            }
+            foreach (var wallet in snapshot.Wallets) HandleWallet(wallet);
         }
 
         private void HandleWallet(WalletResponse response)
