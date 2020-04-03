@@ -110,7 +110,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
         private CryptoOrder ConvertOrder(OrderResponse order)
         {
-            var id = order.Id.ToString();
+            var id = order.Id.ToString() ?? "00000";
             var clientId = order.ProfileId;
             var existingCurrent = ExistingOrders.ContainsKey(id) ? ExistingOrders[id] : null;
             var existingPartial = _partiallyFilledOrders.ContainsKey(id) ? _partiallyFilledOrders[id] : null;
