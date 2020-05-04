@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
     <PackageId>Crypto.Websocket.Extensions</PackageId>
     <Version>2.4.0</Version>
     <Authors>Mariusz Kotas</Authors>
@@ -19,13 +19,16 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile> 
     <AssemblyVersion>2.4.0.0</AssemblyVersion>
     <FileVersion>2.4.0.0</FileVersion>
+    
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Binance.Client.Websocket" Version="2.0.14" />
-    <PackageReference Include="Bitfinex.Client.Websocket" Version="4.0.102" />
-    <PackageReference Include="Bitmex.Client.Websocket" Version="3.1.74" />
-    <PackageReference Include="Coinbase.Client.Websocket" Version="2.0.12" />
+    <PackageReference Include="Binance.Client.Websocket" Version="2.0.19" />
+    <PackageReference Include="Bitfinex.Client.Websocket" Version="4.1.108" />
+    <PackageReference Include="Bitmex.Client.Websocket" Version="3.1.76" />
+    <PackageReference Include="Coinbase.Client.Websocket" Version="2.0.15" />
     <PackageReference Include="LibLog" Version="5.0.8">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>

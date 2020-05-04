@@ -35,9 +35,9 @@ namespace Crypto.Websocket.Extensions.Sample
 
 
             //OrderBookExample.RunEverything().Wait();
-            //OrderBookExample.RunOnlyOne().Wait();
+            OrderBookExample.RunOnlyOne().Wait();
 
-            TradesExample.RunEverything().Wait();
+            //TradesExample.RunEverything().Wait();
 
             //OrdersExample.RunEverything().Wait();
 
@@ -60,7 +60,8 @@ namespace Crypto.Websocket.Extensions.Sample
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Verbose()
                 .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-                .WriteTo.ColoredConsole(LogEventLevel.Debug)
+                .WriteTo.ColoredConsole(LogEventLevel.Debug, 
+                    outputTemplate: "{Timestamp:HH:mm:ss.ffffff} [{Level:u3}] {Message}{NewLine}")
                 .CreateLogger();
         }
 
