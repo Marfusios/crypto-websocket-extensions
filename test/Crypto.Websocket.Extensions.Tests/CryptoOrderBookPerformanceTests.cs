@@ -136,7 +136,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var msg = $"Elapsed time was: {elapsedMs} ms";
             _output.WriteLine(msg);
 
-            Assert.True(elapsedMs < 5000, msg);
+            Assert.True(elapsedMs < 7000, msg);
         }
 
         [Fact]
