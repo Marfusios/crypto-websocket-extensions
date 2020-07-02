@@ -394,7 +394,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             _askLevels.Clear();
             _allLevels.Clear();
 
-            LogAlways($"Handling snapshot: {levels.Length} levels");
+            LogDebug($"Handling snapshot: {levels.Length} levels");
             foreach (var level in levels)
             {
                 var price = level.Price;

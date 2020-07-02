@@ -15,6 +15,9 @@ using Bitfinex.Client.Websocket.Websockets;
 using Bitmex.Client.Websocket;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Websockets;
+using Bitstamp.Client.Websocket;
+using Bitstamp.Client.Websocket.Client;
+using Bitstamp.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket;
 using Coinbase.Client.Websocket.Channels;
 using Coinbase.Client.Websocket.Client;
@@ -25,6 +28,7 @@ using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Serilog;
+using Channel = Bitstamp.Client.Websocket.Channels.Channel;
 
 namespace Crypto.Websocket.Extensions.Sample
 {
@@ -36,6 +40,7 @@ namespace Crypto.Websocket.Extensions.Sample
             var bitfinexOb = await StartBitfinex("BTCUSD", true);
             var binanceOb = await StartBinance("BTCUSDT", true);
             var coinbaseOb = await StartCoinbase("BTC-USD", true);
+            var bitstampOb = await StartBitstamp("BTCUSD", true);
 
             Log.Information("Waiting for price change...");
 
@@ -44,17 +49,19 @@ namespace Crypto.Websocket.Extensions.Sample
                     bitmexOb.BidAskUpdatedStream,
                     bitfinexOb.BidAskUpdatedStream,
                     binanceOb.BidAskUpdatedStream,
-                    coinbaseOb.BidAskUpdatedStream
+                    coinbaseOb.BidAskUpdatedStream,
+                    bitstampOb.BidAskUpdatedStream
                 })
-                .Subscribe(HandleQuoteChanged);
+                .Subscribe(x => HandleQuoteChanged(x, true));
         }
 
         public static async Task RunOnlyOne()
         {
-            var ob = await StartBitmex("XBTUSD", true);
+            //var ob = await StartBitmex("XBTUSD", true);
             //var ob = await StartBinance("BTCUSDT", true);
             //var ob = await StartBitfinex("BTCUSD", true);
             //var ob = await StartCoinbase("BTC-USD", true);
+            var ob = await StartBitstamp("BTCUSD", true);
 
             Log.Information("Waiting for price change...");
 
@@ -62,10 +69,10 @@ namespace Crypto.Websocket.Extensions.Sample
                 {
                     ob.BidAskUpdatedStream
                 })
-                .Subscribe(HandleQuoteChanged);
+                .Subscribe(x => HandleQuoteChanged(x, false));
         }
 
-        private static void HandleQuoteChanged(IList<IOrderBookChangeInfo> quotes)
+        private static void HandleQuoteChanged(IList<IOrderBookChangeInfo> quotes, bool simple)
         {
             var formattedMessages = quotes
                 .Select(x =>
@@ -76,7 +83,7 @@ namespace Crypto.Websocket.Extensions.Sample
                         time = $" {x.ServerTimestamp:ss.ffffff}";
                     }
 
-                    var metaString = $" (" +
+                    var metaString = simple ? string.Empty : $" (" +
                                    $"{x.Sources.Length} " +
                                    $"{x.Sources.Sum(y => y.Levels.Length)}" +
                                    $"{time})";
@@ -105,7 +112,7 @@ namespace Crypto.Websocket.Extensions.Sample
                 ConfigureOptimized(source, orderBook);
             }
 
-            await communicator.Start();
+            _ = communicator.Start();
 
             // Send subscription request to order book data
             client.Send(new Bitmex.Client.Websocket.Requests.BookSubscribeRequest(pair));
@@ -127,7 +134,7 @@ namespace Crypto.Websocket.Extensions.Sample
                 ConfigureOptimized(source, orderBook);
             }
 
-            await communicator.Start();
+            _ = communicator.Start();
 
             // Send configuration request to enable server timestamps
             client.Send(new ConfigurationRequest(ConfigurationFlag.Sequencing | ConfigurationFlag.Timestamp));
@@ -157,11 +164,11 @@ namespace Crypto.Websocket.Extensions.Sample
                 ConfigureOptimized(source, orderBook);
             }
 
-            await communicator.Start();
+            _ = communicator.Start();
 
             // Binance is special
             // We need to load snapshot in advance manually via REST call
-            await source.LoadSnapshot(communicator, pair);
+            _ = source.LoadSnapshot(communicator, pair);
 
             return orderBook;
         }
@@ -180,12 +187,37 @@ namespace Crypto.Websocket.Extensions.Sample
                 ConfigureOptimized(source, orderBook);
             }
 
-            await communicator.Start();
+            _ = communicator.Start();
 
             // Send subscription request to order book data
             client.Send(new SubscribeRequest(
                 new[] { pair },
                 ChannelSubscriptionType.Level2
+            ));
+
+            return orderBook;
+        }
+
+        private static async Task<CryptoOrderBook> StartBitstamp(string pair, bool optimized)
+        {
+            var url = BitstampValues.ApiWebsocketUrl;
+            var communicator = new BitstampWebsocketCommunicator(url) { Name = "Bitstamp" };
+            var client = new BitstampWebsocketClient(communicator);
+
+            var source = new BitstampOrderBookSource(client);
+            var orderBook = new CryptoOrderBook(pair, source);
+
+            if (optimized)
+            {
+                ConfigureOptimized(source, orderBook);
+            }
+
+            _ = communicator.Start();
+
+            // Send subscription request to order book data
+            client.Send(new Bitstamp.Client.Websocket.Requests.SubscribeRequest(
+                pair,
+                Channel.OrderBook
             ));
 
             return orderBook;

@@ -11,6 +11,9 @@ using Bitfinex.Client.Websocket.Websockets;
 using Bitmex.Client.Websocket;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Websockets;
+using Bitstamp.Client.Websocket;
+using Bitstamp.Client.Websocket.Client;
+using Bitstamp.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket;
 using Coinbase.Client.Websocket.Channels;
 using Coinbase.Client.Websocket.Client;
@@ -20,6 +23,7 @@ using Crypto.Websocket.Extensions.Core.Trades.Sources;
 using Crypto.Websocket.Extensions.Trades.Sources;
 using Serilog;
 using Websocket.Client;
+using Channel = Bitstamp.Client.Websocket.Channels.Channel;
 
 namespace Crypto.Websocket.Extensions.Sample
 {
@@ -31,18 +35,21 @@ namespace Crypto.Websocket.Extensions.Sample
             var bitfinex = GetBitfinex("BTCUSD");
             var binance = GetBinance("BTCUSDT");
             var coinbase = GetCoinbase("BTC-USD");
+            var bitstamp = GetBitstamp("BTCUSD");
 
             LogTrades(bitmex.Item1);
             LogTrades(bitfinex.Item1);
             LogTrades(binance.Item1);
             LogTrades(coinbase.Item1);
+            LogTrades(bitstamp.Item1);
 
             Log.Information("Waiting for trades...");
 
-            _ = bitmex.Item2.Start();
-            _ = bitfinex.Item2.Start();
-            _ = binance.Item2.Start();
-            _ = coinbase.Item2.Start();
+            //_ = bitmex.Item2.Start();
+            //_ = bitfinex.Item2.Start();
+            //_ = binance.Item2.Start();
+            //_ = coinbase.Item2.Start();
+            _ = bitstamp.Item2.Start();
         }
 
         private static void LogTrades(ITradeSource source)
@@ -123,6 +130,25 @@ namespace Crypto.Websocket.Extensions.Sample
                 client.Send(new SubscribeRequest(
                     new[] { pair },
                     ChannelSubscriptionType.Matches
+                ));
+            });
+
+            return (source, communicator);
+        }
+
+        private static (ITradeSource, IWebsocketClient) GetBitstamp(string pair)
+        {
+            var url = BitstampValues.ApiWebsocketUrl;
+            var communicator = new BitstampWebsocketCommunicator(url) { Name = "Bitstamp" };
+            var client = new BitstampWebsocketClient(communicator);
+
+            var source = new BitstampTradeSource(client);
+
+            communicator.ReconnectionHappened.Subscribe(x =>
+            {
+                client.Send(new Bitstamp.Client.Websocket.Requests.SubscribeRequest(
+                    pair,
+                    Channel.Ticker
                 ));
             });
 
