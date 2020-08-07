@@ -34,8 +34,8 @@ namespace Crypto.Websocket.Extensions.Sample
 
 
 
-            //OrderBookExample.RunEverything().Wait();
-            OrderBookExample.RunOnlyOne().Wait();
+            OrderBookExample.RunEverything().Wait();
+            //OrderBookExample.RunOnlyOne().Wait();
 
             //TradesExample.RunEverything().Wait();
 

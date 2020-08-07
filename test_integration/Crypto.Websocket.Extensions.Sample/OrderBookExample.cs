@@ -36,11 +36,14 @@ namespace Crypto.Websocket.Extensions.Sample
     {
         public static async Task RunEverything()
         {
-            var bitmexOb = await StartBitmex("XBTUSD", true);
-            var bitfinexOb = await StartBitfinex("BTCUSD", true);
-            var binanceOb = await StartBinance("BTCUSDT", true);
-            var coinbaseOb = await StartCoinbase("BTC-USD", true);
-            var bitstampOb = await StartBitstamp("BTCUSD", true);
+            var optimized = true;
+            var l2Optimized = false;
+
+            var bitmexOb = await StartBitmex("XBTUSD", optimized, l2Optimized);
+            var bitfinexOb = await StartBitfinex("BTCUSD", optimized, l2Optimized);
+            var binanceOb = await StartBinance("BTCUSDT", optimized, l2Optimized);
+            var coinbaseOb = await StartCoinbase("BTC-USD", optimized, l2Optimized);
+            var bitstampOb = await StartBitstamp("BTCUSD", optimized, l2Optimized);
 
             Log.Information("Waiting for price change...");
 
@@ -57,11 +60,14 @@ namespace Crypto.Websocket.Extensions.Sample
 
         public static async Task RunOnlyOne()
         {
-            var ob = await StartBitmex("XBTUSD", true);
-            //var ob = await StartBinance("BTCUSDT", true);
-            //var ob = await StartBitfinex("BTCUSD", true);
-            //var ob = await StartCoinbase("BTC-USD", true);
-            //var ob = await StartBitstamp("BTCUSD", true);
+            var optimized = true;
+            var l2Optimized = false;
+
+            var ob = await StartBitmex("XBTUSD", optimized, l2Optimized);
+            //var ob = await StartBinance("BTCUSDT", optimized, l2Optimized);
+            //var ob = await StartBitfinex("BTCUSD", optimized, l2Optimized);
+            //var ob = await StartCoinbase("BTC-USD", optimized, l2Optimized);
+            //var ob = await StartBitstamp("BTCUSD", optimized, l2Optimized);
 
             Log.Information("Waiting for price change...");
 
@@ -98,14 +104,16 @@ namespace Crypto.Websocket.Extensions.Sample
         }
 
 
-        private static async Task<CryptoOrderBook> StartBitmex(string pair, bool optimized)
+        private static async Task<ICryptoOrderBook> StartBitmex(string pair, bool optimized, bool l2Optimized)
         {
             var url = BitmexValues.ApiWebsocketUrl;
             var communicator = new BitmexWebsocketCommunicator(url) { Name = "Bitmex" };
             var client = new BitmexWebsocketClient(communicator);
 
             var source = new BitmexOrderBookSource(client);
-            var orderBook = new CryptoOrderBook(pair, source);
+            var orderBook = l2Optimized ? 
+                new CryptoOrderBookL2(pair, source) : 
+                (ICryptoOrderBook)new CryptoOrderBook(pair, source);
 
             if (optimized)
             {
@@ -120,14 +128,16 @@ namespace Crypto.Websocket.Extensions.Sample
             return orderBook;
         }
 
-        private static async Task<CryptoOrderBook> StartBitfinex(string pair, bool optimized)
+        private static async Task<ICryptoOrderBook> StartBitfinex(string pair, bool optimized, bool l2Optimized)
         {
             var url = BitfinexValues.ApiWebsocketUrl;
             var communicator = new BitfinexWebsocketCommunicator(url) { Name = "Bitfinex" };
             var client = new BitfinexWebsocketClient(communicator);
 
             var source = new BitfinexOrderBookSource(client);
-            var orderBook = new CryptoOrderBook(pair, source);
+            var orderBook = l2Optimized ? 
+                new CryptoOrderBookL2(pair, source) : 
+                (ICryptoOrderBook)new CryptoOrderBook(pair, source);
 
             if (optimized)
             {
@@ -146,7 +156,7 @@ namespace Crypto.Websocket.Extensions.Sample
             return orderBook;
         }
 
-        private static async Task<CryptoOrderBook> StartBinance(string pair, bool optimized)
+        private static async Task<ICryptoOrderBook> StartBinance(string pair, bool optimized, bool l2Optimized)
         {
             var url = BinanceValues.ApiWebsocketUrl;
             var communicator = new BinanceWebsocketCommunicator(url) { Name = "Binance" };
@@ -157,7 +167,9 @@ namespace Crypto.Websocket.Extensions.Sample
             );
 
             var source = new BinanceOrderBookSource(client);
-            var orderBook = new CryptoOrderBook(pair, source);
+            var orderBook = l2Optimized ? 
+                new CryptoOrderBookL2(pair, source) : 
+                (ICryptoOrderBook)new CryptoOrderBook(pair, source);
 
             if (optimized)
             {
@@ -173,14 +185,16 @@ namespace Crypto.Websocket.Extensions.Sample
             return orderBook;
         }
 
-        private static async Task<CryptoOrderBook> StartCoinbase(string pair, bool optimized)
+        private static async Task<ICryptoOrderBook> StartCoinbase(string pair, bool optimized, bool l2Optimized)
         {
             var url = CoinbaseValues.ApiWebsocketUrl;
             var communicator = new CoinbaseWebsocketCommunicator(url) { Name = "Coinbase" };
             var client = new CoinbaseWebsocketClient(communicator);
 
             var source = new CoinbaseOrderBookSource(client);
-            var orderBook = new CryptoOrderBook(pair, source);
+            var orderBook = l2Optimized ? 
+                new CryptoOrderBookL2(pair, source) : 
+                (ICryptoOrderBook)new CryptoOrderBook(pair, source);
 
             if (optimized)
             {
@@ -198,14 +212,16 @@ namespace Crypto.Websocket.Extensions.Sample
             return orderBook;
         }
 
-        private static async Task<CryptoOrderBook> StartBitstamp(string pair, bool optimized)
+        private static async Task<ICryptoOrderBook> StartBitstamp(string pair, bool optimized, bool l2Optimized)
         {
             var url = BitstampValues.ApiWebsocketUrl;
             var communicator = new BitstampWebsocketCommunicator(url) { Name = "Bitstamp" };
             var client = new BitstampWebsocketClient(communicator);
 
             var source = new BitstampOrderBookSource(client);
-            var orderBook = new CryptoOrderBook(pair, source);
+            var orderBook = l2Optimized ? 
+                new CryptoOrderBookL2(pair, source) : 
+                (ICryptoOrderBook)new CryptoOrderBook(pair, source);
 
             if (optimized)
             {
@@ -223,13 +239,13 @@ namespace Crypto.Websocket.Extensions.Sample
             return orderBook;
         }
 
-        private static void ConfigureOptimized(IOrderBookSource source, CryptoOrderBook orderBook)
+        private static void ConfigureOptimized(IOrderBookSource source, ICryptoOrderBook orderBook)
         {
             source.BufferEnabled = true;
             source.BufferInterval = TimeSpan.FromMilliseconds(0);
 
-            orderBook.DebugEnabled = true;
-            orderBook.DebugLogEnabled = true;
+            orderBook.DebugEnabled = false;
+            orderBook.DebugLogEnabled = false;
             orderBook.ValidityCheckEnabled = false;
         }
     }
