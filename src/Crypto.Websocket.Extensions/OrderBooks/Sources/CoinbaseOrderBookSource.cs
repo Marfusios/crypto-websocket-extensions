@@ -8,6 +8,7 @@ using Coinbase.Client.Websocket.Client;
 using Coinbase.Client.Websocket.Responses;
 using Coinbase.Client.Websocket.Responses.Books;
 using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
@@ -20,7 +21,7 @@ using CoinbaseOrderBookLevel = Coinbase.Client.Websocket.Responses.Books.OrderBo
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 {
     /// <inheritdoc />
-    public class CoinbaseOrderBookSource : OrderBookLevel2SourceBase
+    public class CoinbaseOrderBookSource : OrderBookSourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
@@ -64,7 +65,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         {
             // received snapshot, convert and stream
             var levels = ConvertSnapshot(snapshot);
-            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels);
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2);
             FillBulk(snapshot, bulk);
             StreamSnapshot(bulk);
         }
@@ -147,7 +148,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             var bids = ConvertLevels(pair, parsed.Bids);
             var asks = ConvertLevels(pair, parsed.Asks);
             var levels = bids.Concat(asks).ToArray();
-            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels);
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2);
             return bulk;
         }
 
@@ -159,7 +160,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
             foreach (var actionGroup in group)
             {
-                var bulk = new OrderBookLevelBulk(actionGroup.Key, actionGroup.ToArray());
+                var bulk = new OrderBookLevelBulk(actionGroup.Key, actionGroup.ToArray(), CryptoOrderBookType.L2);
                 FillBulk(update, bulk);
                 yield return bulk;
             }

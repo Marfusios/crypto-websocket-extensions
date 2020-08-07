@@ -21,7 +21,7 @@ namespace Crypto.Websocket.Extensions.Tests
         {
             var pair = "BTC/USD";
             var data = GetOrderBookSnapshotMockData(pair, 500);
-            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
 
             var orderBook = new CryptoOrderBook(pair, source);
@@ -53,7 +53,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var data2 = GetOrderBookSnapshotMockData(pair2, 200);
             var data = data2.Concat(data1).ToArray();
             var now = CryptoDateUtils.ConvertFromUnixSeconds(1577575307.123451);
-            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data)
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2)
             {
                 ExchangeName = "test",
                 ServerSequence = 3,
@@ -114,13 +114,13 @@ namespace Crypto.Websocket.Extensions.Tests
             var data2 = GetOrderBookSnapshotMockData(pair2, 200);
             var now = CryptoDateUtils.ConvertFromUnixSeconds(1577575307.123451);
 
-            var snapshot1 = new OrderBookLevelBulk(OrderBookAction.Insert, data1)
+            var snapshot1 = new OrderBookLevelBulk(OrderBookAction.Insert, data1, CryptoOrderBookType.L2)
             {
                 ExchangeName = "test",
                 ServerSequence = 4,
                 ServerTimestamp = now.AddMilliseconds(1)
             };
-            var snapshot2 = new OrderBookLevelBulk(OrderBookAction.Insert, data2)
+            var snapshot2 = new OrderBookLevelBulk(OrderBookAction.Insert, data2, CryptoOrderBookType.L2)
             {
                 ExchangeName = "test",
                 ServerSequence = 5,
@@ -182,7 +182,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var data1 = GetOrderBookSnapshotMockData(pair1, 500);
             var data2 = GetOrderBookSnapshotMockData(pair2, 200);
             var data = data2.Concat(data1).ToArray();
-            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
 
             var orderBook = new CryptoOrderBook(pair1, source);
@@ -227,7 +227,7 @@ namespace Crypto.Websocket.Extensions.Tests
         {
             var pair = "BTC/USD";
             var data = GetOrderBookSnapshotMockData(pair, 500);
-            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
 
             var orderBook = new CryptoOrderBook(pair, source);
@@ -308,7 +308,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var data1 = GetOrderBookSnapshotMockData(pair1, 500);
             var data2 = GetOrderBookSnapshotMockData(pair2, 200);
             var data = data2.Concat(data1).ToArray();
-            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
 
             var orderBook1 = new CryptoOrderBook(pair1, source) {DebugEnabled = true};
@@ -416,7 +416,7 @@ namespace Crypto.Websocket.Extensions.Tests
         {
             var pair = "BTC/USD";
             var data = GetOrderBookSnapshotMockData(pair, 500);
-            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
 
             var notificationCount = 0;
@@ -517,7 +517,7 @@ namespace Crypto.Websocket.Extensions.Tests
         {
             var pair = "BTC/USD";
             var data = GetOrderBookSnapshotMockData(pair, 500);
-            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
             source.BufferInterval = TimeSpan.FromMilliseconds(10);
 
@@ -583,7 +583,7 @@ namespace Crypto.Websocket.Extensions.Tests
         {
             var pair = "BTC/USD";
             var data = GetOrderBookSnapshotMockData(pair, 500);
-            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot)
             {
                 LoadSnapshotEnabled = true,
@@ -612,7 +612,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 480, 50, CryptoOrderSide.Bid),
                 CreateLevel(pair, 520, 50, CryptoOrderSide.Ask),
             };
-            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
             source.BufferInterval = TimeSpan.FromMilliseconds(100);
             var orderBookUpdatedCount = 0;
@@ -651,7 +651,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 480, 50, CryptoOrderSide.Bid),
                 CreateLevel(pair, 520, 50, CryptoOrderSide.Ask),
             };
-            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
             var orderBookUpdatedCount = 0;
 

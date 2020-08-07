@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Bitstamp.Client.Websocket.Client;
 using Bitstamp.Client.Websocket.Responses.Books;
 using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
@@ -15,7 +16,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     /// <summary>
     /// Bitstamp order book source - based only on 100 level snapshots (not diffs) 
     /// </summary>
-    public class BitstampOrderBookSource : OrderBookLevel2SourceBase
+    public class BitstampOrderBookSource : OrderBookSourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
@@ -55,7 +56,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         {
             // received snapshot, convert and stream
             var levels = ConvertLevels(response);
-            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels);
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2);
             FillBulk(response, bulk);
             StreamSnapshot(bulk);
         }

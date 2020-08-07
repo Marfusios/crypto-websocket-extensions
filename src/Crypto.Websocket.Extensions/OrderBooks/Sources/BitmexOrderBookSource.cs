@@ -7,6 +7,7 @@ using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Responses;
 using Bitmex.Client.Websocket.Responses.Books;
 using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
@@ -17,7 +18,7 @@ using OrderBookLevel = Crypto.Websocket.Extensions.Core.OrderBooks.Models.OrderB
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 {
     /// <inheritdoc />
-    public class BitmexOrderBookSource : OrderBookLevel2SourceBase
+    public class BitmexOrderBookSource : OrderBookSourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
@@ -67,7 +68,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             {
                 // received snapshot, convert and stream
                 var levels = ConvertLevels(bookResponse.Data);
-                var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels)
+                var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2)
                 {
                     ExchangeName = ExchangeName
                 };
@@ -151,7 +152,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
             // received snapshot, convert and stream
             var levels = ConvertLevels(parsed);
-            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels)
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2)
             {
                 ExchangeName = ExchangeName
             };
@@ -161,7 +162,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         private OrderBookLevelBulk ConvertDiff(BookResponse response)
         {
             var action = ConvertAction(response.Action);
-            var bulk = new OrderBookLevelBulk(action, ConvertLevels(response.Data))
+            var bulk = new OrderBookLevelBulk(action, ConvertLevels(response.Data), CryptoOrderBookType.L2)
             {
                 ExchangeName = ExchangeName
             };

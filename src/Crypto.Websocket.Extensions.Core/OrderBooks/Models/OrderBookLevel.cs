@@ -8,7 +8,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
     /// <summary>
     /// One level of the order book
     /// </summary>
-    [DebuggerDisplay("OrderBookLevel [{Pair}] {Amount} @ {Price}")]
+    [DebuggerDisplay("OrderBookLevel [{Pair}] {Id} {Amount} @ {Price}")]
     public class OrderBookLevel
     {
         /// <summary>
@@ -29,7 +29,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         }
 
         /// <summary>
-        /// Unique identification of this level
+        /// Unique identification of this level or order id
         /// </summary>
         public string Id { get; private set; }
 
@@ -57,6 +57,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         /// Pair to which this level belongs
         /// </summary>
         public string Pair { get; internal set; }
+
+        /// <summary>
+        /// Ordering index to determine position in the queue
+        /// </summary>
+        public int Ordering { get; internal set; }
 
         /// <summary>
         /// Create a new clone

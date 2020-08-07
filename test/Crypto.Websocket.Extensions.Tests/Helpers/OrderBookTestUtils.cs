@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.Utils;
 
@@ -28,17 +29,17 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
         }
         public static OrderBookLevelBulk GetInsertBulk(params OrderBookLevel[] levels)
         {
-            return new OrderBookLevelBulk(OrderBookAction.Insert, levels);
+            return new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2);
         }
 
         public static OrderBookLevelBulk GetUpdateBulk(params OrderBookLevel[] levels)
         {
-            return new OrderBookLevelBulk(OrderBookAction.Update, levels);
+            return new OrderBookLevelBulk(OrderBookAction.Update, levels, CryptoOrderBookType.L2);
         }
 
         public static OrderBookLevelBulk GetDeleteBulk(params OrderBookLevel[] levels)
         {
-            return new OrderBookLevelBulk(OrderBookAction.Delete, levels);
+            return new OrderBookLevelBulk(OrderBookAction.Delete, levels, CryptoOrderBookType.L2);
         }
 
         public static OrderBookLevel CreateLevel(string pair, double price, double? amount, CryptoOrderSide side)

@@ -12,7 +12,7 @@ using Crypto.Websocket.Extensions.Core.Threading;
 namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 {
     /// <inheritdoc />
-    public abstract class OrderBookLevel2SourceBase : IOrderBookLevel2Source
+    public abstract class OrderBookSourceBase : IOrderBookSource
     {
         private static readonly ILog LogBase = LogProvider.GetCurrentClassLogger();
 
@@ -37,7 +37,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// <summary>
         /// Hidden constructor
         /// </summary>
-        protected OrderBookLevel2SourceBase()
+        protected OrderBookSourceBase()
         {
             StartProcessingFromBufferThread();
         }

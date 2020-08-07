@@ -57,11 +57,11 @@ namespace Crypto.Websocket.Extensions.Sample
 
         public static async Task RunOnlyOne()
         {
-            //var ob = await StartBitmex("XBTUSD", true);
+            var ob = await StartBitmex("XBTUSD", true);
             //var ob = await StartBinance("BTCUSDT", true);
             //var ob = await StartBitfinex("BTCUSD", true);
             //var ob = await StartCoinbase("BTC-USD", true);
-            var ob = await StartBitstamp("BTCUSD", true);
+            //var ob = await StartBitstamp("BTCUSD", true);
 
             Log.Information("Waiting for price change...");
 
@@ -223,13 +223,13 @@ namespace Crypto.Websocket.Extensions.Sample
             return orderBook;
         }
 
-        private static void ConfigureOptimized(IOrderBookLevel2Source source, CryptoOrderBook orderBook)
+        private static void ConfigureOptimized(IOrderBookSource source, CryptoOrderBook orderBook)
         {
             source.BufferEnabled = true;
             source.BufferInterval = TimeSpan.FromMilliseconds(0);
 
-            orderBook.DebugEnabled = false;
-            orderBook.DebugLogEnabled = false;
+            orderBook.DebugEnabled = true;
+            orderBook.DebugLogEnabled = true;
             orderBook.ValidityCheckEnabled = false;
         }
     }

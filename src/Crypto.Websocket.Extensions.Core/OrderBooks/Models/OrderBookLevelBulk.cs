@@ -10,9 +10,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
     public class OrderBookLevelBulk : CryptoChangeInfo
     {
         /// <inheritdoc />
-        public OrderBookLevelBulk(OrderBookAction action, OrderBookLevel[] levels)
+        public OrderBookLevelBulk(OrderBookAction action, OrderBookLevel[] levels, CryptoOrderBookType orderBookType)
         {
             Action = action;
+            OrderBookType = orderBookType;
             Levels = levels ?? new OrderBookLevel[0];
         }
 
@@ -25,5 +26,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         /// Order book levels for this bulk
         /// </summary>
         public OrderBookLevel[] Levels { get; }
+
+        /// <summary>
+        /// Type of the order book levels
+        /// </summary>
+        public CryptoOrderBookType OrderBookType { get; }
     }
 }

@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Utils;
@@ -22,7 +23,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 new OrderBookLevel("1", CryptoOrderSide.Bid, 100, 5, 1, "BTCUSD"),
                 new OrderBookLevel("2", CryptoOrderSide.Ask, 101, 50, 2, "BTCUSD"),
             };
-            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, snapshotLevels)
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, snapshotLevels, CryptoOrderBookType.L2)
             {
                 ServerSequence = 3,
                 ServerTimestamp = now,
@@ -31,13 +32,13 @@ namespace Crypto.Websocket.Extensions.Tests
 
             var bulks = new[]
             {
-                new OrderBookLevelBulk(OrderBookAction.Update, snapshotLevels)
+                new OrderBookLevelBulk(OrderBookAction.Update, snapshotLevels, CryptoOrderBookType.L2)
                 {
                     ServerSequence = 4,
                     ServerTimestamp = now.AddMilliseconds(1),
                     ExchangeName = "test"
                 },
-                new OrderBookLevelBulk(OrderBookAction.Delete, snapshotLevels)
+                new OrderBookLevelBulk(OrderBookAction.Delete, snapshotLevels, CryptoOrderBookType.L2)
                 {
                     ServerSequence = 5,
                     ServerTimestamp = now.AddMilliseconds(2),
@@ -84,7 +85,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 new OrderBookLevel("1", CryptoOrderSide.Bid, 100, 5, 1, "BTCUSD"),
                 new OrderBookLevel("2", CryptoOrderSide.Ask, 101, 50, 2, "BTCUSD"),
             };
-            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, snapshotLevels)
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, snapshotLevels, CryptoOrderBookType.L2)
             {
                 ServerSequence = 3,
                 ServerTimestamp = now,
@@ -93,13 +94,13 @@ namespace Crypto.Websocket.Extensions.Tests
 
             var bulks = new[]
             {
-                new OrderBookLevelBulk(OrderBookAction.Update, snapshotLevels)
+                new OrderBookLevelBulk(OrderBookAction.Update, snapshotLevels, CryptoOrderBookType.L2)
                 {
                     ServerSequence = 4,
                     ServerTimestamp = now.AddMilliseconds(1),
                     ExchangeName = "test"
                 },
-                new OrderBookLevelBulk(OrderBookAction.Delete, snapshotLevels)
+                new OrderBookLevelBulk(OrderBookAction.Delete, snapshotLevels, CryptoOrderBookType.L2)
                 {
                     ServerSequence = 5,
                     ServerTimestamp = now.AddMilliseconds(2),
@@ -142,7 +143,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 new OrderBookLevel("1", CryptoOrderSide.Bid, 100, 5, 1, "BTCUSD"),
                 new OrderBookLevel("2", CryptoOrderSide.Ask, 101, 50, 2, "BTCUSD"),
             };
-            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, snapshotLevels)
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, snapshotLevels, CryptoOrderBookType.L2)
             {
                 ServerSequence = 3,
                 ServerTimestamp = now,
@@ -151,13 +152,13 @@ namespace Crypto.Websocket.Extensions.Tests
 
             var bulks = new[]
             {
-                new OrderBookLevelBulk(OrderBookAction.Update, snapshotLevels)
+                new OrderBookLevelBulk(OrderBookAction.Update, snapshotLevels, CryptoOrderBookType.L2)
                 {
                     ServerSequence = 4,
                     ServerTimestamp = now.AddMilliseconds(1),
                     ExchangeName = "test"
                 },
-                new OrderBookLevelBulk(OrderBookAction.Delete, snapshotLevels)
+                new OrderBookLevelBulk(OrderBookAction.Delete, snapshotLevels, CryptoOrderBookType.L2)
                 {
                     ServerSequence = 5,
                     ServerTimestamp = now.AddMilliseconds(2),
@@ -210,7 +211,7 @@ namespace Crypto.Websocket.Extensions.Tests
         }
     }
 
-    public class MockSource : OrderBookLevel2SourceBase
+    public class MockSource : OrderBookSourceBase
     {
         private readonly OrderBookLevelBulk _snapshot;
         private readonly OrderBookLevelBulk[] _bulks;

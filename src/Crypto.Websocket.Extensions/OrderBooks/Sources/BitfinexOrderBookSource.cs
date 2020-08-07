@@ -8,6 +8,7 @@ using Bitfinex.Client.Websocket.Client;
 using Bitfinex.Client.Websocket.Responses;
 using Bitfinex.Client.Websocket.Responses.Books;
 using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
@@ -17,7 +18,7 @@ using Newtonsoft.Json;
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 {
     /// <inheritdoc />
-    public class BitfinexOrderBookSource : OrderBookLevel2SourceBase
+    public class BitfinexOrderBookSource : OrderBookSourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
@@ -62,7 +63,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             // received snapshot, convert and stream
             var levels = ConvertLevels(books);
             var last = books.LastOrDefault();
-            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels);
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2);
             FillBulk(last, bulk);
             StreamSnapshot(bulk);
         }
@@ -143,7 +144,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
             var levels = ConvertLevels(parsed);
             var last = parsed.LastOrDefault();
-            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels);
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2);
             FillBulk(last, bulk);
             return bulk;
         }
@@ -152,7 +153,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         {
             var converted = ConvertLevel(book);
             var action = RecognizeAction(book);
-            var bulk = new OrderBookLevelBulk(action, new[] {converted});
+            var bulk = new OrderBookLevelBulk(action, new[] {converted}, CryptoOrderBookType.L2);
             FillBulk(book, bulk);
             return bulk;
         }

@@ -26,6 +26,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         string TargetPairOriginal { get; }
 
         /// <summary>
+        /// Order book type, which precision it supports
+        /// </summary>
+        CryptoOrderBookType TargetType { get; }
+
+        /// <summary>
         /// Time interval for auto snapshot reloading.
         /// Default 1 min. 
         /// </summary>
@@ -125,14 +130,24 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         double AskAmount { get; }
 
         /// <summary>
-        /// Find bid level by provided price (returns null in case of not found)
+        /// Find bid level for provided price (returns null in case of missing)
         /// </summary>
         OrderBookLevel FindBidLevelByPrice(double price);
 
         /// <summary>
-        /// Find ask level by provided price (returns null in case of not found)
+        /// Find all bid levels for provided price (returns empty when not found)
+        /// </summary>
+        OrderBookLevel[] FindBidLevelsByPrice(double price);
+
+        /// <summary>
+        /// Find ask level for provided price (returns null in case of missing)
         /// </summary>
         OrderBookLevel FindAskLevelByPrice(double price);
+
+        /// <summary>
+        /// Find all ask levels for provided price (returns empty when not found)
+        /// </summary>
+        OrderBookLevel[] FindAskLevelsByPrice(double price);
 
         /// <summary>
         /// Find bid level by provided identification (returns null in case of not found)

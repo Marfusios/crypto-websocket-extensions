@@ -8,6 +8,7 @@ using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Responses.Books;
 using Binance.Client.Websocket.Websockets;
 using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
@@ -32,7 +33,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
 
     /// <inheritdoc />
-    public class BinanceOrderBookSource : OrderBookLevel2SourceBase
+    public class BinanceOrderBookSource : OrderBookSourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
@@ -92,7 +93,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         {
             // received snapshot, convert and stream
             var levels = ConvertSnapshot(response.Data);
-            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels)
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2)
             {
                 ExchangeName = ExchangeName,
                 ServerSequence = response.Data.LastUpdateId
@@ -138,7 +139,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                 return null;
 
             var levels = ConvertSnapshot(snapshot);
-            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels)
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2)
             {
                 ExchangeName = ExchangeName,
                 ServerSequence = snapshot.LastUpdateId
@@ -199,7 +200,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
             if (toDelete.Any())
             {
-                var bulk = new OrderBookLevelBulk(OrderBookAction.Delete, toDelete)
+                var bulk = new OrderBookLevelBulk(OrderBookAction.Delete, toDelete, CryptoOrderBookType.L2)
                 {
                     ExchangeName = ExchangeName,
                     ServerTimestamp = response.Data?.EventTime,
@@ -210,7 +211,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
             if (toUpdate.Any())
             {
-                var bulk = new OrderBookLevelBulk(OrderBookAction.Update, toUpdate)
+                var bulk = new OrderBookLevelBulk(OrderBookAction.Update, toUpdate, CryptoOrderBookType.L2)
                 {
                     ExchangeName = ExchangeName,
                     ServerTimestamp = response.Data?.EventTime,

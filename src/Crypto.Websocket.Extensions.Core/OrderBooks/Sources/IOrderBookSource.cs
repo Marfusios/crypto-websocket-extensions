@@ -7,7 +7,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
     /// <summary>
     /// Order book source that provides level 2 data
     /// </summary>
-    public interface IOrderBookLevel2Source : IDisposable
+    public interface IOrderBookSource : IDisposable
     {
         /// <summary>
         /// Origin exchange name
