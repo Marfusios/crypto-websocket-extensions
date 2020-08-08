@@ -75,6 +75,16 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         bool DebugLogEnabled { get; set; }
 
         /// <summary>
+        /// Whenever snapshot was already handled
+        /// </summary>
+        bool IsSnapshotLoaded { get; }
+
+        /// <summary>
+        /// All diffs/deltas that come before snapshot will be ignored (default: true)
+        /// </summary>
+        bool IgnoreDiffsBeforeSnapshot { get; set; }
+
+        /// <summary>
         /// Streams data when top level bid or ask price was updated
         /// </summary>
         IObservable<IOrderBookChangeInfo> BidAskUpdatedStream { get; }

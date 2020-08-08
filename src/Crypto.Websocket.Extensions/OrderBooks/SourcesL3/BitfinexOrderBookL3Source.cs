@@ -15,10 +15,10 @@ using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace Crypto.Websocket.Extensions.OrderBooks.Sources
+namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
 {
     /// <inheritdoc />
-    public class BitfinexOrderBookSource : OrderBookSourceBase
+    public class BitfinexOrderBookL3Source : OrderBookSourceBase
     {
         private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
@@ -29,7 +29,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
 
         /// <inheritdoc />
-        public BitfinexOrderBookSource(BitfinexWebsocketClient client)
+        public BitfinexOrderBookL3Source(BitfinexWebsocketClient client)
         {
             _httpClient.BaseAddress = new Uri("https://api-pub.bitfinex.com");
 
@@ -54,41 +54,41 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private void Subscribe()
         {
-            _subscriptionSnapshot = _client.Streams.BookSnapshotStream.Subscribe(HandleSnapshot);
-            _subscription = _client.Streams.BookStream.Subscribe(HandleBook);
+            _subscriptionSnapshot = _client.Streams.RawBookSnapshotStream.Subscribe(HandleSnapshot);
+            _subscription = _client.Streams.RawBookStream.Subscribe(HandleBook);
         }
 
-        private void HandleSnapshot(Book[] books)
+        private void HandleSnapshot(RawBook[] books)
         {
             // received snapshot, convert and stream
             var levels = ConvertLevels(books);
             var last = books.LastOrDefault();
-            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2);
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L3);
             FillBulk(last, bulk);
             StreamSnapshot(bulk);
         }
 
-        private void HandleBook(Book book)
+        private void HandleBook(RawBook book)
         {
             BufferData(book);
         }
 
-        private OrderBookLevel[] ConvertLevels(Book[] data)
+        private OrderBookLevel[] ConvertLevels(RawBook[] data)
         {
             return data
                 .Select(ConvertLevel)
                 .ToArray();
         }
 
-        private OrderBookLevel ConvertLevel(Book x)
+        private OrderBookLevel ConvertLevel(RawBook x)
         {
             return new OrderBookLevel
             (
-                x.Price.ToString(CultureInfo.InvariantCulture),
+                x.OrderId.ToString(CultureInfo.InvariantCulture),
                 ConvertSide(x.Amount),
                 x.Price,
                 x.Amount,
-                x.Count,
+                null,
                 x.Pair
             );
         }
@@ -102,9 +102,9 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return CryptoOrderSide.Undefined;
         }
 
-        private OrderBookAction RecognizeAction(Book book)
+        private OrderBookAction RecognizeAction(RawBook book)
         {
-            if (book.Count > 0)
+            if (book.Price > 0)
                 return OrderBookAction.Update;
             return OrderBookAction.Delete;
         }
@@ -112,7 +112,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <inheritdoc />
         protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
         {
-            Book[] parsed = null;
+            RawBook[] parsed = null;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
             pairSafe = $"t{pairSafe}";
             var countSafe = count > 100 ? 100 : count;
@@ -120,12 +120,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
             try
             {
-                var url = $"/v2/book/{pairSafe}/P0?len={countSafe}";
+                var url = $"/v2/book/{pairSafe}/R0?len={countSafe}";
                 using (HttpResponseMessage response = await _httpClient.GetAsync(url))
                 using (HttpContent content = response.Content)
                 {
                     result = await content.ReadAsStringAsync();
-                    parsed = JsonConvert.DeserializeObject<Book[]>(result);
+                    parsed = JsonConvert.DeserializeObject<RawBook[]>(result);
                     if (parsed == null || !parsed.Any())
                         return null;
 
@@ -137,23 +137,23 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             }
             catch (Exception e)
             {
-                Log.Debug($"[ORDER BOOK {ExchangeName}] Failed to load L2 orderbook snapshot for pair '{pairSafe}'. " +
+                Log.Debug($"[ORDER BOOK {ExchangeName}] Failed to load L3 orderbook snapshot for pair '{pairSafe}'. " +
                          $"Error: '{e.Message}'.  Content: '{result}'");
                 return null;
             }
 
             var levels = ConvertLevels(parsed);
             var last = parsed.LastOrDefault();
-            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2);
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L3);
             FillBulk(last, bulk);
             return bulk;
         }
 
-        private OrderBookLevelBulk ConvertDiff(Book book)
+        private OrderBookLevelBulk ConvertDiff(RawBook book)
         {
             var converted = ConvertLevel(book);
             var action = RecognizeAction(book);
-            var bulk = new OrderBookLevelBulk(action, new[] {converted}, CryptoOrderBookType.L2);
+            var bulk = new OrderBookLevelBulk(action, new[] {converted}, CryptoOrderBookType.L3);
             FillBulk(book, bulk);
             return bulk;
         }
@@ -174,7 +174,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             var result = new List<OrderBookLevelBulk>();
             foreach (var response in data)
             {
-                var responseSafe = response as Book;
+                var responseSafe = response as RawBook;
                 if(responseSafe == null)
                     continue;
 

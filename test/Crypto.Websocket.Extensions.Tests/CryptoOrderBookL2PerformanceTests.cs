@@ -217,7 +217,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 if (i % 10 == 0)
                 {
                     // insert new levels
-                    var bulk = GetInsertBulk(
+                    var bulk = GetInsertBulkL2(
                         CreateLevel(pair, (i % maxBidPrice) + 0.4, i + 50, CryptoOrderSide.Bid),
                         CreateLevel(pair, (Math.Max(i - 55, 1) % maxBidPrice) + 0.4, i + 600, CryptoOrderSide.Bid),
                         CreateLevel(pair, (maxBidPrice + (i % maxAskCount) + 0.4), i + 400, CryptoOrderSide.Ask),
@@ -230,7 +230,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 else
                 {
                     // update levels
-                    var bulk = GetUpdateBulk(
+                    var bulk = GetUpdateBulkL2(
                         CreateLevel(pair, (i % maxBidPrice), i + 50, CryptoOrderSide.Bid),
                         CreateLevel(pair, (Math.Max(i - 55, 1) % maxBidPrice), i + 600, CryptoOrderSide.Bid),
                         CreateLevel(pair, (maxBidPrice + (i % maxAskCount)), i + 400, CryptoOrderSide.Ask),
