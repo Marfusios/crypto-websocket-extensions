@@ -1,8 +1,11 @@
-﻿namespace Crypto.Websocket.Extensions.Core.Models
+﻿using System.Diagnostics;
+
+namespace Crypto.Websocket.Extensions.Core.Models
 {
     /// <summary>
     /// Price quotes
     /// </summary>
+    [DebuggerDisplay("CryptoQuotes bid: {Bid}/{BidAmount}, ask: {Ask}/{AskAmount}")]
     public class CryptoQuotes : ICryptoQuotes
     {
         /// <inheritdoc />
@@ -39,5 +42,10 @@
         /// Top level ask amount
         /// </summary>
         public double AskAmount { get; }
+
+        public override string ToString()
+        {
+            return $"bid: {Bid}/{BidAmount}, ask: {Ask}/{AskAmount}";
+        }
     }
 }

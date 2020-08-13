@@ -317,5 +317,47 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(2, allAsks[100.111].Length);
 
         }
+
+        [Fact]
+        public void NegativePrice_ShouldHandleCorrectly()
+        {
+            var pair1 = "BTC/USD";
+
+            var source = new OrderBookSourceMock();
+            source.BufferEnabled = false;
+
+            var orderBook = new CryptoOrderBook(pair1, source);
+            orderBook.IgnoreDiffsBeforeSnapshot = false;
+
+            source.StreamBulk(
+                GetInsertBulk(CryptoOrderBookType.L3, CreateLevel(pair1, 100.111, 0.123, CryptoOrderSide.Ask, null, "ASK1"))
+                );
+
+            Assert.Equal(0, orderBook.BidPrice);
+            Assert.Equal(0, orderBook.BidAmount);
+            Assert.Equal(100.111, orderBook.AskPrice);
+            Assert.Equal(0.123, orderBook.AskAmount);
+
+            source.StreamBulk(
+                GetInsertBulk(CryptoOrderBookType.L3, CreateLevel(pair1, -200, 0.444, CryptoOrderSide.Bid, null, "BID1"))
+            );
+            source.StreamBulk(
+                GetInsertBulk(CryptoOrderBookType.L3, CreateLevel(pair1, -100, 0.555, CryptoOrderSide.Bid, null, "BID2"))
+            );
+
+            Assert.Equal(-100, orderBook.BidPrice);
+            Assert.Equal(0.555, orderBook.BidAmount);
+            Assert.Equal(100.111, orderBook.AskPrice);
+            Assert.Equal(0.123, orderBook.AskAmount);
+
+            source.StreamBulk(
+                GetInsertBulk(CryptoOrderBookType.L3, CreateLevel(pair1, 100, 777, CryptoOrderSide.Bid, null, "BID2"))
+            );
+
+            Assert.Equal(100, orderBook.BidPrice);
+            Assert.Equal(777, orderBook.BidAmount);
+            Assert.Equal(100.111, orderBook.AskPrice);
+            Assert.Equal(0.123, orderBook.AskAmount);
+        }
     }
 }

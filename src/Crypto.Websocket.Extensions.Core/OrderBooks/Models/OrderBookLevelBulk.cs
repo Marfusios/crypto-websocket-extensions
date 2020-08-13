@@ -6,7 +6,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
     /// <summary>
     /// Groups together order book levels that are coming from server
     /// </summary>
-    [DebuggerDisplay("OrderBookLevelBulk [{Action}] count: {Levels.Length}")]
+    [DebuggerDisplay("OrderBookLevelBulk [{Action}] type: {OrderBookType} count: {Levels.Length}")]
     public class OrderBookLevelBulk : CryptoChangeInfo
     {
         /// <inheritdoc />

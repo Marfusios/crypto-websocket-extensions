@@ -27,7 +27,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
             Observable.CombineLatest(new[]
                 {
-                    ob.BidAskUpdatedStream
+                    ob.OrderBookUpdatedStream
                 })
                 .Subscribe(x => HandleQuoteChanged(x, false, ob));
         }
@@ -47,9 +47,9 @@ namespace Crypto.Websocket.Extensions.Sample
                 var ask = asks.Length > i ? asks[i] : null;
 
                 var bidMsg =
-                    $"#{i+1} {bid?.Id} {"p: " + (bid?.Price ?? 0).ToString("#.00#") + " a: " + (bid?.Amount ?? 0).ToString("0.00#")}";
+                    bid != null ? $"#{i+1} {bid?.Id} {"p: " + (bid?.Price ?? 0).ToString("#.00#") + " a: " + (bid?.Amount ?? 0).ToString("0.00#")}" : " ";
                 var askMsg =
-                    $"#{i+1} {ask?.Id} {"p: " + (ask?.Price ?? 0).ToString("#.00#") + " a: " + (ask?.Amount ?? 0).ToString("0.00#")}";
+                    ask != null ? $"#{i+1} {ask?.Id} {"p: " + (ask?.Price ?? 0).ToString("#.00#") + " a: " + (ask?.Amount ?? 0).ToString("0.00#")}" : " ";
 
                 bidMsg = $"{bidMsg,50}";
                 askMsg = $"{askMsg,50}";

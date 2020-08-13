@@ -680,5 +680,34 @@ namespace Crypto.Websocket.Extensions.Tests
         }
 #endif
 
+        [Fact]
+        public void NegativePrice_ShouldHandleCorrectly()
+        {
+            var pair = "BTC/USD";
+            var data = GetOrderBookSnapshotMockData(pair, 500);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
+            var source = new OrderBookSourceMock(snapshot);
+            source.BufferEnabled = false;
+
+            var orderBook = new CryptoOrderBookL2(pair, source) {DebugEnabled = true};
+            orderBook.IgnoreDiffsBeforeSnapshot = false;
+
+            source.StreamBulk(GetInsertBulkL2(
+                CreateLevel(pair, -200, -50, CryptoOrderSide.Bid),
+                CreateLevel(pair, 500, -400, CryptoOrderSide.Ask)
+            ));
+
+            source.StreamBulk(GetInsertBulkL2(
+                CreateLevel(pair, -50, -600, CryptoOrderSide.Bid),
+                CreateLevel(pair, -100, -3350, CryptoOrderSide.Bid)
+            ));
+
+            Assert.Equal(-50, orderBook.BidPrice);
+            Assert.Equal(600, orderBook.BidAmount);
+
+            Assert.Equal(500, orderBook.AskPrice);
+            Assert.Equal(400, orderBook.AskAmount);
+        }
+
     }
 }

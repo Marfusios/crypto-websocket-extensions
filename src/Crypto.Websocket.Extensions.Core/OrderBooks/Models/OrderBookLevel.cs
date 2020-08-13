@@ -23,7 +23,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
             Amount = amount;
             Pair = pair == null ? null : CryptoPairsHelper.Clean(pair);
 
-            Price = Abs(Price);
+            Price = Price;
             Amount = Abs(Amount);
             Count = Abs(Count);
         }

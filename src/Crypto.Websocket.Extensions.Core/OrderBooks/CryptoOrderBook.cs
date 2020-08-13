@@ -633,7 +633,6 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             return string.IsNullOrWhiteSpace(level.Id) ||
                    level.Price == null ||
-                   level.Price.Value < 0 ||
                    level.Amount == null;
         }
 

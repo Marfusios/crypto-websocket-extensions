@@ -1,10 +1,12 @@
-﻿using Crypto.Websocket.Extensions.Core.Models;
+﻿using System.Diagnostics;
+using Crypto.Websocket.Extensions.Core.Models;
 
 namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
 {
     /// <summary>
     /// Info about changed order book
     /// </summary>
+    [DebuggerDisplay("OrderBookChangeInfo [{PairOriginal}] {Quotes} sources: {Sources.Length}")]
     public class OrderBookChangeInfo : CryptoChangeInfo, IOrderBookChangeInfo
     {
         /// <inheritdoc />
