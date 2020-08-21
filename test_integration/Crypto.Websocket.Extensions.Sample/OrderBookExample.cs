@@ -64,10 +64,10 @@ namespace Crypto.Websocket.Extensions.Sample
             var l2OrderBook = false;
 
             var ob = await StartBitmex("XBTUSD", optimized, l2OrderBook);
-            //var ob = await StartBinance("BTCUSDT", optimized, l2Optimized);
-            //var ob = await StartBitfinex("BTCUSD", optimized, l2Optimized);
-            //var ob = await StartCoinbase("BTC-USD", optimized, l2Optimized);
-            //var ob = await StartBitstamp("BTCUSD", optimized, l2Optimized);
+            //var ob = await StartBinance("BTCUSDT", optimized, l2OrderBook);
+            //var ob = await StartBitfinex("BTCUSD", optimized, l2OrderBook);
+            //var ob = await StartCoinbase("BTC-USD", optimized, l2OrderBook);
+            //var ob = await StartBitstamp("BTCUSD", optimized, l2OrderBook);
 
             Log.Information("Waiting for price change...");
 

@@ -70,6 +70,9 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
         {
             var data = trade.Data;
 
+            var buyId = data.BuyOrderId.ToString(CultureInfo.InvariantCulture);
+            var sellId = data.SellOrderId.ToString(CultureInfo.InvariantCulture);
+
             var result = new CryptoTrade()
             {
                 Amount = data.Amount,
@@ -81,7 +84,10 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
                 Pair = trade.Symbol,
 
                 ExchangeName = ExchangeName,
-                ServerTimestamp = data.Microtimestamp
+                ServerTimestamp = data.Microtimestamp,
+
+                MakerOrderId = data.Side == TradeSide.Buy ? sellId : buyId,
+                TakerOrderId = data.Side == TradeSide.Sell ? sellId : buyId
             };
             return result;
         }

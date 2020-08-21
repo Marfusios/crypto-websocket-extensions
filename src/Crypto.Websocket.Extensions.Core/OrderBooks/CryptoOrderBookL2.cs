@@ -18,7 +18,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
     /// <summary>
     /// Cryptocurrency order book optimized for L2 precision (grouped by price).
     /// Process order book data from one source and one target pair.
-    /// All levels are computed in advance, allocates less memory. 
+    /// All levels are computed in advance, allocates less memory than CryptoOrderBook counterpart. 
     /// </summary>
     [DebuggerDisplay("CryptoOrderBook [{TargetPair}] bid: {BidPrice} ({_bidLevels.Count}) ask: {AskPrice} ({_askLevels.Count})")]
     public class CryptoOrderBookL2 : ICryptoOrderBook
@@ -32,7 +32,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         private readonly Subject<OrderBookChangeInfo> _topLevelUpdated = new Subject<OrderBookChangeInfo>();
         private readonly Subject<OrderBookChangeInfo> _orderBookUpdated = new Subject<OrderBookChangeInfo>();
 
-        private readonly SortedDictionary<double, OrderBookLevel> _bidLevels = new SortedDictionary<double, OrderBookLevel>(new DescendingComparer<double>());
+        private readonly SortedDictionary<double, OrderBookLevel> _bidLevels = new SortedDictionary<double, OrderBookLevel>(new DescendingComparer());
         private readonly SortedDictionary<double, OrderBookLevel> _askLevels = new SortedDictionary<double, OrderBookLevel>();
 
         private readonly Dictionary<string, OrderBookLevel> _allLevels = new Dictionary<string, OrderBookLevel>(20000);
@@ -761,9 +761,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             Log.Debug(e, $"[ORDER BOOK {ExchangeName} {TargetPair}] {msg}");
         }
 
-        private class DescendingComparer<T> : IComparer<T> where T : IComparable<T> {
-            public int Compare(T x, T y) {
-                // ReSharper disable once PossibleNullReferenceException
+        private class DescendingComparer : IComparer<double> {
+            public int Compare(double x, double y) {
                 return y.CompareTo(x);
             }
         }

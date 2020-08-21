@@ -27,7 +27,7 @@ It helps to unify data models and usage of more clients together.
 | [![bitmex](https://user-images.githubusercontent.com/1294454/27766319-f653c6e6-5ed4-11e7-933d-f0bc3699ae8f.jpg)](https://www.bitmex.com/register/qGWwBG)  | [BitMEX](https://www.bitmex.com/register/qGWwBG)  | [bitmex-client-websocket](https://github.com/Marfusios/bitmex-client-websocket) |
 | [![binance](https://user-images.githubusercontent.com/1294454/29604020-d5483cdc-87ee-11e7-94c7-d1a8d9169293.jpg)](https://www.binance.com/?ref=21773680)  | [Binance](https://www.binance.com/?ref=21773680)  | [binance-client-websocket](https://github.com/Marfusios/binance-client-websocket) |
 | [![coinbase](https://user-images.githubusercontent.com/1294454/41764625-63b7ffde-760a-11e8-996d-a6328fa9347a.jpg)](https://www.coinbase.com/join/kotas_4)  | [Coinbase](https://www.coinbase.com/join/kotas_4)  | [coinbase-client-websocket](https://github.com/Marfusios/coinbase-client-websocket) |
-| [![bitstamp](https://user-images.githubusercontent.com/1294454/27786377-8c8ab57e-5fe9-11e7-8ea4-2b05b6bcceec.jpg)](https://www.coinbase.com/join/kotas_4)  | [Bitstamp](https://www.bitstamp.net)  | [bitstamp-client-websocket](https://github.com/Marfusios/bitstamp-client-websocket) |
+| [![bitstamp](https://user-images.githubusercontent.com/1294454/27786377-8c8ab57e-5fe9-11e7-8ea4-2b05b6bcceec.jpg)](https://www.bitstamp.net)  | [Bitstamp](https://www.bitstamp.net)  | [bitstamp-client-websocket](https://github.com/Marfusios/bitstamp-client-websocket) |
 
 
 ## Extensions
@@ -36,13 +36,15 @@ It helps to unify data models and usage of more clients together.
 
 * efficient data structure, based on [howtohft blog post](https://web.archive.org/web/20110219163448/http://howtohft.wordpress.com/2011/02/15/how-to-build-a-fast-limit-order-book/)
 * `CryptoOrderBook` class - unified order book across all exchanges
-* support for level2 market data (only differences in order book)
+* support for L2 (grouped by price), L3 (every single order) market data 
+* support for snapshots and deltas/diffs
 * provides streams:
     * `OrderBookUpdatedStream` - streams on an every order book update
     * `BidAskUpdatedStream` - streams when bid or ask price changed (top level of the order book)
 	* `TopLevelUpdatedStream` - streams when bid or ask price/amount changed (top level of the order book)
 * provides properties and methods:
     * `BidLevels` and `AskLevels` - ordered array of current state of the order book
+    * `BidLevelsPerPrice` and `AskLevelsPerPrice` - dictionary of all L3 orders split by price
     * `FindLevelByPrice` and `FindLevelById` - returns specific order book level
 
 Usage:
@@ -93,9 +95,9 @@ await communicator.Start();
 ---
 
 More usage examples:
+* console sample ([link](test_integration/Crypto.Websocket.Extensions.Sample/Program.cs))
 * unit tests ([link](test/Crypto.Websocket.Extensions.Tests))
 * integration tests ([link](test_integration/Crypto.Websocket.Extensions.Tests.Integration))
-* console sample ([link](test_integration/Crypto.Websocket.Extensions.Sample/Program.cs))
 
 **Pull Requests are welcome!**
 

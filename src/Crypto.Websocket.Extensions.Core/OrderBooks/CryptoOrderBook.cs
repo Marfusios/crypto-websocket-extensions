@@ -17,9 +17,9 @@ using Crypto.Websocket.Extensions.Core.Validations;
 namespace Crypto.Websocket.Extensions.Core.OrderBooks
 {
     /// <summary>
-    /// Cryptocurrency order book.
+    /// Cryptocurrency order book (supports all levels L2, L3, etc).
     /// Process order book data from one source and one target pair.
-    /// Only first levels are computed in advance, allocates more memory. 
+    /// Only first levels are computed in advance, allocates more memory than CryptoOrderBookL2 counterpart. 
     /// </summary>
     [DebuggerDisplay("CryptoOrderBook [{TargetPair} {TargetType}] bid: {BidPrice} ({_bidLevels.Count}) ask: {AskPrice} ({_askLevels.Count})")]
     public class CryptoOrderBook : ICryptoOrderBook
@@ -33,7 +33,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         private readonly Subject<OrderBookChangeInfo> _topLevelUpdated = new Subject<OrderBookChangeInfo>();
         private readonly Subject<OrderBookChangeInfo> _orderBookUpdated = new Subject<OrderBookChangeInfo>();
 
-        private readonly SortedDictionary<double, OrderedDictionary> _bidLevels = new SortedDictionary<double, OrderedDictionary>(new DescendingComparer<double>());
+        private readonly SortedDictionary<double, OrderedDictionary> _bidLevels = new SortedDictionary<double, OrderedDictionary>(new DescendingComparer());
         private readonly SortedDictionary<double, OrderedDictionary> _askLevels = new SortedDictionary<double, OrderedDictionary>();
 
         private readonly OrderBookLevelsOrderPerPrice _bidLevelOrdering = new OrderBookLevelsOrderPerPrice(1000);
@@ -409,7 +409,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             var forThis = bulks
                 .Where(x => x != null)
                 .Where(x => IsCorrectType(x.OrderBookType))
-                .Where(x => x.Levels.Any(y => TargetPair.Equals(y.Pair)))
+                //.Where(x => x.Levels.Any(y => TargetPair.Equals(y.Pair)))
                 .ToArray();
             if (!forThis.Any())
             {
@@ -918,9 +918,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             Log.Debug(e, $"[ORDER BOOK {ExchangeName} {TargetPair}] {msg}");
         }
 
-        private class DescendingComparer<T> : IComparer<T> where T : IComparable<T> {
-            public int Compare(T x, T y) {
-                // ReSharper disable once PossibleNullReferenceException
+        private class DescendingComparer : IComparer<double> {
+            public int Compare(double x, double y) {
                 return y.CompareTo(x);
             }
         }
