@@ -8,7 +8,9 @@ namespace Crypto.Websocket.Extensions.Core.Models
     [DebuggerDisplay("CryptoQuotes bid: {Bid}/{BidAmount}, ask: {Ask}/{AskAmount}")]
     public class CryptoQuotes : ICryptoQuotes
     {
-        /// <inheritdoc />
+        /// <summary>
+        /// Price quotes
+        /// </summary>
         public CryptoQuotes(double bid, double ask, double bidAmount, double askAmount)
         {
             Bid = bid;
@@ -43,6 +45,18 @@ namespace Crypto.Websocket.Extensions.Core.Models
         /// </summary>
         public double AskAmount { get; }
 
+        /// <summary>
+        /// Returns true if quotes are in valid state
+        /// </summary>
+        public bool IsValid()
+        {
+            var isPriceValid = Bid <= Ask;
+            return isPriceValid;
+        }
+
+        /// <summary>
+        /// Format quotes to readable form
+        /// </summary>
         public override string ToString()
         {
             return $"bid: {Bid}/{BidAmount}, ask: {Ask}/{AskAmount}";

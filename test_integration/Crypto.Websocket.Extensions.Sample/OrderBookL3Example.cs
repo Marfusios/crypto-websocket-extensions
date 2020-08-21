@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
@@ -8,7 +7,6 @@ using Bitfinex.Client.Websocket.Client;
 using Bitfinex.Client.Websocket.Requests.Configurations;
 using Bitfinex.Client.Websocket.Websockets;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
-using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.OrderBooks.SourcesL3;
 using Serilog;
@@ -20,6 +18,7 @@ namespace Crypto.Websocket.Extensions.Sample
         public static async Task RunOnlyOne()
         {
             var optimized = true;
+            var levelsCount = 3;
 
             var ob = await StartBitfinex("BTCUSD", optimized);
 
@@ -29,13 +28,13 @@ namespace Crypto.Websocket.Extensions.Sample
                 {
                     ob.OrderBookUpdatedStream
                 })
-                .Subscribe(x => HandleQuoteChanged(x, false, ob));
+                .Subscribe(x => HandleQuoteChanged(ob, levelsCount));
         }
 
-        private static void HandleQuoteChanged(IList<IOrderBookChangeInfo> quotes, bool simple, CryptoOrderBook ob)
+        private static void HandleQuoteChanged( CryptoOrderBook ob, int levelsCount)
         {
-            var bids = ob.BidLevelsPerPrice.Take(2).SelectMany(x => x.Value).ToArray();
-            var asks = ob.AskLevelsPerPrice.Take(2).SelectMany(x => x.Value).ToArray();
+            var bids = ob.BidLevelsPerPrice.Take(levelsCount).SelectMany(x => x.Value).ToArray();
+            var asks = ob.AskLevelsPerPrice.Take(levelsCount).SelectMany(x => x.Value).ToArray();
 
             var max = Math.Max(bids.Length, asks.Length);
 
@@ -47,9 +46,15 @@ namespace Crypto.Websocket.Extensions.Sample
                 var ask = asks.Length > i ? asks[i] : null;
 
                 var bidMsg =
-                    bid != null ? $"#{i+1} {bid?.Id} {"p: " + (bid?.Price ?? 0).ToString("#.00#") + " a: " + (bid?.Amount ?? 0).ToString("0.00#")}" : " ";
+                    bid != null ? $"#{i+1} {bid?.Id} " +
+                                  $"{"p: " + (bid?.Price ?? 0).ToString("#.00#") + " a: " + (bid?.Amount ?? 0).ToString("0.00#")} " +
+                                  $"[{bid.PriceUpdatedCount}/{bid.AmountUpdatedCount}]" 
+                        : " ";
                 var askMsg =
-                    ask != null ? $"#{i+1} {ask?.Id} {"p: " + (ask?.Price ?? 0).ToString("#.00#") + " a: " + (ask?.Amount ?? 0).ToString("0.00#")}" : " ";
+                    ask != null ? $"#{i+1} {ask?.Id} " +
+                                  $"{"p: " + (ask?.Price ?? 0).ToString("#.00#") + " a: " + (ask?.Amount ?? 0).ToString("0.00#")} " +
+                                  $"[{ask.PriceUpdatedCount}/{ask.AmountUpdatedCount}]" 
+                        : " ";
 
                 bidMsg = $"{bidMsg,50}";
                 askMsg = $"{askMsg,50}";
@@ -58,7 +63,7 @@ namespace Crypto.Websocket.Extensions.Sample
                 
             }
 
-            Log.Information($"TOP LEVEL: {msg}{Environment.NewLine}");
+            Log.Information($"TOP LEVEL {ob.ExchangeName} {ob.TargetPairOriginal}: {msg}{Environment.NewLine}");
 
         }
 

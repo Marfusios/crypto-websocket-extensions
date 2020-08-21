@@ -61,8 +61,8 @@ namespace Crypto.Websocket.Extensions.Tests
             };
             var source = new OrderBookSourceMock(snapshot);
 
-            var orderBook1 = new CryptoOrderBook(pair1, source);
-            var orderBook2 = new CryptoOrderBook(pair2, source);
+            ICryptoOrderBook orderBook1 = new CryptoOrderBook(pair1, source);
+            ICryptoOrderBook orderBook2 = new CryptoOrderBook(pair2, source);
 
             orderBook1.OrderBookUpdatedStream.Subscribe(x =>
             {
@@ -129,8 +129,8 @@ namespace Crypto.Websocket.Extensions.Tests
 
             var source = new OrderBookSourceMock();
 
-            var orderBook1 = new CryptoOrderBook(pair1, source);
-            var orderBook2 = new CryptoOrderBook(pair2, source);
+            ICryptoOrderBook orderBook1 = new CryptoOrderBook(pair1, source);
+            ICryptoOrderBook orderBook2 = new CryptoOrderBook(pair2, source);
 
             orderBook1.OrderBookUpdatedStream.Subscribe(x =>
             {
@@ -185,7 +185,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
 
-            var orderBook = new CryptoOrderBook(pair1, source);
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair1, source);
 
             source.StreamSnapshot();
 
@@ -230,7 +230,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
 
-            var orderBook = new CryptoOrderBook(pair, source);
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source);
 
             source.StreamSnapshot();
 
@@ -311,8 +311,8 @@ namespace Crypto.Websocket.Extensions.Tests
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
 
-            var orderBook1 = new CryptoOrderBook(pair1, source) {DebugEnabled = true};
-            var orderBook2 = new CryptoOrderBook(pair2, source) {DebugEnabled = true};
+            ICryptoOrderBook orderBook1 = new CryptoOrderBook(pair1, source) {DebugEnabled = true};
+            ICryptoOrderBook orderBook2 = new CryptoOrderBook(pair2, source) {DebugEnabled = true};
 
             source.StreamSnapshot();
 
@@ -425,7 +425,7 @@ namespace Crypto.Websocket.Extensions.Tests
 
             var changes = new List<IOrderBookChangeInfo>();
 
-            var orderBook = new CryptoOrderBook(pair, source) {DebugEnabled = true};
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source) {DebugEnabled = true};
 
             orderBook.OrderBookUpdatedStream.Subscribe(x =>
             {
@@ -525,7 +525,7 @@ namespace Crypto.Websocket.Extensions.Tests
 
             var changes = new List<IOrderBookChangeInfo>();
 
-            var orderBook = new CryptoOrderBook(pair, source) {DebugEnabled = true};
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source) {DebugEnabled = true};
 
             orderBook.OrderBookUpdatedStream.Subscribe(x =>
             {
@@ -617,7 +617,7 @@ namespace Crypto.Websocket.Extensions.Tests
             source.BufferInterval = TimeSpan.FromMilliseconds(100);
             var orderBookUpdatedCount = 0;
 
-            var orderBook = new CryptoOrderBook(pair, source)
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source)
             {
                 ValidityCheckTimeout = TimeSpan.FromMilliseconds(200), 
                 ValidityCheckEnabled = true,
@@ -655,7 +655,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var source = new OrderBookSourceMock(snapshot);
             var orderBookUpdatedCount = 0;
 
-            var orderBook = new CryptoOrderBook(pair, source)
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source)
             {
                 ValidityCheckTimeout = TimeSpan.FromMilliseconds(200), 
                 ValidityCheckEnabled = false
@@ -689,7 +689,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var source = new OrderBookSourceMock(snapshot);
             source.BufferEnabled = false;
 
-            var orderBook = new CryptoOrderBook(pair, source) {DebugEnabled = true};
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source) {DebugEnabled = true};
             orderBook.IgnoreDiffsBeforeSnapshot = false;
 
             source.StreamBulk(GetInsertBulkL2(
@@ -707,6 +707,66 @@ namespace Crypto.Websocket.Extensions.Tests
 
             Assert.Equal(500, orderBook.AskPrice);
             Assert.Equal(400, orderBook.AskAmount);
+        }
+
+        [Fact]
+        public void InvalidBidAsk_ShouldBePreserved()
+        {
+            var pair = "BTC/USD";
+            var data = GetOrderBookSnapshotMockData(pair, 500);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
+            var source = new OrderBookSourceMock(snapshot);
+            source.BufferEnabled = false;
+
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source) {DebugEnabled = true};
+            orderBook.IgnoreDiffsBeforeSnapshot = false;
+
+            var changesTopLevel = new List<IOrderBookChangeInfo>();
+            orderBook.BidAskUpdatedStream.Subscribe(x => changesTopLevel.Add(x));
+
+            var changes = new List<IOrderBookChangeInfo>();
+            orderBook.OrderBookUpdatedStream.Subscribe(x => changes.Add(x));
+
+            source.StreamBulk(GetInsertBulkL2(
+                CreateLevel(pair, 100, 50, CryptoOrderSide.Bid),
+                CreateLevel(pair, 200, 400, CryptoOrderSide.Ask),
+                CreateLevel(pair, 300, 600, CryptoOrderSide.Ask)
+            ));
+
+            source.StreamBulk(GetInsertBulkL2(
+                CreateLevel(pair, 205, 60, CryptoOrderSide.Bid),
+                CreateLevel(pair, 211, 333, CryptoOrderSide.Bid)
+            ));
+
+            Assert.Equal(211, orderBook.BidPrice);
+            Assert.Equal(333, orderBook.BidAmount);
+
+            Assert.Equal(200, orderBook.AskPrice);
+            Assert.Equal(400, orderBook.AskAmount);
+
+            Assert.False(orderBook.IsValid());
+
+            source.StreamBulk(GetDeleteBulkL2(
+                CreateLevel(pair, 200, CryptoOrderSide.Ask)
+            ));
+
+            Assert.Equal(211, orderBook.BidPrice);
+            Assert.Equal(333, orderBook.BidAmount);
+
+            Assert.Equal(300, orderBook.AskPrice);
+            Assert.Equal(600, orderBook.AskAmount);
+
+            Assert.True(orderBook.IsValid());
+
+            Assert.Equal(3, changesTopLevel.Count);
+            Assert.True(changesTopLevel[0].Quotes.IsValid());
+            Assert.False(changesTopLevel[1].Quotes.IsValid());
+            Assert.True(changesTopLevel[2].Quotes.IsValid());
+
+            Assert.Equal(3, changes.Count);
+            Assert.True(changes[0].Quotes.IsValid());
+            Assert.False(changes[1].Quotes.IsValid());
+            Assert.True(changes[2].Quotes.IsValid());
         }
 
     }

@@ -29,5 +29,10 @@
         /// Top level ask amount
         /// </summary>
         double AskAmount { get; }
+
+        /// <summary>
+        /// Returns true if quotes are in valid state
+        /// </summary>
+        bool IsValid();
     }
 }

@@ -36,14 +36,14 @@ namespace Crypto.Websocket.Extensions.Sample
     {
         public static async Task RunEverything()
         {
-            var optimized = true;
-            var l2Optimized = false;
+            var optimized = false;
+            var l2OrderBook = false;
 
-            var bitmexOb = await StartBitmex("XBTUSD", optimized, l2Optimized);
-            var bitfinexOb = await StartBitfinex("BTCUSD", optimized, l2Optimized);
-            var binanceOb = await StartBinance("BTCUSDT", optimized, l2Optimized);
-            var coinbaseOb = await StartCoinbase("BTC-USD", optimized, l2Optimized);
-            var bitstampOb = await StartBitstamp("BTCUSD", optimized, l2Optimized);
+            var bitmexOb = await StartBitmex("XBTUSD", optimized, l2OrderBook);
+            var bitfinexOb = await StartBitfinex("BTCUSD", optimized, l2OrderBook);
+            var binanceOb = await StartBinance("BTCUSDT", optimized, l2OrderBook);
+            var coinbaseOb = await StartCoinbase("BTC-USD", optimized, l2OrderBook);
+            var bitstampOb = await StartBitstamp("BTCUSD", optimized, l2OrderBook);
 
             Log.Information("Waiting for price change...");
 
@@ -58,12 +58,12 @@ namespace Crypto.Websocket.Extensions.Sample
                 .Subscribe(x => HandleQuoteChanged(x, true));
         }
 
-        public static async Task RunOnlyOne()
+        public static async Task RunOnlyOne(bool displayFullOb)
         {
             var optimized = true;
-            var l2Optimized = false;
+            var l2OrderBook = false;
 
-            var ob = await StartBitmex("XBTUSD", optimized, l2Optimized);
+            var ob = await StartBitmex("XBTUSD", optimized, l2OrderBook);
             //var ob = await StartBinance("BTCUSDT", optimized, l2Optimized);
             //var ob = await StartBitfinex("BTCUSD", optimized, l2Optimized);
             //var ob = await StartCoinbase("BTC-USD", optimized, l2Optimized);
@@ -71,11 +71,20 @@ namespace Crypto.Websocket.Extensions.Sample
 
             Log.Information("Waiting for price change...");
 
-            Observable.CombineLatest(new[]
-                {
-                    ob.BidAskUpdatedStream
-                })
-                .Subscribe(x => HandleQuoteChanged(x, false));
+            if (displayFullOb)
+            {
+                ob.OrderBookUpdatedStream
+                    .Subscribe(x => HandleQuoteChanged(ob));
+            }
+            else
+            {
+                Observable.CombineLatest(new[]
+                    {
+                        ob.BidAskUpdatedStream
+                    })
+                    .Subscribe(x => HandleQuoteChanged(x, false));
+            }
+
         }
 
         private static void HandleQuoteChanged(IList<IOrderBookChangeInfo> quotes, bool simple)
@@ -101,6 +110,42 @@ namespace Crypto.Websocket.Extensions.Sample
 
             var msg = string.Join(" | ", formattedMessages);
             Log.Information($"Quotes changed:  {msg}");
+        }
+
+        private static void HandleQuoteChanged(ICryptoOrderBook ob)
+        {
+            var bids = ob.BidLevels.Take(10).ToArray();
+            var asks = ob.AskLevels.Take(10).ToArray();
+
+            var max = Math.Max(bids.Length, asks.Length);
+
+            var msg = string.Empty;
+
+            for (int i = 0; i < max; i++)
+            {
+                var bid = bids.Length > i ? bids[i] : null;
+                var ask = asks.Length > i ? asks[i] : null;
+
+                var bidMsg =
+                    bid != null ? $"#{i+1} " +
+                                  $"{"p: " + (bid?.Price ?? 0).ToString("#.00##") + " a: " + (bid?.Amount ?? 0).ToString("0.00#")} " +
+                                  $"[{bid.AmountUpdatedCount}]" 
+                        : " ";
+                var askMsg =
+                    ask != null ? $"#{i+1} " +
+                                  $"{"p: " + (ask?.Price ?? 0).ToString("#.00##") + " a: " + (ask?.Amount ?? 0).ToString("0.00#")} " +
+                                  $"[{ask.AmountUpdatedCount}]" 
+                        : " ";
+
+                bidMsg = $"{bidMsg,50}";
+                askMsg = $"{askMsg,50}";
+
+                msg+= $"{Environment.NewLine}{bidMsg}  {askMsg}";
+                
+            }
+
+            Log.Information($"ORDER BOOK {ob.ExchangeName} {ob.TargetPairOriginal}: {msg}{Environment.NewLine}");
+
         }
 
 
@@ -244,8 +289,8 @@ namespace Crypto.Websocket.Extensions.Sample
             source.BufferEnabled = true;
             source.BufferInterval = TimeSpan.FromMilliseconds(0);
 
-            orderBook.DebugEnabled = false;
-            orderBook.DebugLogEnabled = false;
+            orderBook.DebugEnabled = true;
+            orderBook.DebugLogEnabled = true;
             orderBook.ValidityCheckEnabled = false;
         }
     }

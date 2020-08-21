@@ -250,7 +250,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         public bool IsValid()
         {
             var isPriceValid = BidPrice <= AskPrice;
-            return isPriceValid &&_source.IsValid();
+            return isPriceValid && _source.IsValid();
         }
 
         /// <summary>
@@ -538,6 +538,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             // ReSharper disable once PossibleInvalidOperationException
             collection[level.Price.Value] = level;
             _allLevels[level.Id] = level;
+            level.AmountUpdatedCount++;
         }
 
         private static bool IsInvalidLevel(OrderBookLevel level)

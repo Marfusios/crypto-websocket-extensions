@@ -265,7 +265,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         public bool IsValid()
         {
             var isPriceValid = BidPrice <= AskPrice;
-            return isPriceValid &&_source.IsValid();
+            return isPriceValid && _source.IsValid();
         }
 
 
@@ -561,17 +561,18 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 }
 
                 var previousPrice = existing.Price;
+                var previousAmount = existing.Amount;
 
                 existing.Price = level.Price ?? existing.Price;
                 existing.Amount = level.Amount ?? existing.Amount;
                 existing.Count = level.Count ?? existing.Count;
                 existing.Pair = level.Pair ?? existing.Pair;
-                InsertToCollection(collection, ordering, existing, previousPrice);
+                InsertToCollection(collection, ordering, existing, previousPrice, previousAmount);
             }
         }
 
         private void InsertToCollection(IDictionary<double, OrderedDictionary> collection, OrderBookLevelsOrderPerPrice ordering, 
-            OrderBookLevel level, double? previousPrice = null)
+            OrderBookLevel level, double? previousPrice = null, double? previousAmount = null)
         {
             if (collection == null)
                 return;
@@ -583,13 +584,13 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
 
             _allLevels[level.Id] = level;
-            InsertLevelIntoPriceGroup(level, collection, ordering, previousPrice);
+            InsertLevelIntoPriceGroup(level, collection, ordering, previousPrice, previousAmount);
         }
 
         private void InsertLevelIntoPriceGroup(OrderBookLevel level, IDictionary<double, OrderedDictionary> collection,
-            OrderBookLevelsOrderPerPrice orderingGroup, double? previousPrice = null)
+            OrderBookLevelsOrderPerPrice orderingGroup, double? previousPrice = null, double? previousAmount = null)
         {
-            // remove from last location if needed
+            // remove from last location if needed (price updated)
             if (previousPrice.HasValue && !CryptoMathUtils.IsSame(previousPrice, level.Price) && collection.ContainsKey(previousPrice.Value))
             {
                 var previousPriceVal = previousPrice.Value;
@@ -601,6 +602,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                     collection.Remove(previousPriceVal);
                     orderingGroup.Remove(previousPriceVal);
                 }
+
+                level.PriceUpdatedCount++;
             }
 
             // ReSharper disable once PossibleInvalidOperationException
@@ -623,6 +626,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             if (previousPrice.HasValue)
             {
                 currentGroup.Remove(level.Id);
+            }
+
+            // amount changed, increase counter
+            if (previousAmount.HasValue && !CryptoMathUtils.IsSame(previousAmount, level.Amount))
+            {
+                level.AmountUpdatedCount++;
             }
 
             currentGroup[level.Id] = level;

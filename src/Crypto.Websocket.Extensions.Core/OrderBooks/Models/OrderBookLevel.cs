@@ -44,17 +44,17 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         public double? Price { get; internal set; }
 
         /// <summary>
-        /// Number of orders at that price level
+        /// Number of orders at that price level or order
         /// </summary>
         public int? Count { get; internal set; }
 
         /// <summary>
-        /// Total amount available at that price level. 
+        /// Total amount available at that price level or order. 
         /// </summary>
         public double? Amount { get; internal set; }
 
         /// <summary>
-        /// Pair to which this level belongs
+        /// Pair to which this level or order belongs
         /// </summary>
         public string Pair { get; internal set; }
 
@@ -62,6 +62,16 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         /// Ordering index to determine position in the queue
         /// </summary>
         public int Ordering { get; internal set; }
+
+        /// <summary>
+        /// How many times price was updated for this order book level/order (makes sense only for L3)
+        /// </summary>
+        public int PriceUpdatedCount { get; internal set; }
+
+        /// <summary>
+        /// How many times amount was updated for this order book level/order (makes sense for both L3 and L2)
+        /// </summary>
+        public int AmountUpdatedCount { get; internal set; }
 
         /// <summary>
         /// Create a new clone
@@ -75,7 +85,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
                 Amount,
                 Count,
                 Pair
-                );
+                )
+            {
+                Ordering = Ordering,
+                PriceUpdatedCount = PriceUpdatedCount,
+                AmountUpdatedCount = AmountUpdatedCount
+            };
         }
 
         private static double? Abs(double? value)
