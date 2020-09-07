@@ -139,6 +139,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.True(elapsedMs < 7000, msg);
         }
 
+#if DEBUG
         [Fact]
         public async Task StreamLargeAmount_100kIterations_WithBuffer_ShouldBeFast()
         {
@@ -208,6 +209,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.True(elapsedEnd < 5000, msgInserting);
             Assert.True(elapsedInsertingMs < 1000, msgInserting);
         }
+#endif
 
         private static long StreamLevels(string pair, OrderBookSourceMock source, int iterations, int maxBidPrice, int maxAskCount, bool slowDown = false)
         {
