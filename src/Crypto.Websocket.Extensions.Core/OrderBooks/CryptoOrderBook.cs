@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -33,13 +33,15 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         private readonly Subject<OrderBookChangeInfo> _topLevelUpdated = new Subject<OrderBookChangeInfo>();
         private readonly Subject<OrderBookChangeInfo> _orderBookUpdated = new Subject<OrderBookChangeInfo>();
 
+        private readonly int _priceLevelInitialCapacity = 2;
+
         private readonly SortedDictionary<double, OrderedDictionary> _bidLevels = new SortedDictionary<double, OrderedDictionary>(new DescendingComparer());
         private readonly SortedDictionary<double, OrderedDictionary> _askLevels = new SortedDictionary<double, OrderedDictionary>();
 
-        private readonly OrderBookLevelsOrderPerPrice _bidLevelOrdering = new OrderBookLevelsOrderPerPrice(1000);
-        private readonly OrderBookLevelsOrderPerPrice _askLevelOrdering = new OrderBookLevelsOrderPerPrice(1000);
+        private readonly OrderBookLevelsOrderPerPrice _bidLevelOrdering = new OrderBookLevelsOrderPerPrice(300);
+        private readonly OrderBookLevelsOrderPerPrice _askLevelOrdering = new OrderBookLevelsOrderPerPrice(300);
 
-        private readonly OrderBookLevelsById _allLevels = new OrderBookLevelsById(20000);
+        private readonly OrderBookLevelsById _allLevels = new OrderBookLevelsById(1000);
 
         private bool _isSnapshotLoaded;
         private Timer _snapshotReloadTimer;
@@ -614,7 +616,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
             if (!collection.ContainsKey(price))
             {
-                collection[price] = new OrderedDictionary(100) {{level.Id, level}};
+                collection[price] = new OrderedDictionary(_priceLevelInitialCapacity) {{level.Id, level}};
                 return;
             }
 
