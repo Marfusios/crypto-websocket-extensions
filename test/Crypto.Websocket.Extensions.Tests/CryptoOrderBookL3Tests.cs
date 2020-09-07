@@ -288,9 +288,17 @@ namespace Crypto.Websocket.Extensions.Tests
                 GetUpdateBulk(CryptoOrderBookType.L3, CreateLevel(pair1, 101, 0.123, CryptoOrderSide.Ask, null, "ASK1"))
             );
 
+            source.StreamBulk(
+                GetInsertBulk(CryptoOrderBookType.L3, CreateLevel(pair1, 100.111, 0.111222, CryptoOrderSide.Bid, null, "BID1"))
+            );
+
+            source.StreamBulk(
+                GetInsertBulk(CryptoOrderBookType.L3, CreateLevel(pair1, 99, 0.9, CryptoOrderSide.Bid, null, "BID2"))
+            );
+
             var allAsks = orderBook.AskLevelsPerPrice;
-            Assert.Equal(0, orderBook.BidPrice);
-            Assert.Equal(0, orderBook.BidAmount);
+            Assert.Equal(100.111, orderBook.BidPrice);
+            Assert.Equal(0.111222, orderBook.BidAmount);
             Assert.Equal(100, orderBook.AskPrice);
             Assert.Equal(0.555, orderBook.AskAmount);
             Assert.Equal(3, allAsks.Count);
@@ -299,7 +307,24 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Single(allAsks[100.111]);
 
             source.StreamBulk(
+                GetUpdateBulk(CryptoOrderBookType.L3, CreateLevel(pair1, 101, 0.123123, CryptoOrderSide.Bid, null, "BID1"))
+            );
+
+            source.StreamBulk(
+                GetInsertBulk(CryptoOrderBookType.L3, CreateLevel(pair1, 101, 0.777, CryptoOrderSide.Ask, null, "ASK5"))
+            );
+
+            var ask101 = orderBook.FindAskLevelsByPrice(101);
+            Assert.Equal(3, ask101.Length);
+            Assert.Equal("ASK4", ask101[0].Id);
+            Assert.Equal("ASK1", ask101[1].Id);
+            Assert.Equal("ASK5", ask101[2].Id);
+
+            source.StreamBulk(
                 GetDeleteBulk(CryptoOrderBookType.L3, CreateLevel(pair1, null, CryptoOrderSide.Ask, "ASK4"))
+            );
+            source.StreamBulk(
+                GetDeleteBulk(CryptoOrderBookType.L3, CreateLevel(pair1, null, CryptoOrderSide.Bid, "BID2"))
             );
             source.StreamBulk(
                 GetDeleteBulk(CryptoOrderBookType.L3, CreateLevel(pair1, null, CryptoOrderSide.Ask, "ASK3"))
@@ -309,12 +334,13 @@ namespace Crypto.Websocket.Extensions.Tests
             );
 
             allAsks = orderBook.AskLevelsPerPrice;
-            Assert.Equal(0, orderBook.BidPrice);
-            Assert.Equal(0, orderBook.BidAmount);
+            Assert.Equal(101, orderBook.BidPrice);
+            Assert.Equal(0.123123, orderBook.BidAmount);
             Assert.Equal(100.111, orderBook.AskPrice);
             Assert.Equal(0.444, orderBook.AskAmount);
-            Assert.Equal(1, allAsks.Count);
+            Assert.Equal(2, allAsks.Count);
             Assert.Equal(2, allAsks[100.111].Length);
+            Assert.Equal("ASK5", allAsks[101][0].Id);
 
         }
 
