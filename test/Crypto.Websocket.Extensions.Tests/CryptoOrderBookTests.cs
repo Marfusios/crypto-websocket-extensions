@@ -769,5 +769,54 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.True(changes[2].Quotes.IsValid());
         }
 
+        [Fact]
+        public void DifferentPairs_ShouldNotNotifyAboutOtherPair()
+        {
+            var pair1 = "BTC/USD";
+            var pair2 = "ETH/USD";
+
+            var ob1NotifiedCount = 0;
+            var ob2NotifiedCount = 0;
+
+            var data1 = GetOrderBookSnapshotMockData(pair1, 500);
+
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data1, CryptoOrderBookType.L2);
+            var source = new OrderBookSourceMock(snapshot);
+            source.BufferEnabled = false;
+
+            ICryptoOrderBook orderBook1 = new CryptoOrderBook(pair1, source) {DebugEnabled = true};
+            ICryptoOrderBook orderBook2 = new CryptoOrderBook(pair2, source) {DebugEnabled = true};
+
+            orderBook1.IgnoreDiffsBeforeSnapshot = false;
+            orderBook2.IgnoreDiffsBeforeSnapshot = false;
+
+            orderBook1.OrderBookUpdatedStream.Subscribe(x => ob1NotifiedCount++);
+            orderBook1.TopLevelUpdatedStream.Subscribe(x => ob1NotifiedCount++);
+            orderBook1.BidAskUpdatedStream.Subscribe(x => ob1NotifiedCount++);
+
+            orderBook2.OrderBookUpdatedStream.Subscribe(x => ob2NotifiedCount++);
+            orderBook2.TopLevelUpdatedStream.Subscribe(x => ob2NotifiedCount++);
+            orderBook2.BidAskUpdatedStream.Subscribe(x => ob2NotifiedCount++);
+
+            source.StreamBulk(GetInsertBulkL2(
+                CreateLevel(pair1, -200, -50, CryptoOrderSide.Bid),
+                CreateLevel(pair1, 500, -400, CryptoOrderSide.Ask)
+            ));
+
+            source.StreamBulk(GetInsertBulkL2(
+                CreateLevel(pair1, -50, -600, CryptoOrderSide.Bid),
+                CreateLevel(pair1, -100, -3350, CryptoOrderSide.Bid)
+            ));
+
+            Assert.Equal(-50, orderBook1.BidPrice);
+            Assert.Equal(600, orderBook1.BidAmount);
+
+            Assert.Equal(500, orderBook1.AskPrice);
+            Assert.Equal(400, orderBook1.AskAmount);
+
+            Assert.Equal(0, ob2NotifiedCount);
+            Assert.Equal(2*3, ob1NotifiedCount);
+        }
+
     }
 }

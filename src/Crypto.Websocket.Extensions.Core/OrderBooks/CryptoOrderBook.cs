@@ -463,7 +463,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 );
             }
 
-            _orderBookUpdated.OnNext(change);
+            if(allLevels.Any())
+                _orderBookUpdated.OnNext(change);
             NotifyIfBidAskChanged(oldBid, oldAsk, change);
             NotifyIfTopLevelChanged(oldBid, oldAsk, oldBidAmount, oldAskAmount, change);
 
