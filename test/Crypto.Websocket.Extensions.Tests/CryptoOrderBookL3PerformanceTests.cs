@@ -121,7 +121,8 @@ namespace Crypto.Websocket.Extensions.Tests
             var ask = book.AskLevels[0];
 
             var sw = new Stopwatch();
-            for (int i = 0; i < iterations; i++)
+            var iterationsSafe = iterations * 13;
+            for (int i = 0; i < iterationsSafe; i += 13)
             {
                 var newBidPrice = i % maxBidPrice;
                 var newAskPrice = maxBidPrice + (i % maxAskPrice);

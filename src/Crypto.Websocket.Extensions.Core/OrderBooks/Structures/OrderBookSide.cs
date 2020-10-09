@@ -8,8 +8,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Structures
 {
     internal class OrderBookSide
     {
-        private readonly Dictionary<double, OrderBookLeaf> _priceIndex = new Dictionary<double, OrderBookLeaf>();
-        private readonly Dictionary<string, OrderBookLeaf> _levelIndex = new Dictionary<string, OrderBookLeaf>();
+        private readonly Dictionary<double, OrderBookLeaf> _priceIndex = new Dictionary<double, OrderBookLeaf>(500);
+        private readonly OrderBookLeafsById _levelIndex = new OrderBookLeafsById(500);
 
         public OrderBookSide(CryptoOrderSide side)
         {
@@ -21,6 +21,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Structures
         public OrderBookLeaf Root { get; set; }
 
         public int Count => _levelIndex.Count;
+
+        internal OrderBookLeafsById LevelIndex => _levelIndex;
 
         public void Add(OrderBookLevel level)
         {
@@ -207,7 +209,6 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Structures
         private void RemoveLeaf(OrderBookLevel level, OrderBookLeaf foundLeaf, double? previousPrice = null)
         {
             _levelIndex.Remove(level.Id);
-            var foundData = foundLeaf.Data;
             var foundPrice = previousPrice ?? foundLeaf.Data.Price ?? 0;
             var next = foundLeaf.Next;
 
