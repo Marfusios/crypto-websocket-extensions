@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
@@ -11,6 +10,7 @@ using Crypto.Websocket.Extensions.Core.Logging;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
+using Crypto.Websocket.Extensions.Core.OrderBooks.Structures;
 using Crypto.Websocket.Extensions.Core.Utils;
 using Crypto.Websocket.Extensions.Core.Validations;
 
@@ -33,8 +33,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         private readonly Subject<OrderBookChangeInfo> _topLevelUpdated = new Subject<OrderBookChangeInfo>();
         private readonly Subject<OrderBookChangeInfo> _orderBookUpdated = new Subject<OrderBookChangeInfo>();
 
-        private readonly SortedDictionary<double, OrderedDictionary> _bidLevels = new SortedDictionary<double, OrderedDictionary>(new DescendingComparer());
-        private readonly SortedDictionary<double, OrderedDictionary> _askLevels = new SortedDictionary<double, OrderedDictionary>();
+        private readonly OrderBookSide _bidLevels = new OrderBookSide(CryptoOrderSide.Bid);
+        private readonly OrderBookSide _askLevels = new OrderBookSide(CryptoOrderSide.Ask);
 
         private readonly OrderBookLevelsOrderPerPrice _bidLevelOrdering = new OrderBookLevelsOrderPerPrice(200);
         private readonly OrderBookLevelsOrderPerPrice _askLevelOrdering = new OrderBookLevelsOrderPerPrice(200);
@@ -51,8 +51,6 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         private TimeSpan _validityCheckTimeout = TimeSpan.FromSeconds(5);
         private bool _validityCheckEnabled = true;
         private int _validityCheckCounter;
-
-        private int _priceLevelInitialCapacity = 2;
 
         private IDisposable _subscriptionDiff;
         private IDisposable _subscriptionSnapshot;
@@ -74,17 +72,6 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             _source = source;
             TargetType = targetType;
 
-            if (targetType == CryptoOrderBookType.L1 || targetType == CryptoOrderBookType.L2)
-            {
-                // save memory, only one order at price level
-                _priceLevelInitialCapacity = 1;
-            }
-            else if (targetType == CryptoOrderBookType.L3)
-            {
-                // better performance, could be multiple orders at price level
-                _priceLevelInitialCapacity = 5;
-            }
-                
             Subscribe();
             RestartAutoSnapshotReloading();
             RestartValidityChecking();
@@ -290,9 +277,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             lock (_locker)
             {
-                if (_bidLevels.TryGetValue(price, out OrderedDictionary group))
-                    return group.Values.OfType<OrderBookLevel>().FirstOrDefault();
-                return null;
+                return _bidLevels.GetByPriceFirst(price);
             }
         }
 
@@ -303,9 +288,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             lock (_locker)
             {
-                if (_bidLevels.TryGetValue(price, out OrderedDictionary group))
-                    return group.Values.OfType<OrderBookLevel>().ToArray();
-                return Array.Empty<OrderBookLevel>();
+                return _bidLevels.GetByPrice(price);
             }
         }
 
@@ -317,9 +300,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             lock (_locker)
             {
-                if (_askLevels.TryGetValue(price, out OrderedDictionary group))
-                    return group.Values.OfType<OrderBookLevel>().FirstOrDefault();
-                return null;
+                return _askLevels.GetByPriceFirst(price);
             }
         }
 
@@ -330,9 +311,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             lock (_locker)
             {
-                if (_askLevels.TryGetValue(price, out OrderedDictionary group))
-                    return group.Values.OfType<OrderBookLevel>().ToArray();
-                return Array.Empty<OrderBookLevel>();
+                return _askLevels.GetByPrice(price);
             }
         }
 
@@ -497,14 +476,14 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
                 if (level.Side == CryptoOrderSide.Bid)
                 {
-                    InsertLevelIntoPriceGroup(level, _bidLevels, _bidLevelOrdering);
+                    _bidLevels.Add(level);
                     _allBidLevels[level.Id] = level;
                 }
 
 
                 if (level.Side == CryptoOrderSide.Ask)
                 {
-                    InsertLevelIntoPriceGroup(level, _askLevels, _askLevelOrdering);
+                    _askLevels.Add(level);
                     _allAskLevels[level.Id] = level;
                 }
             }
@@ -580,11 +559,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
         }
 
-        private void InsertToCollection(IDictionary<double, OrderedDictionary> collection, OrderBookLevelsOrderPerPrice ordering, 
+        private void InsertToCollection(OrderBookSide collection, OrderBookLevelsOrderPerPrice ordering, 
             OrderBookLevel level, double? previousPrice = null, double? previousAmount = null)
         {
-            if (collection == null)
-                return;
             if (IsInvalidLevel(level))
             {
                 LogDebug($"Received weird level, ignoring. " +
@@ -593,58 +570,14 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
 
             GetAllCollection(level.Side)[level.Id] = level;
-            InsertLevelIntoPriceGroup(level, collection, ordering, previousPrice, previousAmount);
-        }
 
-        private void InsertLevelIntoPriceGroup(OrderBookLevel level, IDictionary<double, OrderedDictionary> collection,
-            OrderBookLevelsOrderPerPrice orderingGroup, double? previousPrice = null, double? previousAmount = null)
-        {
-            // remove from last location if needed (price updated)
-            if (previousPrice.HasValue && !CryptoMathUtils.IsSame(previousPrice, level.Price) && collection.ContainsKey(previousPrice.Value))
+            if (previousPrice.HasValue)
             {
-                var previousPriceVal = previousPrice.Value;
-                var previousGroup = collection[previousPriceVal];
-                previousGroup.Remove(level.Id);
-
-                if (previousGroup.Count <= 0)
-                {
-                    collection.Remove(previousPriceVal);
-                    orderingGroup.Remove(previousPriceVal);
-                }
-
-                level.PriceUpdatedCount++;
-            }
-
-            // ReSharper disable once PossibleInvalidOperationException
-            var price = level.Price.Value;
-
-            if (!orderingGroup.ContainsKey(price))
-                orderingGroup[price] = 0;
-
-            if (!collection.ContainsKey(price))
-            {
-                collection[price] = new OrderedDictionary(_priceLevelInitialCapacity) {{level.Id, level}};
+                collection.UpdateOrAdd(level, previousPrice, previousAmount);
                 return;
             }
 
-            var currentGroup = collection[price];
-            var ordering = orderingGroup[price] + 1;
-            orderingGroup[price] = ordering;
-
-            // we wanna put order at the end of queue
-            if (previousPrice.HasValue)
-            {
-                currentGroup.Remove(level.Id);
-            }
-
-            // amount changed, increase counter
-            if (previousAmount.HasValue && !CryptoMathUtils.IsSame(previousAmount, level.Amount))
-            {
-                level.AmountUpdatedCount++;
-            }
-
-            currentGroup[level.Id] = level;
-            level.Ordering = ordering;
+            collection.Add(level);
         }
 
         private static bool IsInvalidLevel(OrderBookLevel level)
@@ -674,34 +607,20 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                     allLevels.Remove(level.Id);
                 }
 
-                if (collection.ContainsKey(price))
-                {
-                    var group = collection[price];
-                    if (group.Contains(id))
-                        group.Remove(id);
-
-                    if (group.Count <= 0)
-                    {
-                        collection.Remove(price);
-                        ordering.Remove(price);
-                    }
-                }
+                collection.Remove(level);
             }
         }
 
         private void RecomputeAfterChange()
         {
-            var bids = _bidLevels.Values.FirstOrDefault();
-            var firstBid = bids?.Count > 0 ? (OrderBookLevel)bids[0] : null;
+            var bid = _bidLevels.Root?.Data;
+            var ask = _askLevels.Root?.Data;
 
-            var asks = _askLevels.Values.FirstOrDefault();
-            var firstAsk = asks?.Count > 0 ? (OrderBookLevel)asks[0] : null;
+            BidPrice = bid?.Price ?? 0;
+            BidAmount = bid?.Amount ?? 0;
 
-            BidPrice = firstBid?.Price ?? 0;
-            BidAmount = firstBid?.Amount ?? 0;
-
-            AskPrice = firstAsk?.Price ?? 0;
-            AskAmount = firstAsk?.Amount ?? 0;
+            AskPrice = ask?.Price ?? 0;
+            AskAmount = ask?.Amount ?? 0;
         }
 
         private OrderBookLevel[] ComputeBidLevels()
@@ -709,9 +628,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             lock (_locker)
             {
                 return _bidLevels
-                    .Values
-                    .SelectMany(x => x.Values.Cast<OrderBookLevel>())
-                    .ToArray();
+                    .GetAll();
             }
         }
 
@@ -720,9 +637,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             lock (_locker)
             {
                 return _askLevels
-                    .Values
-                    .SelectMany(x => x.Values.Cast<OrderBookLevel>())
-                    .ToArray();
+                    .GetAll();
             }
         }
 
@@ -736,17 +651,16 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
         }
 
-        private IReadOnlyDictionary<double, OrderBookLevel[]> ComputeLevelsPerPrice(SortedDictionary<double, OrderedDictionary> levels)
+        private IReadOnlyDictionary<double, OrderBookLevel[]> ComputeLevelsPerPrice(OrderBookSide levels)
         {
             lock (_locker)
             {
                 return levels
-                    .ToDictionary(x => x.Key,
-                        y => y.Value.Values.Cast<OrderBookLevel>().ToArray());
+                    .GetAllGroupedByPrice();
             }
         }
 
-        private IDictionary<double, OrderedDictionary> GetLevelsCollection(CryptoOrderSide side)
+        private OrderBookSide GetLevelsCollection(CryptoOrderSide side)
         {
             if (side == CryptoOrderSide.Undefined)
                 return null;
