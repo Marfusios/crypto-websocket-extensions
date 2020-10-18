@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Bitmex.Client.Websocket.Client;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.Utils;
+using Crypto.Websocket.Extensions.OrderBooks.Sources;
+using Crypto.Websocket.Extensions.Tests.data;
 using Crypto.Websocket.Extensions.Tests.Helpers;
 using Xunit;
 
@@ -16,6 +19,10 @@ namespace Crypto.Websocket.Extensions.Tests
 {
     public class CryptoOrderBookL2Tests
     {
+        private readonly string[] _rawFiles = {
+            "data/bitmex_raw_xbtusd_2018-11-13.txt.gz"
+        };
+
         [Fact]
         public void StreamingSnapshot_ShouldHandleCorrectly()
         {
@@ -818,5 +825,83 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(2*3, ob1NotifiedCount);
         }
 
+        [Fact]
+        public async Task StreamingFromFile_ShouldHandleCorrectly()
+        {
+            var pair = "XBTUSD";
+            var communicator = new RawFileCommunicator();
+            communicator.FileNames = _rawFiles;
+
+            var client = new BitmexWebsocketClient(communicator);
+            var source = new BitmexOrderBookSource(client);
+            source.LoadSnapshotEnabled = false;
+            source.BufferEnabled = false;
+            
+            var orderBook = new CryptoOrderBookL2(pair, source);
+            orderBook.SnapshotReloadEnabled = false;
+            orderBook.ValidityCheckEnabled = false;
+
+            var receivedUpdate = 0;
+            IOrderBookChangeInfo lastReceivedUpdate = null;
+
+            var receivedTopLevel = 0;
+            IOrderBookChangeInfo lastReceivedTopLevel = null;
+
+            var receivedBidAskUpdate = 0;
+            IOrderBookChangeInfo lastReceivedBidAskUpdate = null;
+
+
+            orderBook.OrderBookUpdatedStream.Subscribe(x =>
+            {
+                receivedUpdate++;
+                lastReceivedUpdate = x;
+            });
+            orderBook.TopLevelUpdatedStream.Subscribe(x =>
+            {
+                receivedTopLevel++;
+                lastReceivedTopLevel = x;
+            });
+            orderBook.BidAskUpdatedStream.Subscribe(x =>
+            {
+                receivedBidAskUpdate++;
+                lastReceivedBidAskUpdate = x;
+            });
+
+
+            await communicator.Start();
+
+            Assert.Equal(3284, orderBook.BidLevels.Length);
+            Assert.Equal(4035, orderBook.AskLevels.Length);
+
+            Assert.Equal(6249, orderBook.BidPrice);
+            Assert.Equal(163556, orderBook.BidLevels.First().Amount);
+
+            Assert.Equal(6249.5, orderBook.AskPrice);
+            Assert.Equal(270526, orderBook.AskLevels.First().Amount);
+
+            Assert.Equal(322703, receivedUpdate);
+            Assert.Equal(6249, lastReceivedUpdate?.Quotes?.Bid);
+            Assert.Equal(6249.5, lastReceivedUpdate?.Quotes?.Ask);
+            Assert.Equal("8799374800", lastReceivedUpdate.Sources[0].Levels[0].Id);
+            Assert.Null(lastReceivedUpdate.Sources[0].Levels[0].Price);
+
+            Assert.Equal(79020, receivedTopLevel);
+            Assert.Equal(6249, lastReceivedTopLevel?.Quotes?.Bid);
+            Assert.Equal(6249.5, lastReceivedTopLevel?.Quotes?.Ask);
+            Assert.Equal("8799375100", lastReceivedTopLevel.Sources[0].Levels[0].Id);
+            Assert.Null(lastReceivedTopLevel.Sources[0].Levels[0].Price);
+
+            Assert.Equal(584, receivedBidAskUpdate);
+            Assert.Equal(6249, lastReceivedBidAskUpdate?.Quotes?.Bid);
+            Assert.Equal(6249.5, lastReceivedBidAskUpdate?.Quotes?.Ask);
+            Assert.Equal("8799375050", lastReceivedBidAskUpdate.Sources[0].Levels[0].Id);
+            Assert.Equal(6249.5, lastReceivedBidAskUpdate.Sources[0].Levels[0].Price);
+
+            var levels = orderBook.Levels;
+            foreach (var level in levels)
+            {
+                Assert.Equal(CryptoPairsHelper.Clean(pair), level.Pair);
+            }
+        }
     }
 }

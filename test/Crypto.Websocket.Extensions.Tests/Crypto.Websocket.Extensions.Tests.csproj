@@ -20,4 +20,10 @@
     <ProjectReference Include="..\..\src\Crypto.Websocket.Extensions\Crypto.Websocket.Extensions.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="data\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

@@ -3,9 +3,12 @@ using System.Diagnostics;
 using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
+using Bitmex.Client.Websocket.Client;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
+using Crypto.Websocket.Extensions.OrderBooks.Sources;
+using Crypto.Websocket.Extensions.Tests.data;
 using Crypto.Websocket.Extensions.Tests.Helpers;
 using Xunit;
 using Xunit.Abstractions;
@@ -16,6 +19,9 @@ namespace Crypto.Websocket.Extensions.Tests
     public class CryptoOrderBookL2PerformanceTests
     {
         private readonly ITestOutputHelper _output;
+        private readonly string[] _rawFiles = {
+            "data/bitmex_raw_xbtusd_2018-11-13.txt.gz"
+        };
 
         public CryptoOrderBookL2PerformanceTests(ITestOutputHelper output)
         {
@@ -210,6 +216,39 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.True(elapsedInsertingMs < 1000, msgInserting);
         }
 #endif
+
+        [Fact]
+        public async Task StreamFromFile_ShouldBeFast()
+        {
+            var pair = "XBTUSD";
+            var communicator = new RawFileCommunicator();
+            communicator.FileNames = _rawFiles;
+
+            var client = new BitmexWebsocketClient(communicator);
+            var source = new BitmexOrderBookSource(client);
+            source.LoadSnapshotEnabled = false;
+            source.BufferEnabled = false;
+            
+            var orderBook = new CryptoOrderBookL2(pair, source);
+            orderBook.SnapshotReloadEnabled = false;
+            orderBook.ValidityCheckEnabled = false;
+
+            var snapshotCount = 0;
+            var diffCount = 0;
+
+            source.OrderBookSnapshotStream.Subscribe(x => snapshotCount++);
+            source.OrderBookStream.Subscribe(x => diffCount++);
+
+            var sw = Stopwatch.StartNew();
+            await communicator.Start();
+            sw.Stop();
+
+            var elapsedMs = sw.ElapsedMilliseconds;
+            var msg = $"Processed snapshots: {snapshotCount}, diffs: {diffCount}, elapsed time was: {elapsedMs} ms";
+            _output.WriteLine(msg);
+
+            Assert.True(elapsedMs < 7000, msg);
+        }
 
         private static long StreamLevels(string pair, OrderBookSourceMock source, int iterations, int maxBidPrice, int maxAskCount, bool slowDown = false)
         {
