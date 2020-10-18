@@ -42,6 +42,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Structures
 
             var newLeaf = AddInto(level, Root);
             _priceIndex[level.Price ?? 0] = newLeaf;
+            
         }
 
         public void Remove(OrderBookLevel level)
@@ -219,23 +220,44 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Structures
                 next.Previous = foundLeaf.Previous;
 
                 // ReSharper disable once CompareOfFloatsByEqualityOperator
-                if (foundLeaf.Next.Data.Price != foundPrice)
+                if (next.Data.Price != foundPrice)
                 {
                     // no more leafs on this price level, clear
                     _priceIndex.Remove(foundPrice);
                 }
                 else
                 {
-                    _priceIndex[foundPrice] = next;
+                    _priceIndex[foundPrice] = GetFirstOnSamePrice(next);
                 }
             }
             else
             {
-                _priceIndex.Remove(foundPrice);
+                var firstSameOnPrice = GetFirstOnSamePrice(foundLeaf);
+                if (firstSameOnPrice == foundLeaf)
+                    _priceIndex.Remove(foundPrice);
+                else
+                    _priceIndex[foundPrice] = firstSameOnPrice;
             }
 
+            foundLeaf.Next = null;
+            foundLeaf.Previous = null;
+            foundLeaf.Data = null;
+
             if (Root == foundLeaf)
-                Root = foundLeaf.Next;
+                Root = next;
+        }
+
+        private OrderBookLeaf GetFirstOnSamePrice(OrderBookLeaf leaf)
+        {
+            var current = leaf;
+            while (true)
+            {
+                var prev = current.Previous;
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
+                if (prev == null || prev.Data.Price != current.Data.Price)
+                    return current;
+                current = prev;
+            }
         }
 
         private void TraverseTree(Action<OrderBookLeaf> action)
