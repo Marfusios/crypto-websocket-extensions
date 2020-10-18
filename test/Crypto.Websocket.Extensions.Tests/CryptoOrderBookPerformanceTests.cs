@@ -215,7 +215,6 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.True(elapsedEnd < 5000, msgInserting);
             Assert.True(elapsedInsertingMs < 1000, msgInserting);
         }
-#endif
 
         [Fact]
         public async Task StreamFromFile_ShouldBeFast()
@@ -249,6 +248,8 @@ namespace Crypto.Websocket.Extensions.Tests
 
             Assert.True(elapsedMs < 8000, msg);
         }
+#endif
+
 
         private static long StreamLevels(string pair, OrderBookSourceMock source, int iterations, int maxBidPrice, int maxAskCount, bool slowDown = false)
         {
