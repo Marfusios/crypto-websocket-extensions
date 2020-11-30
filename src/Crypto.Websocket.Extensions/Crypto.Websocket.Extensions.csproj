@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net5.0</TargetFrameworks>
     <PackageId>Crypto.Websocket.Extensions</PackageId>
-    <Version>2.4.0</Version>
+    <Version>2.5.0</Version>
     <Authors>Mariusz Kotas</Authors>
     <Description>Extensions to cryptocurrency websocket clients</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReleaseNotes>Initial release</PackageReleaseNotes>
-    <Copyright>Copyright 2019 Mariusz Kotas. All rights reserved.</Copyright>
+    <Copyright>Copyright 2021 Mariusz Kotas. All rights reserved.</Copyright>
     <PackageTags>Crypto websockets websocket client cryptocurrency exchange bitcoin extensions</PackageTags>
     <PackageLicenseUrl>https://github.com/Marfusios/crypto-websocket-extensions/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Marfusios/crypto-websocket-extensions</PackageProjectUrl>
@@ -17,17 +17,17 @@
     <RepositoryType>Git</RepositoryType>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile> 
-    <AssemblyVersion>2.4.0.0</AssemblyVersion>
-    <FileVersion>2.4.0.0</FileVersion>
+    <AssemblyVersion>2.5.0.0</AssemblyVersion>
+    <FileVersion>2.5.0.0</FileVersion>
     
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Binance.Client.Websocket" Version="2.0.20" />
+    <PackageReference Include="Binance.Client.Websocket" Version="2.0.22" />
     <PackageReference Include="Bitfinex.Client.Websocket" Version="4.1.110" />
-    <PackageReference Include="Bitmex.Client.Websocket" Version="3.1.77" />
+    <PackageReference Include="Bitmex.Client.Websocket" Version="3.1.78" />
     <PackageReference Include="Bitstamp.Client.Websocket" Version="1.0.2" />
     <PackageReference Include="Coinbase.Client.Websocket" Version="2.0.16" />
     <PackageReference Include="LibLog" Version="5.0.8">
