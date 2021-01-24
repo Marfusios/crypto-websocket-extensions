@@ -495,6 +495,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                     continue;
                 }
 
+                level.AmountDifference = level.Amount ?? 0;
+                level.CountDifference = level.Count ?? 0;
+
                 if (level.Side == CryptoOrderSide.Bid)
                 {
                     InsertLevelIntoPriceGroup(level, _bidLevels, _bidLevelOrdering);
@@ -565,6 +568,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 var existing = FindLevelById(level.Id, level.Side);
                 if (existing == null)
                 {
+                    level.AmountDifference = level.Amount ?? 0;
+                    level.CountDifference = level.Count ?? 0;
+
                     InsertToCollection(collection, ordering, level);
                     continue;
                 }
@@ -572,10 +578,29 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 var previousPrice = existing.Price;
                 var previousAmount = existing.Amount;
 
+                var amountDiff = (level.Amount ?? 0) - (existing.Amount ?? 0);
+                var countDiff = (level.Count ?? 0) - (existing.Count ?? 0);
+
                 existing.Price = level.Price ?? existing.Price;
                 existing.Amount = level.Amount ?? existing.Amount;
                 existing.Count = level.Count ?? existing.Count;
                 existing.Pair = level.Pair ?? existing.Pair;
+
+                level.AmountDifference = amountDiff;
+                existing.AmountDifference = amountDiff;
+
+                level.CountDifference = countDiff;
+                existing.CountDifference = countDiff;
+
+                level.AmountDifferenceAggregated += amountDiff;
+                existing.AmountDifferenceAggregated += amountDiff;
+
+                level.CountDifferenceAggregated += countDiff;
+                existing.CountDifferenceAggregated += countDiff;
+
+                level.Amount = level.Amount ?? existing.Amount;
+                level.Count = level.Count ?? existing.Count;
+
                 InsertToCollection(collection, ordering, existing, previousPrice, previousAmount);
             }
         }
@@ -670,6 +695,25 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 if(allLevels.ContainsKey(level.Id))
                 {
                     var existing = allLevels[level.Id];
+
+                    var amountDiff = (level.Amount ?? 0) - (existing.Amount ?? 0);
+                    var countDiff = (level.Count ?? 0) - (existing.Count ?? 0);
+
+                    level.Amount = level.Amount ?? existing.Amount;
+                    level.Count = level.Count ?? existing.Count;
+
+                    level.AmountDifference = amountDiff;
+                    existing.AmountDifference = amountDiff;
+
+                    level.CountDifference = countDiff;
+                    existing.CountDifference = countDiff;
+
+                    level.AmountDifferenceAggregated += amountDiff;
+                    existing.AmountDifferenceAggregated += amountDiff;
+
+                    level.CountDifferenceAggregated += countDiff;
+                    existing.CountDifferenceAggregated += countDiff;
+
                     price = existing.Price ?? -1;
                     allLevels.Remove(level.Id);
                 }

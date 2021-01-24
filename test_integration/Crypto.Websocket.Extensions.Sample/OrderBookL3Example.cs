@@ -18,9 +18,10 @@ namespace Crypto.Websocket.Extensions.Sample
         public static async Task RunOnlyOne()
         {
             var optimized = true;
-            var levelsCount = 3;
+            var levelsCount = 20;
 
-            var ob = await StartBitfinex("BTCUSD", optimized);
+            //var ob = await StartBitfinex("BTCUSD", optimized);
+            var ob = await StartBitfinex("btcf0:ustf0", optimized);
 
             Log.Information("Waiting for price change...");
 
@@ -48,16 +49,16 @@ namespace Crypto.Websocket.Extensions.Sample
                 var bidMsg =
                     bid != null ? $"#{i+1} {bid?.Id} " +
                                   $"{"p: " + (bid?.Price ?? 0).ToString("#.00#") + " a: " + (bid?.Amount ?? 0).ToString("0.00#")} " +
-                                  $"[{bid.PriceUpdatedCount}/{bid.AmountUpdatedCount}]" 
+                                  $"[{bid.PriceUpdatedCount}/{bid.AmountUpdatedCount}] [{bid.AmountDifference:0.000}/{bid.AmountDifferenceAggregated:0.000}]" 
                         : " ";
                 var askMsg =
                     ask != null ? $"#{i+1} {ask?.Id} " +
                                   $"{"p: " + (ask?.Price ?? 0).ToString("#.00#") + " a: " + (ask?.Amount ?? 0).ToString("0.00#")} " +
-                                  $"[{ask.PriceUpdatedCount}/{ask.AmountUpdatedCount}]" 
+                                  $"[{ask.PriceUpdatedCount}/{ask.AmountUpdatedCount}] [{ask.AmountDifference:0.000}/{ask.AmountDifferenceAggregated:0.000}]" 
                         : " ";
 
-                bidMsg = $"{bidMsg,50}";
-                askMsg = $"{askMsg,50}";
+                bidMsg = $"{bidMsg,80}";
+                askMsg = $"{askMsg,80}";
 
                 msg+= $"{Environment.NewLine}{bidMsg}  {askMsg}";
                 
@@ -72,7 +73,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
         private static async Task<CryptoOrderBook> StartBitfinex(string pair, bool optimized)
         {
-            var url = BitfinexValues.ApiWebsocketUrl;
+            var url = BitfinexValues.BitfinexPublicWebsocketUrl;
             var communicator = new BitfinexWebsocketCommunicator(url) { Name = "Bitfinex" };
             var client = new BitfinexWebsocketClient(communicator);
 
