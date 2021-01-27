@@ -602,6 +602,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
                 level.Amount = level.Amount ?? existing.Amount;
                 level.Count = level.Count ?? existing.Count;
+                level.Price = level.Price ?? existing.Price;
 
                 InsertToCollection(collection, ordering, existing, previousPrice, previousAmount);
             }
@@ -703,6 +704,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
                     level.Amount = level.Amount ?? existing.Amount;
                     level.Count = level.Count ?? existing.Count;
+                    level.Price = level.Price ?? existing.Price;
 
                     level.AmountDifference = amountDiff;
                     existing.AmountDifference = amountDiff;

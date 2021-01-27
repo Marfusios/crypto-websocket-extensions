@@ -883,13 +883,13 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(6249, lastReceivedUpdate?.Quotes?.Bid);
             Assert.Equal(6249.5, lastReceivedUpdate?.Quotes?.Ask);
             Assert.Equal("8799374800", lastReceivedUpdate.Sources[0].Levels[0].Id);
-            Assert.Null(lastReceivedUpdate.Sources[0].Levels[0].Price);
+            Assert.Equal(6252, lastReceivedUpdate.Sources[0].Levels[0].Price);
 
             Assert.Equal(79020, receivedTopLevel);
             Assert.Equal(6249, lastReceivedTopLevel?.Quotes?.Bid);
             Assert.Equal(6249.5, lastReceivedTopLevel?.Quotes?.Ask);
             Assert.Equal("8799375100", lastReceivedTopLevel.Sources[0].Levels[0].Id);
-            Assert.Null(lastReceivedTopLevel.Sources[0].Levels[0].Price);
+            Assert.Equal(6249, lastReceivedTopLevel.Sources[0].Levels[0].Price);
 
             Assert.Equal(584, receivedBidAskUpdate);
             Assert.Equal(6249, lastReceivedBidAskUpdate?.Quotes?.Bid);
