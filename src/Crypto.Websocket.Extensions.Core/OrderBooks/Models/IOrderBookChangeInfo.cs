@@ -32,5 +32,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         /// Source bulks that caused this update (all levels)
         /// </summary>
         OrderBookLevelBulk[] Sources { get; }
+
+        /// <summary>
+        /// Whenever this order book change update comes from snapshot or diffs
+        /// </summary>
+        bool IsSnapshot { get; }
     }
 }
