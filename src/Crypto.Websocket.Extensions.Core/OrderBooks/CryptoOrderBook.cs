@@ -52,7 +52,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         private bool _validityCheckEnabled = true;
         private int _validityCheckCounter;
 
-        private int _priceLevelInitialCapacity = 2;
+        private readonly int _priceLevelInitialCapacity = 2;
 
         private IDisposable _subscriptionDiff;
         private IDisposable _subscriptionSnapshot;
@@ -408,13 +408,14 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
                 change = CreateBookChangeNotification(
                     levelsForThis,
-                    new[] {bulk}
+                    new[] {bulk},
+                    true
                 );
             }
 
             _orderBookUpdated.OnNext(change);
-            NotifyIfBidAskChanged(oldBid, oldAsk, change);
             NotifyIfTopLevelChanged(oldBid, oldAsk, oldBidAmount, oldAskAmount, change);
+            NotifyIfBidAskChanged(oldBid, oldAsk, change);
         }
 
         private void HandleDiffSynchronized(OrderBookLevelBulk[] bulks)
@@ -459,7 +460,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
                 change = CreateBookChangeNotification(
                     allLevels.ToArray(),
-                    forThis
+                    forThis,
+                    false
                 );
             }
 
@@ -817,7 +819,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 _allAskLevels;
         }
 
-        private OrderBookChangeInfo CreateBookChangeNotification(OrderBookLevel[] levels, OrderBookLevelBulk[] sources)
+        private OrderBookChangeInfo CreateBookChangeNotification(OrderBookLevel[] levels, OrderBookLevelBulk[] sources, bool isSnapshot)
         {
             var quotes = new CryptoQuotes(BidPrice, AskPrice, BidAmount, AskAmount);
             var clonedLevels = DebugEnabled ? levels.Select(x => x.Clone()).ToArray() : new OrderBookLevel[0];
@@ -827,7 +829,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 TargetPairOriginal,
                 quotes, 
                 clonedLevels,
-                sources
+                sources,
+                isSnapshot
                 )
             {
                 ExchangeName = lastSource?.ExchangeName,

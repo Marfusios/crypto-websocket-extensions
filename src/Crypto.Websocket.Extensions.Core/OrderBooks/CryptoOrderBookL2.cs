@@ -370,7 +370,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
                 change = NotifyAboutBookChange(
                     levelsForThis,
-                    new[] {bulk}
+                    new[] {bulk},
+                    true
                 );
             }
 
@@ -420,13 +421,14 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
                 change = NotifyAboutBookChange(
                     allLevels.ToArray(),
-                    forThis
+                    forThis,
+                    false
                 );
             }
 
             _orderBookUpdated.OnNext(change);
-            NotifyIfBidAskChanged(oldBid, oldAsk, change);
             NotifyIfTopLevelChanged(oldBid, oldAsk, oldBidAmount, oldAskAmount, change);
+            NotifyIfBidAskChanged(oldBid, oldAsk, change);
 
             if (sw != null)
             {
@@ -669,7 +671,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 _allAskLevels;
         }
 
-        private OrderBookChangeInfo NotifyAboutBookChange(OrderBookLevel[] levels, OrderBookLevelBulk[] sources)
+        private OrderBookChangeInfo NotifyAboutBookChange(OrderBookLevel[] levels, OrderBookLevelBulk[] sources, bool isSnapshot)
         {
             var quotes = new CryptoQuotes(BidPrice, AskPrice, BidAmount, AskAmount);
             var clonedLevels = DebugEnabled ? levels.Select(x => x.Clone()).ToArray() : new OrderBookLevel[0];
@@ -679,7 +681,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 TargetPairOriginal,
                 quotes, 
                 clonedLevels,
-                sources
+                sources,
+                isSnapshot
                 )
             {
                 ExchangeName = lastSource?.ExchangeName,

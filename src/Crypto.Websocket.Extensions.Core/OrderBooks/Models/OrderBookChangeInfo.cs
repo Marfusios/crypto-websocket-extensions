@@ -11,12 +11,14 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
     {
         /// <inheritdoc />
         public OrderBookChangeInfo(string pair, string pairOriginal,
-            CryptoQuotes quotes, OrderBookLevel[] levels, OrderBookLevelBulk[] sources)
+            CryptoQuotes quotes, OrderBookLevel[] levels, OrderBookLevelBulk[] sources, 
+            bool isSnapshot)
         {
             Pair = pair;
             PairOriginal = pairOriginal;
             Quotes = quotes;
             Sources = sources;
+            IsSnapshot = isSnapshot;
             Levels = levels ?? new OrderBookLevel[0];
         }
 
@@ -45,5 +47,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         /// Source bulks that caused this update (all levels)
         /// </summary>
         public OrderBookLevelBulk[] Sources { get; }
+
+        /// <summary>
+        /// Whenever this order book change update comes from snapshot or diffs
+        /// </summary>
+        public bool IsSnapshot { get; }
     }
 }
