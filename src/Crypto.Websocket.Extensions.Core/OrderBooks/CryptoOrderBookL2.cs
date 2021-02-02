@@ -522,8 +522,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                     continue;
                 }
 
-                var amountDiff = (level.Amount ?? 0) - (existing.Amount ?? 0);
-                var countDiff = (level.Count ?? 0) - (existing.Count ?? 0);
+                var amountDiff = (level.Amount ?? existing.Amount ?? 0) - (existing.Amount ?? 0);
+                var countDiff = (level.Count ?? existing.Count ?? 0) - (existing.Count ?? 0);
 
                 existing.Price = level.Price ?? existing.Price;
                 existing.Amount = level.Amount ?? existing.Amount;
@@ -600,8 +600,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
                 if (existing != null)
                 {
-                    var amountDiff = (level.Amount ?? 0) - (existing.Amount ?? 0);
-                    var countDiff = (level.Count ?? 0) - (existing.Count ?? 0);
+                    var amountDiff =  -(existing.Amount ?? 0);
+                    var countDiff = -(existing.Count ?? 0);
 
                     level.Amount = level.Amount ?? existing.Amount;
                     level.Count = level.Count ?? existing.Count;

@@ -430,6 +430,9 @@ namespace Crypto.Websocket.Extensions.Tests
             var notificationBidAskCount = 0;
             var notificationTopLevelCount = 0;
 
+            var amountDifferenceBid = 0.0;
+            var amountDifferenceAsk = 0.0;
+
             var changes = new List<IOrderBookChangeInfo>();
 
             var orderBook = new CryptoOrderBookL2(pair, source) {DebugEnabled = true};
@@ -438,6 +441,11 @@ namespace Crypto.Websocket.Extensions.Tests
             {
                 notificationCount++;
                 changes.Add(x);
+                foreach (var bulk in x.Sources)
+                {
+                    amountDifferenceBid += bulk.Levels.Where(x => x.Side == CryptoOrderSide.Bid).Sum(x => x.AmountDifference);
+                    amountDifferenceAsk += bulk.Levels.Where(x => x.Side == CryptoOrderSide.Ask).Sum(x => x.AmountDifference);
+                }
             });
             orderBook.BidAskUpdatedStream.Subscribe(_ => notificationBidAskCount++);
             orderBook.TopLevelUpdatedStream.Subscribe(_ => notificationTopLevelCount++);
@@ -516,6 +524,9 @@ namespace Crypto.Websocket.Extensions.Tests
 
             Assert.Equal(499.4, secondChange.Levels.First().Price);
             Assert.Equal(500.2, secondChange.Levels.Last().Price);
+
+            Assert.Equal(623466, amountDifferenceBid);
+            Assert.Equal(1368070, amountDifferenceAsk);
         }
 
 
@@ -902,6 +913,79 @@ namespace Crypto.Websocket.Extensions.Tests
             {
                 Assert.Equal(CryptoPairsHelper.Clean(pair), level.Pair);
             }
+        }
+
+        [Fact]
+        public void StreamingData_ShouldComputeDifferenceCorrectly()
+        {
+            var pair = "BTC/USD";
+            var data = GetOrderBookSnapshotMockData(pair, 500);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
+            var source = new OrderBookSourceMock(snapshot);
+            source.BufferEnabled = false;
+
+            var amountDifferenceBid = 0.0;
+            var amountDifferenceAsk = 0.0;
+
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source) {DebugEnabled = true};
+            orderBook.SnapshotReloadEnabled = false;
+            orderBook.ValidityCheckEnabled = false;
+            orderBook.IgnoreDiffsBeforeSnapshot = false;
+
+            orderBook.OrderBookUpdatedStream.Subscribe(x =>
+            {
+                foreach (var bulk in x.Sources)
+                {
+                    amountDifferenceBid += bulk.Levels.Where(x => x.Side == CryptoOrderSide.Bid).Sum(x => x.AmountDifference);
+                    amountDifferenceAsk += bulk.Levels.Where(x => x.Side == CryptoOrderSide.Ask).Sum(x => x.AmountDifference);
+                }
+            });
+
+            source.StreamBulk(GetInsertBulkL2(
+                CreateLevel(pair, 100, 50, CryptoOrderSide.Bid),
+                CreateLevel(pair, 101, 500, CryptoOrderSide.Ask)
+            ));
+
+            source.StreamBulk(GetInsertBulkL2(
+                CreateLevel(pair, 99, 10, CryptoOrderSide.Bid),
+                CreateLevel(pair, 98, 20, CryptoOrderSide.Bid)
+            ));
+
+            source.StreamBulk(GetInsertBulkL2(
+                CreateLevel(pair, 102, 100, CryptoOrderSide.Ask),
+                CreateLevel(pair, 103, 200, CryptoOrderSide.Ask)
+            ));
+
+            source.StreamBulk(GetUpdateBulkL2(
+                CreateLevel(pair, 100, 25, CryptoOrderSide.Bid),
+                CreateLevel(pair, 99, 5, CryptoOrderSide.Bid),
+                CreateLevel(pair, 101, 250, CryptoOrderSide.Ask),
+                CreateLevel(pair, 103, 100, CryptoOrderSide.Ask),
+
+                CreateLevel(pair, 100, null, CryptoOrderSide.Bid),
+                CreateLevel(pair, 102, null, CryptoOrderSide.Ask)
+            ));
+
+            source.StreamBulk(GetUpdateBulkL2(
+                CreateLevel(pair, 98, 10, CryptoOrderSide.Bid)
+            ));
+
+            source.StreamBulk(GetUpdateBulkL2(
+                CreateLevel(pair, 99, 10, CryptoOrderSide.Bid)
+            ));
+
+            source.StreamBulk(GetUpdateBulkL2(
+                CreateLevel(pair, 103, 400, CryptoOrderSide.Ask)
+            ));
+
+            source.StreamBulk(GetDeleteBulkL2(
+                CreateLevel(pair, 98, CryptoOrderSide.Bid),
+                CreateLevel(pair, 102, CryptoOrderSide.Ask),
+                CreateLevel(pair, 103, CryptoOrderSide.Ask)
+            ));
+
+            Assert.Equal(35, amountDifferenceBid);
+            Assert.Equal(250, amountDifferenceAsk);
         }
     }
 }
