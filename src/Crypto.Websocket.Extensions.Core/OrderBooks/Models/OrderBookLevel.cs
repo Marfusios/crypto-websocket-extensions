@@ -94,6 +94,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         public int CountDifferenceAggregated { get; internal set; }
 
         /// <summary>
+        /// Level index (position) in the order book.
+        /// Beware not updated after first set! 
+        /// </summary>
+        public int? Index { get; internal set; }
+
+        /// <summary>
         /// Create a new clone
         /// </summary>
         public OrderBookLevel Clone()

@@ -988,5 +988,109 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(250, amountDifferenceAsk);
         }
 
+        [Fact]
+        public void StreamingData_ShouldComputeIndexesCorrectly()
+        {
+            var pair = "BTC/USD";
+            var data = GetOrderBookSnapshotMockData(pair, 500);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
+            var source = new OrderBookSourceMock(snapshot);
+            source.BufferEnabled = false;
+
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source) {DebugEnabled = true};
+            orderBook.SnapshotReloadEnabled = false;
+            orderBook.ValidityCheckEnabled = false;
+            orderBook.IgnoreDiffsBeforeSnapshot = false;
+            orderBook.IsIndexComputationEnabled = true;
+
+            var updatedBidLevels = new List<OrderBookLevel>();
+            var updatedAskLevels = new List<OrderBookLevel>();
+
+            orderBook.OrderBookUpdatedStream.Subscribe(x =>
+            {
+                foreach (var bulk in x.Sources)
+                {
+                    var bidLevels = bulk.Levels.Where(x => x.Side == CryptoOrderSide.Bid).ToArray();
+                    var askLevels = bulk.Levels.Where(x => x.Side == CryptoOrderSide.Ask).ToArray();
+
+                    updatedBidLevels.AddRange(bidLevels);
+                    updatedAskLevels.AddRange(askLevels);
+                }
+            });
+
+            source.StreamBulk(GetInsertBulkL2(
+                CreateLevel(pair, 100, 50, CryptoOrderSide.Bid),
+                CreateLevel(pair, 101, 500, CryptoOrderSide.Ask)
+            ));
+
+            source.StreamBulk(GetInsertBulkL2(
+                CreateLevel(pair, 99, 10, CryptoOrderSide.Bid),
+                CreateLevel(pair, 98, 20, CryptoOrderSide.Bid)
+            ));
+
+            source.StreamBulk(GetInsertBulkL2(
+                CreateLevel(pair, 102, 100, CryptoOrderSide.Ask),
+                CreateLevel(pair, 103, 200, CryptoOrderSide.Ask)
+            ));
+
+            source.StreamBulk(GetUpdateBulkL2(
+                CreateLevel(pair, 100, 25, CryptoOrderSide.Bid),
+                CreateLevel(pair, 99, 5, CryptoOrderSide.Bid),
+                CreateLevel(pair, 101, 250, CryptoOrderSide.Ask),
+                CreateLevel(pair, 103, 100, CryptoOrderSide.Ask),
+
+                CreateLevel(pair, 100, null, CryptoOrderSide.Bid),
+                CreateLevel(pair, 102, null, CryptoOrderSide.Ask)
+            ));
+
+            source.StreamBulk(GetUpdateBulkL2(
+                CreateLevel(pair, 98, 10, CryptoOrderSide.Bid)
+            ));
+
+            source.StreamBulk(GetUpdateBulkL2(
+                CreateLevel(pair, 99, 10, CryptoOrderSide.Bid)
+            ));
+
+            source.StreamBulk(GetUpdateBulkL2(
+                CreateLevel(pair, 103, 400, CryptoOrderSide.Ask)
+            ));
+
+            source.StreamBulk(GetDeleteBulkL2(
+                CreateLevel(pair, 98, CryptoOrderSide.Bid),
+                CreateLevel(pair, 102, CryptoOrderSide.Ask),
+                CreateLevel(pair, 103, CryptoOrderSide.Ask)
+            ));
+
+            source.StreamBulk(GetDeleteBulkL2(
+                CreateLevel(pair, 100, CryptoOrderSide.Bid)
+            ));
+
+            source.StreamBulk(GetDeleteBulkL2(
+                CreateLevel(pair, 99, CryptoOrderSide.Bid)
+            ));
+
+            Assert.Equal(0, updatedBidLevels[0].Index);
+            Assert.Equal(1, updatedBidLevels[1].Index);
+            Assert.Equal(2, updatedBidLevels[2].Index);
+            Assert.Equal(0, updatedBidLevels[3].Index);
+            Assert.Equal(1, updatedBidLevels[4].Index);
+            Assert.Equal(0, updatedBidLevels[5].Index);
+            Assert.Equal(2, updatedBidLevels[6].Index);
+            Assert.Equal(1, updatedBidLevels[7].Index);
+            Assert.Equal(2, updatedBidLevels[8].Index);
+            Assert.Equal(0, updatedBidLevels[9].Index);
+            Assert.Equal(0, updatedBidLevels[10].Index);
+
+            Assert.Equal(0, updatedAskLevels[0].Index);
+            Assert.Equal(1, updatedAskLevels[1].Index);
+            Assert.Equal(2, updatedAskLevels[2].Index);
+            Assert.Equal(0, updatedAskLevels[3].Index);
+            Assert.Equal(2, updatedAskLevels[4].Index);
+            Assert.Equal(1, updatedAskLevels[5].Index);
+            Assert.Equal(2, updatedAskLevels[6].Index);
+            Assert.Equal(1, updatedAskLevels[7].Index);
+            Assert.Equal(2, updatedAskLevels[8].Index);
+        }
+
     }
 }
