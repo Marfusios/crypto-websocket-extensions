@@ -108,7 +108,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             var existing = existingPartial ?? existingCurrent;
 
             var price = Math.Abs(FirstNonZero(order.Price, order.AvgPx, existing?.Price) ?? 0);
-            var priceAvg = Math.Abs(FirstNonZero(order.AvgPx, existing?.PriceAverage) ?? 0);
+            var priceAvg = Math.Abs(FirstNonZero(order.AvgPx, order.Price, existing?.PriceAverage) ?? 0);
 
             var isPartial = order.OrdStatus == OrderStatus.Undefined ?
                 existing?.OrderStatus == CryptoOrderStatus.PartiallyFilled :
