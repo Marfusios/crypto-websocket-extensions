@@ -27,6 +27,11 @@ using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
+using Huobi.Client.Websocket;
+using Huobi.Client.Websocket.Clients;
+using Huobi.Client.Websocket.Config;
+using Huobi.Client.Websocket.Messages.MarketData.MarketByPrice;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using Channel = Bitstamp.Client.Websocket.Channels.Channel;
 
@@ -44,6 +49,7 @@ namespace Crypto.Websocket.Extensions.Sample
             var binanceOb = await StartBinance("BTCUSDT", optimized, l2OrderBook);
             var coinbaseOb = await StartCoinbase("BTC-USD", optimized, l2OrderBook);
             var bitstampOb = await StartBitstamp("BTCUSD", optimized, l2OrderBook);
+            var huobiOb = await StartHuobi("btcusdt", optimized, l2OrderBook);
 
             Log.Information("Waiting for price change...");
 
@@ -53,7 +59,8 @@ namespace Crypto.Websocket.Extensions.Sample
                     bitfinexOb.BidAskUpdatedStream,
                     binanceOb.BidAskUpdatedStream,
                     coinbaseOb.BidAskUpdatedStream,
-                    bitstampOb.BidAskUpdatedStream
+                    bitstampOb.BidAskUpdatedStream,
+                    huobiOb.BidAskUpdatedStream
                 })
                 .Subscribe(x => HandleQuoteChanged(x, true));
         }
@@ -68,6 +75,7 @@ namespace Crypto.Websocket.Extensions.Sample
             //var ob = await StartBitfinex("BTCUSD", optimized, l2OrderBook);
             //var ob = await StartCoinbase("BTC-USD", optimized, l2OrderBook);
             //var ob = await StartBitstamp("BTCUSD", optimized, l2OrderBook);
+            //var ob = await StartHuobi("btcusdt", optimized, l2OrderBook);}}
 
             Log.Information("Waiting for price change...");
 
@@ -280,6 +288,38 @@ namespace Crypto.Websocket.Extensions.Sample
                 pair,
                 Channel.OrderBook
             ));
+
+            return orderBook;
+        }
+
+        private static async Task<ICryptoOrderBook> StartHuobi(string pair, bool optimized, bool l2Optimized)
+        {
+            var config = new HuobiMarketByPriceWebsocketClientConfig
+            {
+                Url = HuobiConstants.ApiMbpWebsocketUrl,
+                CommunicatorName = "Huobi"
+            };
+            var loggerFactory = new LoggerFactory().AddSerilog(Log.Logger);
+
+            var client = HuobiWebsocketClientsFactory.CreateMarketByPriceClient(config, loggerFactory);
+            var source = new HuobiOrderBookSource(client);
+
+            var orderBook = l2Optimized ? 
+                new CryptoOrderBookL2(pair, source) : 
+                (ICryptoOrderBook)new CryptoOrderBook(pair, source);
+
+            if (optimized)
+            {
+                ConfigureOptimized(source, orderBook);
+            }
+
+            _ = client.Start();
+
+            // send subscription request to order book data
+            client.Send(new MarketByPriceSubscribeRequest("s1", pair, 20));
+
+            // send request to snapshot
+            client.Send(new MarketByPricePullRequest("p1", pair, 20));
 
             return orderBook;
         }
