@@ -18,7 +18,7 @@ namespace Crypto.Websocket.Extensions.Tests.data
     public class RawFileCommunicator : IBitmexCommunicator, IBitfinexCommunicator, 
         IBinanceCommunicator, ICoinbaseCommunicator
     {
-        private readonly Subject<ResponseMessage> _messageReceivedSubject = new Subject<ResponseMessage>();
+        readonly Subject<ResponseMessage> _messageReceivedSubject = new();
 
         public IObservable<ResponseMessage> MessageReceived => _messageReceivedSubject.AsObservable();
         public IObservable<ReconnectionInfo> ReconnectionHappened => Observable.Empty<ReconnectionInfo>();
@@ -104,7 +104,7 @@ namespace Crypto.Websocket.Extensions.Tests.data
 
         public Uri Url { get; set; }
 
-        private void StartStreaming()
+        void StartStreaming()
         {
             if (FileNames == null)
                 throw new InvalidOperationException("FileNames are not set, provide at least one path to historical data");
@@ -123,8 +123,8 @@ namespace Crypto.Websocket.Extensions.Tests.data
             }
         }
 
- 
-        private static string ReadByDelimeter(StreamReader sr, string delimiter)
+
+        static string ReadByDelimeter(StreamReader sr, string delimiter)
         {
             var line = new StringBuilder();
             int matchIndex = 0;
@@ -151,7 +151,7 @@ namespace Crypto.Websocket.Extensions.Tests.data
             return line.Length == 0 ? null : line.ToString();
         }
 
-        private StreamReader GetFileStreamReader(string fileName)
+        StreamReader GetFileStreamReader(string fileName)
         {
             var fs = new FileStream(fileName, FileMode.Open);
             if (fileName.EndsWith("gz", StringComparison.OrdinalIgnoreCase) ||

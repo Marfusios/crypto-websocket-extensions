@@ -18,8 +18,9 @@ namespace Crypto.Websocket.Extensions.Tests
 {
     public class CryptoOrderBookL2PerformanceTests
     {
-        private readonly ITestOutputHelper _output;
-        private readonly string[] _rawFiles = {
+        readonly ITestOutputHelper _output;
+
+        readonly string[] _rawFiles = {
             "data/bitmex_raw_xbtusd_2018-11-13.txt.gz"
         };
 
@@ -220,17 +221,23 @@ namespace Crypto.Websocket.Extensions.Tests
         public async Task StreamFromFile_ShouldBeFast()
         {
             var pair = "XBTUSD";
-            var communicator = new RawFileCommunicator();
-            communicator.FileNames = _rawFiles;
+            var communicator = new RawFileCommunicator
+            {
+                FileNames = _rawFiles
+            };
 
             var client = new BitmexWebsocketClient(communicator);
-            var source = new BitmexOrderBookSource(client);
-            source.LoadSnapshotEnabled = false;
-            source.BufferEnabled = false;
-            
-            var orderBook = new CryptoOrderBookL2(pair, source);
-            orderBook.SnapshotReloadEnabled = false;
-            orderBook.ValidityCheckEnabled = false;
+            var source = new BitmexOrderBookSource(client)
+            {
+                LoadSnapshotEnabled = false,
+                BufferEnabled = false
+            };
+
+            var orderBook = new CryptoOrderBookL2(pair, source)
+            {
+                SnapshotReloadEnabled = false,
+                ValidityCheckEnabled = false
+            };
 
             var snapshotCount = 0;
             var diffCount = 0;
@@ -250,7 +257,7 @@ namespace Crypto.Websocket.Extensions.Tests
         }
 #endif
 
-        private static long StreamLevels(string pair, OrderBookSourceMock source, int iterations, int maxBidPrice, int maxAskCount, bool slowDown = false)
+        static long StreamLevels(string pair, OrderBookSourceMock source, int iterations, int maxBidPrice, int maxAskCount, bool slowDown = false)
         {
             var sw = new Stopwatch();
             for (int i = 0; i < iterations; i++)

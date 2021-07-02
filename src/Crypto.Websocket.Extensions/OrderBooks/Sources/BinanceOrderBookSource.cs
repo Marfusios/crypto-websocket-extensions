@@ -35,12 +35,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     /// <inheritdoc />
     public class BinanceOrderBookSource : OrderBookSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private readonly HttpClient _httpClient = new HttpClient();
-        private BinanceWebsocketClient _client;
-        private IDisposable _subscriptionSnapshot;
-        private IDisposable _subscription;
+        readonly HttpClient _httpClient = new();
+        BinanceWebsocketClient _client;
+        IDisposable _snapshotSubscription;
+        IDisposable _diffSubscription;
 
         /// <inheritdoc />
         public BinanceOrderBookSource(BinanceWebsocketClient client)
@@ -61,8 +61,17 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             CryptoValidations.ValidateInput(client, nameof(client));
 
             _client = client;
-            _subscription?.Dispose();
+            _snapshotSubscription?.Dispose();
+            _diffSubscription?.Dispose();
             Subscribe();
+        }
+
+        /// <inheritdoc />
+        public override void Dispose()
+        {
+            base.Dispose();
+            _snapshotSubscription?.Dispose();
+            _diffSubscription?.Dispose();
         }
 
         /// <summary>
@@ -83,13 +92,13 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             OrderBookPartialResponse.StreamFakeSnapshot(snapshot, communicator);
         }
 
-        private void Subscribe()
+        void Subscribe()
         {
-            _subscriptionSnapshot = _client.Streams.OrderBookPartialStream.Subscribe(HandleSnapshot);
-            _subscription = _client.Streams.OrderBookDiffStream.Subscribe(HandleDiff);
+            _snapshotSubscription = _client.Streams.OrderBookPartialStream.Subscribe(HandleSnapshot);
+            _diffSubscription = _client.Streams.OrderBookDiffStream.Subscribe(HandleDiff);
         }
 
-        private void HandleSnapshot(OrderBookPartialResponse response)
+        void HandleSnapshot(OrderBookPartialResponse response)
         {
             // received snapshot, convert and stream
             var levels = ConvertSnapshot(response.Data);
@@ -101,26 +110,24 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             StreamSnapshot(bulk);
         }
 
-        private void HandleDiff(OrderBookDiffResponse response)
+        void HandleDiff(OrderBookDiffResponse response)
         {
             BufferData(response);
         }
 
-        private OrderBookLevel[] ConvertLevels(Binance.Client.Websocket.Responses.Books.OrderBookLevel[] books, 
-            string pair, CryptoOrderSide side)
+        static OrderBookLevel[] ConvertLevels(Binance.Client.Websocket.Responses.Books.OrderBookLevel[] books, string pair, CryptoOrderSide side)
         {
             if (books == null)
-                return new OrderBookLevel[0];
+                return Array.Empty<OrderBookLevel>();
 
             return books
                 .Select(x => ConvertLevel(x , pair, side))
                 .ToArray();
         }
 
-        private OrderBookLevel ConvertLevel(Binance.Client.Websocket.Responses.Books.OrderBookLevel x, 
-            string pair, CryptoOrderSide side)
+        static OrderBookLevel ConvertLevel(Binance.Client.Websocket.Responses.Books.OrderBookLevel x, string pair, CryptoOrderSide side)
         {
-            return new OrderBookLevel
+            return new
             (
                 x.Price.ToString(CultureInfo.InvariantCulture),
                 side,
@@ -147,7 +154,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return bulk;
         }
 
-        private async Task<OrderBookPartial> LoadSnapshotRaw(string pair, int count)
+        async Task<OrderBookPartial> LoadSnapshotRaw(string pair, int count)
         {
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
             var countSafe = count > 1000 ? 1000 : count;
@@ -156,17 +163,16 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             try
             {
                 var url = $"/api/v1/depth?symbol={pairSafe}&limit={countSafe}";
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                using (HttpContent content = response.Content)
-                {
-                    result = await content.ReadAsStringAsync();
-                    var parsed = JsonConvert.DeserializeObject<OrderBookPartial>(result);
-                    if (parsed == null)
-                        return null;
+                using var response = await _httpClient.GetAsync(url);
+                using var content = response.Content;
+                result = await content.ReadAsStringAsync();
+                var parsed = JsonConvert.DeserializeObject<OrderBookPartial>(result);
+                
+                if (parsed == null)
+                    return null;
 
-                    parsed.Symbol = pairSafe;
-                    return parsed;
-                }
+                parsed.Symbol = pairSafe;
+                return parsed;
             }
             catch (Exception e)
             {
@@ -176,7 +182,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             }
         }
 
-        private OrderBookLevel[] ConvertSnapshot(OrderBookPartial response)
+        static OrderBookLevel[] ConvertSnapshot(OrderBookPartial response)
         {
             var bids = ConvertLevels(response.Bids, response.Symbol, CryptoOrderSide.Bid);
             var asks = ConvertLevels(response.Asks, response.Symbol, CryptoOrderSide.Ask);
@@ -188,7 +194,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return all;
         }
 
-        private OrderBookLevelBulk[] ConvertDiff(OrderBookDiffResponse response)
+        OrderBookLevelBulk[] ConvertDiff(OrderBookDiffResponse response)
         {
             var result = new List<OrderBookLevelBulk>();
             var bids = ConvertLevels(response.Data?.Bids, response.Data?.Symbol, CryptoOrderSide.Bid);
@@ -229,16 +235,15 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             var result = new List<OrderBookLevelBulk>();
             foreach (var response in data)
             {
-                var responseSafe = response as OrderBookDiffResponse;
-                if(responseSafe == null)
-                    continue;
+                if (response is OrderBookDiffResponse responseSafe)
+                {
+                    var bulks = ConvertDiff(responseSafe);
 
-                var bulks = ConvertDiff(responseSafe);
+                    if(!bulks.Any())
+                        continue;
 
-                if(!bulks.Any())
-                    continue;
-
-                result.AddRange(bulks);
+                    result.AddRange(bulks);
+                }
             }
 
             return result.ToArray();

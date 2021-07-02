@@ -23,7 +23,7 @@
         /// <summary>
         /// Raw, every single order
         /// </summary>
-        L3, 
+        L3,
 
         /// <summary>
         /// Everything

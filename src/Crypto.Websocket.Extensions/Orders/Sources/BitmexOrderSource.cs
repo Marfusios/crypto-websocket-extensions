@@ -17,11 +17,11 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
     /// </summary>
     public class BitmexOrderSource : OrderSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private readonly CryptoOrderCollection _partiallyFilledOrders = new CryptoOrderCollection();
-        private BitmexWebsocketClient _client;
-        private IDisposable _subscription;
+        readonly CryptoOrderCollection _partiallyFilledOrders = new();
+        BitmexWebsocketClient _client;
+        IDisposable _subscription;
 
         /// <inheritdoc />
         public BitmexOrderSource(BitmexWebsocketClient client)
@@ -44,12 +44,12 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             Subscribe();
         }
 
-        private void Subscribe()
+        void Subscribe()
         {
             _subscription = _client.Streams.OrderStream.Subscribe(HandleOrdersSafe);
         }
 
-        private void HandleOrdersSafe(OrderResponse response)
+        void HandleOrdersSafe(OrderResponse response)
         {
             try
             {
@@ -61,7 +61,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             }
         }
 
-        private void HandleOrders(OrderResponse response)
+        void HandleOrders(OrderResponse response)
         {
             if (response?.Data == null || !response.Data.Any())
             {
@@ -211,23 +211,16 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         {
             var typeSafe = (type ?? string.Empty).ToLower();
 
-            switch (typeSafe)
+            return typeSafe switch
             {
-                case "market":
-                    return CryptoOrderType.Market;
-                case "stop":
-                    return CryptoOrderType.Stop;
-                case "stoplimit":
-                    return CryptoOrderType.StopLimit;
-                case "limit":
-                    return CryptoOrderType.Limit;
-                case "limitiftouched":
-                    return CryptoOrderType.TakeProfitLimit;
-                case "marketiftouched":
-                    return CryptoOrderType.TakeProfitMarket;
-                default:
-                    return CryptoOrderType.Undefined;
-            }
+                "market" => CryptoOrderType.Market,
+                "stop" => CryptoOrderType.Stop,
+                "stoplimit" => CryptoOrderType.StopLimit,
+                "limit" => CryptoOrderType.Limit,
+                "limitiftouched" => CryptoOrderType.TakeProfitLimit,
+                "marketiftouched" => CryptoOrderType.TakeProfitMarket,
+                _ => CryptoOrderType.Undefined
+            };
         }
 
         /// <summary>
@@ -260,23 +253,19 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         public static CryptoOrderStatus ConvertOrderStatus(Order order)
         {
             var status = order.OrdStatus;
-            switch (status)
+            return status switch
             {
-                case OrderStatus.New:
-                    return order.WorkingIndicator ?? false ? CryptoOrderStatus.Active : CryptoOrderStatus.New;
-                case OrderStatus.PartiallyFilled:
-                    return CryptoOrderStatus.PartiallyFilled;
-                case OrderStatus.Filled:
-                    return CryptoOrderStatus.Executed;
-                case OrderStatus.Undefined:
-                    return order.WorkingIndicator ?? false ? CryptoOrderStatus.Active : CryptoOrderStatus.Canceled;
-                default:
-                    return CryptoOrderStatus.Canceled;
-            }
+                OrderStatus.New => order.WorkingIndicator ?? false ? CryptoOrderStatus.Active : CryptoOrderStatus.New,
+                OrderStatus.PartiallyFilled => CryptoOrderStatus.PartiallyFilled,
+                OrderStatus.Filled => CryptoOrderStatus.Executed,
+                OrderStatus.Undefined => order.WorkingIndicator ?? false
+                    ? CryptoOrderStatus.Active
+                    : CryptoOrderStatus.Canceled,
+                _ => CryptoOrderStatus.Canceled
+            };
         }
 
-
-        private static double? FirstNonZero(params double?[] numbers)
+        static double? FirstNonZero(params double?[] numbers)
         {
             foreach (var number in numbers)
             {
@@ -287,7 +276,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             return null;
         }
 
-        private static double? Abs(double? value)
+        static double? Abs(double? value)
         {
             if (!value.HasValue)
                 return null;

@@ -11,13 +11,13 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
     [DebuggerDisplay("Order: {Id}/{ClientId} - {Pair} - {PriceGrouped} {AmountFilled}")]
     public class CryptoOrder
     {
-        private CryptoOrderSide _side;
-        private double? _amountFilledCumulative;
-        private double? _amountFilledCumulativeQuote;
-        private double? _amountFilled;
-        private double? _amountFilledQuote;
-        private double? _amountOrig;
-        private double? _amountOrigQuote;
+        CryptoOrderSide _side;
+        double? _amountFilledCumulative;
+        double? _amountFilledCumulativeQuote;
+        double? _amountFilled;
+        double? _amountFilledQuote;
+        double? _amountOrig;
+        double? _amountOrigQuote;
 
         /// <summary>
         /// Unique order id (provided by exchange)
@@ -174,16 +174,14 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         public bool OnMargin { get; set; }
 
 
-
-
-        private double? WithCorrectSign(double? value)
+        double? WithCorrectSign(double? value)
         {
             if (!value.HasValue || _side == CryptoOrderSide.Undefined)
                 return value;
             return Math.Abs(value.Value) * (_side == CryptoOrderSide.Bid ? 1 : -1);
         }
 
-        private void FixAmountSign(ref double? amount)
+        void FixAmountSign(ref double? amount)
         {
             if (amount.HasValue)
             {
@@ -191,7 +189,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
             }
         }
 
-        private double FirstNotNull(params double?[] numbers)
+        static double FirstNotNull(params double?[] numbers)
         {
             foreach (var number in numbers)
             {
@@ -229,7 +227,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         public static CryptoOrder Mock(string cid, string pair, CryptoOrderSide side,
             double price, double amount, CryptoOrderType type, DateTime timestamp)
         {
-            return new CryptoOrder
+            return new()
             {
                 Id = Guid.NewGuid().ToString("D"),
                 ClientId = cid,

@@ -19,11 +19,11 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
     /// </summary>
     public class BitmexPositionSource : PositionSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-        private readonly ConcurrentDictionary<string, CryptoPosition> _positions = new ConcurrentDictionary<string, CryptoPosition>();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        readonly ConcurrentDictionary<string, CryptoPosition> _positions = new();
 
-        private BitmexWebsocketClient _client;
-        private IDisposable _subscription;
+        BitmexWebsocketClient _client;
+        IDisposable _subscription;
 
         /// <inheritdoc />
         public BitmexPositionSource(BitmexWebsocketClient client)
@@ -46,14 +46,14 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
             Subscribe();
         }
 
-        private void Subscribe()
+        void Subscribe()
         {
             _subscription = _client.Streams.PositionStream
                 .Where(x => x?.Data != null && x.Data.Any())
                 .Subscribe(HandleSafe);
         }
 
-        private void HandleSafe(PositionResponse response)
+        void HandleSafe(PositionResponse response)
         {
             try
             {
@@ -65,17 +65,17 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
             }
         }
 
-        private void Handle(PositionResponse response)
+        void Handle(PositionResponse response)
         {
             PositionsSubject.OnNext(Convert(response.Data));
         }
 
-        private CryptoPosition[] Convert(Position[] positions)
+        CryptoPosition[] Convert(Position[] positions)
         {
             return positions.Select(Convert).ToArray();
         }
 
-        private CryptoPosition Convert(Position position)
+        CryptoPosition Convert(Position position)
         {
             var key = GetPositionKey(position);
             var existing = _positions.ContainsKey(key) ? _positions[key] : null;
@@ -107,14 +107,14 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
             return current;
         }
 
-        private CryptoPositionSide ConvertSide(double? amount)
+        static CryptoPositionSide ConvertSide(double? amount)
         {
             if (!amount.HasValue || CryptoMathUtils.IsSame(amount.Value, 0))
                 return CryptoPositionSide.Undefined;
             return amount.Value >= 0 ? CryptoPositionSide.Long : CryptoPositionSide.Short;
         }
 
-        private double? ConvertToBtc(string currency, double? value)
+        static double? ConvertToBtc(string currency, double? value)
         {
             if (!value.HasValue)
                 return null;
@@ -122,7 +122,7 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
             return BitmexConverter.ConvertToBtc(currency, value.Value);
         }
 
-        private string GetPositionKey(Position position)
+        static string GetPositionKey(Position position)
         {
             return $"{position.Symbol}-{position.Account}";
         }

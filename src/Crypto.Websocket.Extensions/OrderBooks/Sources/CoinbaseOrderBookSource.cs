@@ -23,13 +23,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     /// <inheritdoc />
     public class CoinbaseOrderBookSource : OrderBookSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private readonly HttpClient _httpClient = new HttpClient();
-        private CoinbaseWebsocketClient _client;
-        private IDisposable _subscription;
-        private IDisposable _subscriptionSnapshot;
-
+        readonly HttpClient _httpClient = new();
+        CoinbaseWebsocketClient _client;
+        IDisposable _snapshotSubscription;
+        IDisposable _diffSubscription;
 
         /// <inheritdoc />
         public CoinbaseOrderBookSource(CoinbaseWebsocketClient client)
@@ -50,18 +49,26 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             CryptoValidations.ValidateInput(client, nameof(client));
 
             _client = client;
-            _subscriptionSnapshot?.Dispose();
-            _subscription?.Dispose();
+            _snapshotSubscription?.Dispose();
+            _diffSubscription?.Dispose();
             Subscribe();
         }
 
-        private void Subscribe()
+        /// <inheritdoc />
+        public override void Dispose()
         {
-            _subscriptionSnapshot = _client.Streams.OrderBookSnapshotStream.Subscribe(HandleSnapshot);
-            _subscription = _client.Streams.OrderBookUpdateStream.Subscribe(HandleBook);
+            base.Dispose();
+            _snapshotSubscription?.Dispose();
+            _diffSubscription?.Dispose();
         }
 
-        private void HandleSnapshot(OrderBookSnapshotResponse snapshot)
+        void Subscribe()
+        {
+            _snapshotSubscription = _client.Streams.OrderBookSnapshotStream.Subscribe(HandleSnapshot);
+            _diffSubscription = _client.Streams.OrderBookUpdateStream.Subscribe(HandleBook);
+        }
+
+        void HandleSnapshot(OrderBookSnapshotResponse snapshot)
         {
             // received snapshot, convert and stream
             var levels = ConvertSnapshot(snapshot);
@@ -70,7 +77,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             StreamSnapshot(bulk);
         }
 
-        private OrderBookLevel[] ConvertSnapshot(OrderBookSnapshotResponse snapshot)
+        static OrderBookLevel[] ConvertSnapshot(OrderBookSnapshotResponse snapshot)
         {
             var bids = ConvertLevels(snapshot.ProductId, snapshot.Bids);
             var asks = ConvertLevels(snapshot.ProductId, snapshot.Asks);
@@ -78,21 +85,21 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return levels;
         }
 
-        private void HandleBook(OrderBookUpdateResponse update)
+        void HandleBook(OrderBookUpdateResponse update)
         {
             BufferData(update);
         }
 
-        private OrderBookLevel[] ConvertLevels(string pair, CoinbaseOrderBookLevel[] data)
+        static OrderBookLevel[] ConvertLevels(string pair, CoinbaseOrderBookLevel[] data)
         {
             return data
                 .Select(x => ConvertLevel(pair, x))
                 .ToArray();
         }
 
-        private OrderBookLevel ConvertLevel(string pair, CoinbaseOrderBookLevel x)
+        static OrderBookLevel ConvertLevel(string pair, CoinbaseOrderBookLevel x)
         {
-            return new OrderBookLevel
+            return new
             (
                 x.Price.ToString(CultureInfo.InvariantCulture),
                 ConvertSide(x.Side),
@@ -103,7 +110,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             );
         }
 
-        private CryptoOrderSide ConvertSide(OrderBookSide side)
+        static CryptoOrderSide ConvertSide(OrderBookSide side)
         {
             if (side == OrderBookSide.Buy)
                 return CryptoOrderSide.Bid;
@@ -112,7 +119,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return CryptoOrderSide.Undefined;
         }
 
-        private OrderBookAction RecognizeAction(OrderBookLevel level)
+        OrderBookAction RecognizeAction(OrderBookLevel level)
         {
             if (level.Amount > 0)
                 return OrderBookAction.Update;
@@ -129,14 +136,13 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             try
             {
                 var url = $"/products/{pairSafe}/book?level=2";
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                using (HttpContent content = response.Content)
-                {
-                    result = await content.ReadAsStringAsync();
-                    parsed = JsonConvert.DeserializeObject<OrderBookSnapshotDto>(result);
-                    if (parsed == null)
-                        return null;
-                }
+                using var response = await _httpClient.GetAsync(url);
+                using var content = response.Content;
+                result = await content.ReadAsStringAsync();
+                parsed = JsonConvert.DeserializeObject<OrderBookSnapshotDto>(result);
+                
+                if (parsed == null)
+                    return null;
             }
             catch (Exception e)
             {
@@ -152,7 +158,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return bulk;
         }
 
-        private IEnumerable<OrderBookLevelBulk> ConvertDiff(OrderBookUpdateResponse update)
+        IEnumerable<OrderBookLevelBulk> ConvertDiff(OrderBookUpdateResponse update)
         {
             var converted = ConvertLevels(update.ProductId, update.Changes);
 
@@ -166,7 +172,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             }
         }
 
-        private void FillBulk(ResponseBase response, OrderBookLevelBulk bulk)
+        void FillBulk(ResponseBase response, OrderBookLevelBulk bulk)
         {
             bulk.ExchangeName = ExchangeName;
             bulk.ServerSequence = response.Sequence;
@@ -179,19 +185,18 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             var result = new List<OrderBookLevelBulk>();
             foreach (var response in data)
             {
-                var responseSafe = response as OrderBookUpdateResponse;
-                if(responseSafe == null)
-                    continue;
-
-                var converted = ConvertDiff(responseSafe);
-                result.AddRange(converted);
+                if (response is OrderBookUpdateResponse responseSafe)
+                {
+                    var converted = ConvertDiff(responseSafe);
+                    result.AddRange(converted);
+                }
             }
 
             return result.ToArray();
         }
 
         // ReSharper disable once ClassNeverInstantiated.Local
-        private class OrderBookSnapshotDto
+        class OrderBookSnapshotDto
         {
             public long Sequence { get; set; }
 
@@ -204,9 +209,9 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     }
 
 
-    internal class OrderBookLevelConverter : JsonConverter
+    class OrderBookLevelConverter : JsonConverter
     {
-        private readonly OrderBookSide _side;
+        readonly OrderBookSide _side;
 
         public OrderBookLevelConverter()
         {
@@ -237,17 +242,19 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             throw new NotImplementedException();
         }
 
-        private CoinbaseOrderBookLevel[] JArrayToTradingTicker(JArray data)
+        CoinbaseOrderBookLevel[] JArrayToTradingTicker(JArray data)
         {
             var result = new List<CoinbaseOrderBookLevel>();
             foreach (var item in data)
             {
                 var array = item.ToArray();
 
-                var level = new CoinbaseOrderBookLevel();
-                level.Price = (double) array[0];
-                level.Amount = (double) array[1];
-                level.Side = _side;
+                var level = new CoinbaseOrderBookLevel
+                {
+                    Price = (double) array[0],
+                    Amount = (double) array[1],
+                    Side = _side
+                };
 
                 result.Add(level);
             }

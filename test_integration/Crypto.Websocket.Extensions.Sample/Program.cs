@@ -11,9 +11,9 @@ namespace Crypto.Websocket.Extensions.Sample
 {
     class Program
     {
-        private static readonly ManualResetEvent ExitEvent = new ManualResetEvent(false);
+        static readonly ManualResetEvent ExitEvent = new(false);
 
-        static void Main(string[] args)
+        static void Main(string[] _)
         {
             GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
 
@@ -34,7 +34,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
 
 
-            OrderBookExample.RunEverything().Wait();
+            OrderBookExample.RunEverything();
             //OrderBookExample.RunOnlyOne(false).Wait();
             //OrderBookL3Example.RunOnlyOne().Wait();
 
@@ -51,10 +51,8 @@ namespace Crypto.Websocket.Extensions.Sample
             Log.CloseAndFlush();
         }
 
-        
 
-
-        private static void InitLogging()
+        static void InitLogging()
         {
             var executingDir = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
             var logPath = Path.Combine(executingDir, "logs", "verbose.log");
@@ -66,19 +64,19 @@ namespace Crypto.Websocket.Extensions.Sample
                 .CreateLogger();
         }
 
-        private static void CurrentDomainOnProcessExit(object sender, EventArgs eventArgs)
+        static void CurrentDomainOnProcessExit(object sender, EventArgs eventArgs)
         {
             Log.Warning("Exiting process");
             ExitEvent.Set();
         }
 
-        private static void DefaultOnUnloading(AssemblyLoadContext assemblyLoadContext)
+        static void DefaultOnUnloading(AssemblyLoadContext assemblyLoadContext)
         {
             Log.Warning("Unloading process");
             ExitEvent.Set();
         }
 
-        private static void ConsoleOnCancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        static void ConsoleOnCancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             Log.Warning("Canceling process");
             e.Cancel = true;

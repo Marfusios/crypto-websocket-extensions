@@ -16,8 +16,8 @@ namespace Crypto.Websocket.Extensions.Sample
 {
     public static class OrdersExample
     {
-        private static readonly string API_KEY = "";
-        private static readonly string API_SECRET = "";
+        static readonly string API_KEY = "";
+        static readonly string API_SECRET = "";
 
         public static async Task RunEverything()
         {
@@ -26,7 +26,7 @@ namespace Crypto.Websocket.Extensions.Sample
             Log.Information("Waiting for orders...");
         }
 
-        private static void HandleOrderChanged(CryptoOrder order)
+        static void HandleOrderChanged(CryptoOrder order)
         {
             Log.Information($"Order '{order.ClientId}' [{order.Pair} {order.Side} {order.Type}] changed. " +
                             $"Price: {order.PriceGrouped}, Amount: {order.AmountOrig:#.#####}/{order.AmountOrigQuote}, " +
@@ -35,7 +35,7 @@ namespace Crypto.Websocket.Extensions.Sample
                             $"Status: {order.OrderStatus}");
         }
 
-        private static void HandleWalletsChanged(CryptoWallet[] wallets)
+        static void HandleWalletsChanged(CryptoWallet[] wallets)
         {
             foreach (var wallet in wallets)
             {
@@ -43,7 +43,7 @@ namespace Crypto.Websocket.Extensions.Sample
             }
         }
 
-        private static void HandleWalletChanged(CryptoWallet wallet)
+        static void HandleWalletChanged(CryptoWallet wallet)
         {
             Log.Information($"Wallet '{wallet.Type}' " +
                             $"Balance: {wallet.Balance} {wallet.Currency}, " +
@@ -51,7 +51,7 @@ namespace Crypto.Websocket.Extensions.Sample
                             $"Pnl: {wallet.RealizedPnl:#.#####}/{wallet.UnrealizedPnl:#.#####}");
         }
 
-        private static void HandlePositionsChanged(CryptoPosition[] positions)
+        static void HandlePositionsChanged(CryptoPosition[] positions)
         {
             foreach (var pos in positions)
             {
@@ -59,7 +59,7 @@ namespace Crypto.Websocket.Extensions.Sample
             }
         }
 
-        private static void HandlePositionChanged(CryptoPosition pos)
+        static void HandlePositionChanged(CryptoPosition pos)
         {
             Log.Information($"Position '{pos.Pair}' [{pos.Side}], " +
                             $"price: {pos.LastPrice:0.00######}, amount: {pos.Amount}/{pos.AmountQuote}, " +
@@ -69,7 +69,7 @@ namespace Crypto.Websocket.Extensions.Sample
         }
 
 
-        private static async Task<ICryptoOrders> StartBitmex(bool isTestnet, Action<CryptoOrder> handler, 
+        static async Task<ICryptoOrders> StartBitmex(bool isTestnet, Action<CryptoOrder> handler, 
             Action<CryptoWallet[]> walletHandler, Action<CryptoPosition[]> positionHandler)
         {
             var url = isTestnet ? BitmexValues.ApiWebsocketTestnetUrl : BitmexValues.ApiWebsocketUrl;

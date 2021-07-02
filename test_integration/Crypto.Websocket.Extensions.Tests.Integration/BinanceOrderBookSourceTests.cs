@@ -16,69 +16,61 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
         public async Task ConnectToSource_ShouldHandleOrderBookCorrectly()
         {
             var url = BinanceValues.ApiWebsocketUrl;
-            using (var communicator = new BinanceWebsocketCommunicator(url))
-            {
-                using (var client = new BinanceWebsocketClient(communicator))
-                {
-                    var pair = "BTCUSDT";
+            using var communicator = new BinanceWebsocketCommunicator(url);
+            using var client = new BinanceWebsocketClient(communicator);
+            const string pair = "BTCUSDT";
 
-                    client.SetSubscriptions(
-                        new OrderBookDiffSubscription(pair)
-                    );
+            client.SetSubscriptions(
+                new OrderBookDiffSubscription(pair)
+            );
 
-                    var source = new BinanceOrderBookSource(client);
-                    var orderBook = new CryptoOrderBook(pair, source);
+            var source = new BinanceOrderBookSource(client);
+            var orderBook = new CryptoOrderBook(pair, source);
 
-                    await communicator.Start();
+            await communicator.Start();
 
-                    // Binance is special
-                    // We need to load snapshot in advance manually via REST call
-                    await source.LoadSnapshot(pair);
+            // Binance is special
+            // We need to load snapshot in advance manually via REST call
+            await source.LoadSnapshot(pair);
 
-                    await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(5));
 
-                    Assert.True(orderBook.BidPrice > 0);
-                    Assert.True(orderBook.AskPrice > 0);
+            Assert.True(orderBook.BidPrice > 0);
+            Assert.True(orderBook.AskPrice > 0);
 
-                    Assert.NotEmpty(orderBook.BidLevels);
-                    Assert.NotEmpty(orderBook.AskLevels);
-                }
-            }
+            Assert.NotEmpty(orderBook.BidLevels);
+            Assert.NotEmpty(orderBook.AskLevels);
         }
 
         [Fact]
         public async Task AutoSnapshotReloading_ShouldWorkAfterTimeout()
         {
             var url = BinanceValues.ApiWebsocketUrl;
-            using (var communicator = new BinanceWebsocketCommunicator(url))
+            using var communicator = new BinanceWebsocketCommunicator(url);
+            using var client = new BinanceWebsocketClient(communicator);
+            const string pair = "BTCUSDT";
+
+            client.SetSubscriptions(
+                new OrderBookDiffSubscription(pair)
+            );
+
+            var source = new BinanceOrderBookSource(client)
             {
-                using (var client = new BinanceWebsocketClient(communicator))
-                {
-                    var pair = "BTCUSDT";
+                LoadSnapshotEnabled = true
+            };
+            var orderBook = new CryptoOrderBook(pair, source)
+            {
+                SnapshotReloadTimeout = TimeSpan.FromSeconds(5),
+                SnapshotReloadEnabled = true
+            };
 
-                    client.SetSubscriptions(
-                        new OrderBookDiffSubscription(pair)
-                    );
+            await Task.Delay(TimeSpan.FromSeconds(13));
 
-                    var source = new BinanceOrderBookSource(client)
-                    {
-                        LoadSnapshotEnabled = true
-                    };
-                    var orderBook = new CryptoOrderBook(pair, source)
-                    {
-                        SnapshotReloadTimeout = TimeSpan.FromSeconds(5),
-                        SnapshotReloadEnabled = true
-                    };
+            Assert.True(orderBook.BidPrice > 0);
+            Assert.True(orderBook.AskPrice > 0);
 
-                    await Task.Delay(TimeSpan.FromSeconds(13));
-
-                    Assert.True(orderBook.BidPrice > 0);
-                    Assert.True(orderBook.AskPrice > 0);
-
-                    Assert.NotEmpty(orderBook.BidLevels);
-                    Assert.NotEmpty(orderBook.AskLevels);
-                }
-            }
+            Assert.NotEmpty(orderBook.BidLevels);
+            Assert.NotEmpty(orderBook.AskLevels);
         }
     }
 }

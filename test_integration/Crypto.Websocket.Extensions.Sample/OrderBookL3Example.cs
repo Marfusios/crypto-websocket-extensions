@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Reactive.Linq;
-using System.Threading.Tasks;
 using Bitfinex.Client.Websocket;
 using Bitfinex.Client.Websocket.Client;
 using Bitfinex.Client.Websocket.Requests.Configurations;
@@ -15,13 +14,13 @@ namespace Crypto.Websocket.Extensions.Sample
 {
     public static class OrderBookL3Example
     {
-        public static async Task RunOnlyOne()
+        public static void RunOnlyOne()
         {
             var optimized = true;
             var levelsCount = 20;
 
             //var ob = await StartBitfinex("BTCUSD", optimized);
-            var ob = await StartBitfinex("btcf0:ustf0", optimized);
+            var ob = StartBitfinex("btcf0:ustf0", optimized);
 
             Log.Information("Waiting for price change...");
 
@@ -32,7 +31,7 @@ namespace Crypto.Websocket.Extensions.Sample
                 .Subscribe(x => HandleQuoteChanged(ob, levelsCount));
         }
 
-        private static void HandleQuoteChanged( CryptoOrderBook ob, int levelsCount)
+        static void HandleQuoteChanged( CryptoOrderBook ob, int levelsCount)
         {
             var bids = ob.BidLevelsPerPrice.Take(levelsCount).SelectMany(x => x.Value).ToArray();
             var asks = ob.AskLevelsPerPrice.Take(levelsCount).SelectMany(x => x.Value).ToArray();
@@ -68,10 +67,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
         }
 
-
-       
-
-        private static async Task<CryptoOrderBook> StartBitfinex(string pair, bool optimized)
+        static CryptoOrderBook StartBitfinex(string pair, bool optimized)
         {
             var url = BitfinexValues.BitfinexPublicWebsocketUrl;
             var communicator = new BitfinexWebsocketCommunicator(url) { Name = "Bitfinex" };
@@ -96,7 +92,7 @@ namespace Crypto.Websocket.Extensions.Sample
             return orderBook;
         }
 
-        private static void ConfigureOptimized(IOrderBookSource source, ICryptoOrderBook orderBook)
+        static void ConfigureOptimized(IOrderBookSource source, ICryptoOrderBook orderBook)
         {
             source.BufferEnabled = true;
             source.BufferInterval = TimeSpan.FromMilliseconds(0);

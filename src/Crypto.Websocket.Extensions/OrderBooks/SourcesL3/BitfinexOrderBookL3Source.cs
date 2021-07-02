@@ -20,13 +20,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
     /// <inheritdoc />
     public class BitfinexOrderBookL3Source : OrderBookSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private readonly HttpClient _httpClient = new HttpClient();
-        private BitfinexWebsocketClient _client;
-        private IDisposable _subscription;
-        private IDisposable _subscriptionSnapshot;
-
+        readonly HttpClient _httpClient = new();
+        BitfinexWebsocketClient _client;
+        IDisposable _snapshotSubscription;
+        IDisposable _diffSubscription;
 
         /// <inheritdoc />
         public BitfinexOrderBookL3Source(BitfinexWebsocketClient client)
@@ -47,18 +46,26 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
             CryptoValidations.ValidateInput(client, nameof(client));
 
             _client = client;
-            _subscriptionSnapshot?.Dispose();
-            _subscription?.Dispose();
+            _snapshotSubscription?.Dispose();
+            _diffSubscription?.Dispose();
             Subscribe();
         }
 
-        private void Subscribe()
+        /// <inheritdoc />
+        public override void Dispose()
         {
-            _subscriptionSnapshot = _client.Streams.RawBookSnapshotStream.Subscribe(HandleSnapshot);
-            _subscription = _client.Streams.RawBookStream.Subscribe(HandleBook);
+            base.Dispose();
+            _snapshotSubscription?.Dispose();
+            _diffSubscription?.Dispose();
         }
 
-        private void HandleSnapshot(RawBook[] books)
+        void Subscribe()
+        {
+            _snapshotSubscription = _client.Streams.RawBookSnapshotStream.Subscribe(HandleSnapshot);
+            _diffSubscription = _client.Streams.RawBookStream.Subscribe(HandleBook);
+        }
+
+        void HandleSnapshot(RawBook[] books)
         {
             // received snapshot, convert and stream
             var levels = ConvertLevels(books);
@@ -68,21 +75,21 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
             StreamSnapshot(bulk);
         }
 
-        private void HandleBook(RawBook book)
+        void HandleBook(RawBook book)
         {
             BufferData(book);
         }
 
-        private OrderBookLevel[] ConvertLevels(RawBook[] data)
+        OrderBookLevel[] ConvertLevels(RawBook[] data)
         {
             return data
                 .Select(ConvertLevel)
                 .ToArray();
         }
 
-        private OrderBookLevel ConvertLevel(RawBook x)
+        OrderBookLevel ConvertLevel(RawBook x)
         {
-            return new OrderBookLevel
+            return new
             (
                 x.OrderId.ToString(CultureInfo.InvariantCulture),
                 ConvertSide(x.Amount),
@@ -93,7 +100,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
             );
         }
 
-        private CryptoOrderSide ConvertSide(double amount)
+        static CryptoOrderSide ConvertSide(double amount)
         {
             if (amount > 0)
                 return CryptoOrderSide.Bid;
@@ -102,7 +109,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
             return CryptoOrderSide.Undefined;
         }
 
-        private OrderBookAction RecognizeAction(RawBook book)
+        static OrderBookAction RecognizeAction(RawBook book)
         {
             if (book.Price > 0)
                 return OrderBookAction.Update;
@@ -121,19 +128,16 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
             try
             {
                 var url = $"/v2/book/{pairSafe}/R0?len={countSafe}";
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                using (HttpContent content = response.Content)
-                {
-                    result = await content.ReadAsStringAsync();
-                    parsed = JsonConvert.DeserializeObject<RawBook[]>(result);
-                    if (parsed == null || !parsed.Any())
-                        return null;
+                using var response = await _httpClient.GetAsync(url);
+                using var content = response.Content;
+                result = await content.ReadAsStringAsync();
+                parsed = JsonConvert.DeserializeObject<RawBook[]>(result);
+               
+                if (parsed == null || !parsed.Any())
+                    return null;
 
-                    foreach (var book in parsed)
-                    {
-                        book.Pair = pair;
-                    }
-                }
+                foreach (var book in parsed)
+                    book.Pair = pair;
             }
             catch (Exception e)
             {
@@ -149,7 +153,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
             return bulk;
         }
 
-        private OrderBookLevelBulk ConvertDiff(RawBook book)
+        OrderBookLevelBulk ConvertDiff(RawBook book)
         {
             var converted = ConvertLevel(book);
             var action = RecognizeAction(book);
@@ -158,7 +162,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
             return bulk;
         }
 
-        private void FillBulk(ResponseBase response, OrderBookLevelBulk bulk)
+        void FillBulk(ResponseBase response, OrderBookLevelBulk bulk)
         {
             if (response == null)
                 return;
@@ -174,17 +178,14 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
             var result = new List<OrderBookLevelBulk>();
             foreach (var response in data)
             {
-                var responseSafe = response as RawBook;
-                if(responseSafe == null)
-                    continue;
-
-                var converted = ConvertDiff(responseSafe);
-                result.Add(converted);
+                if (response is RawBook responseSafe)
+                {
+                    var converted = ConvertDiff(responseSafe);
+                    result.Add(converted);
+                }
             }
 
             return result.ToArray();
         }
-
-
     }
 }

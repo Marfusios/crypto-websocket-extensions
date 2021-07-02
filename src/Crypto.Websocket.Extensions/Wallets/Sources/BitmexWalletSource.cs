@@ -16,11 +16,11 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
     /// </summary>
     public class BitmexWalletSource : WalletSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private BitmexWebsocketClient _client;
-        private IDisposable _subscription;
-        private CryptoWallet _lastWallet;
+        BitmexWebsocketClient _client;
+        IDisposable _subscription;
+        CryptoWallet _lastWallet;
 
         /// <inheritdoc />
         public BitmexWalletSource(BitmexWebsocketClient client)
@@ -43,14 +43,14 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
             Subscribe();
         }
 
-        private void Subscribe()
+        void Subscribe()
         {
             _subscription = _client.Streams.MarginStream
                 .Where(x => x?.Data != null && x.Data.Any())
                 .Subscribe(HandleWalletSafe);
         }
 
-        private void HandleWalletSafe(MarginResponse response)
+        void HandleWalletSafe(MarginResponse response)
         {
             try
             {
@@ -62,12 +62,12 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
             }
         }
 
-        private void HandleWallet(MarginResponse response)
+        void HandleWallet(MarginResponse response)
         {
             WalletChangedSubject.OnNext(response.Data.Select(ConvertWallet).ToArray());
         }
 
-        private CryptoWallet ConvertWallet(Margin margin)
+        CryptoWallet ConvertWallet(Margin margin)
         {
             var currency = margin.Currency ?? "XBt";
 
@@ -85,7 +85,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
             return wallet;
         }
 
-        private double? ConvertToBtc(string currency, long? value)
+        static double? ConvertToBtc(string currency, long? value)
         {
             if (!value.HasValue)
                 return null;

@@ -11,9 +11,9 @@ namespace Crypto.Websocket.Extensions.Core.Positions.Models
     [DebuggerDisplay("Position: {Pair} - {EntryPrice} {Amount}/{AmountQuote} - pnl: {UnrealizedPnl}")]
     public class CryptoPosition
     {
-        private CryptoPositionSide _side;
-        private double _amount;
-        private double _amountQuote;
+        CryptoPositionSide _side;
+        double _amount;
+        double _amountQuote;
 
         /// <summary>
         /// Pair to which this position belongs
@@ -104,7 +104,7 @@ namespace Crypto.Websocket.Extensions.Core.Positions.Models
         public double? UnrealizedPnl { get; set; }
 
 
-        private double WithCorrectSign(double value)
+        double WithCorrectSign(double value)
         {
             if (_side == CryptoPositionSide.Undefined)
                 return value;

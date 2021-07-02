@@ -20,13 +20,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     /// <inheritdoc />
     public class BitfinexOrderBookSource : OrderBookSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private readonly HttpClient _httpClient = new HttpClient();
-        private BitfinexWebsocketClient _client;
-        private IDisposable _subscription;
-        private IDisposable _subscriptionSnapshot;
-
+        readonly HttpClient _httpClient = new();
+        BitfinexWebsocketClient _client;
+        IDisposable _snapshotSubscription;
+        IDisposable _diffSubscription;
 
         /// <inheritdoc />
         public BitfinexOrderBookSource(BitfinexWebsocketClient client)
@@ -39,6 +38,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <inheritdoc />
         public override string ExchangeName => "bitfinex";
 
+
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
@@ -47,18 +47,26 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             CryptoValidations.ValidateInput(client, nameof(client));
 
             _client = client;
-            _subscriptionSnapshot?.Dispose();
-            _subscription?.Dispose();
+            _snapshotSubscription?.Dispose();
+            _diffSubscription?.Dispose();
             Subscribe();
         }
 
-        private void Subscribe()
+        /// <inheritdoc />
+        public override void Dispose()
         {
-            _subscriptionSnapshot = _client.Streams.BookSnapshotStream.Subscribe(HandleSnapshot);
-            _subscription = _client.Streams.BookStream.Subscribe(HandleBook);
+            base.Dispose();
+            _snapshotSubscription?.Dispose();
+            _diffSubscription?.Dispose();
         }
 
-        private void HandleSnapshot(Book[] books)
+        void Subscribe()
+        {
+            _snapshotSubscription = _client.Streams.BookSnapshotStream.Subscribe(HandleSnapshot);
+            _diffSubscription = _client.Streams.BookStream.Subscribe(HandleBook);
+        }
+
+        void HandleSnapshot(Book[] books)
         {
             // received snapshot, convert and stream
             var levels = ConvertLevels(books);
@@ -68,21 +76,21 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             StreamSnapshot(bulk);
         }
 
-        private void HandleBook(Book book)
+        void HandleBook(Book book)
         {
             BufferData(book);
         }
 
-        private OrderBookLevel[] ConvertLevels(Book[] data)
+        OrderBookLevel[] ConvertLevels(Book[] data)
         {
             return data
                 .Select(ConvertLevel)
                 .ToArray();
         }
 
-        private OrderBookLevel ConvertLevel(Book x)
+        OrderBookLevel ConvertLevel(Book x)
         {
-            return new OrderBookLevel
+            return new
             (
                 x.Price.ToString(CultureInfo.InvariantCulture),
                 ConvertSide(x.Amount),
@@ -93,7 +101,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             );
         }
 
-        private CryptoOrderSide ConvertSide(double amount)
+        static CryptoOrderSide ConvertSide(double amount)
         {
             if (amount > 0)
                 return CryptoOrderSide.Bid;
@@ -102,7 +110,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return CryptoOrderSide.Undefined;
         }
 
-        private OrderBookAction RecognizeAction(Book book)
+        static OrderBookAction RecognizeAction(Book book)
         {
             if (book.Count > 0)
                 return OrderBookAction.Update;
@@ -121,19 +129,16 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             try
             {
                 var url = $"/v2/book/{pairSafe}/P0?len={countSafe}";
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                using (HttpContent content = response.Content)
-                {
-                    result = await content.ReadAsStringAsync();
-                    parsed = JsonConvert.DeserializeObject<Book[]>(result);
-                    if (parsed == null || !parsed.Any())
-                        return null;
+                using var response = await _httpClient.GetAsync(url);
+                using var content = response.Content;
+                result = await content.ReadAsStringAsync();
+                parsed = JsonConvert.DeserializeObject<Book[]>(result);
+                
+                if (parsed == null || !parsed.Any())
+                    return null;
 
-                    foreach (var book in parsed)
-                    {
-                        book.Pair = pair;
-                    }
-                }
+                foreach (var book in parsed)
+                    book.Pair = pair;
             }
             catch (Exception e)
             {
@@ -149,7 +154,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return bulk;
         }
 
-        private OrderBookLevelBulk ConvertDiff(Book book)
+        OrderBookLevelBulk ConvertDiff(Book book)
         {
             var converted = ConvertLevel(book);
             var action = RecognizeAction(book);
@@ -158,7 +163,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return bulk;
         }
 
-        private void FillBulk(ResponseBase response, OrderBookLevelBulk bulk)
+        void FillBulk(ResponseBase response, OrderBookLevelBulk bulk)
         {
             if (response == null)
                 return;
@@ -174,12 +179,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             var result = new List<OrderBookLevelBulk>();
             foreach (var response in data)
             {
-                var responseSafe = response as Book;
-                if(responseSafe == null)
-                    continue;
-
-                var converted = ConvertDiff(responseSafe);
-                result.Add(converted);
+                if (response is Book responseSafe)
+                {
+                    var converted = ConvertDiff(responseSafe);
+                    result.Add(converted);
+                }
             }
 
             return result.ToArray();

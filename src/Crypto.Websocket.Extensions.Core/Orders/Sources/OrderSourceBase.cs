@@ -10,11 +10,25 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
     /// </summary>
     public abstract class OrderSourceBase : IOrderSource
     {
-        protected readonly Subject<CryptoOrder[]> OrderSnapshotSubject = new Subject<CryptoOrder[]>();
-        protected readonly Subject<CryptoOrder> OrderCreatedSubject = new Subject<CryptoOrder>();
-        protected readonly Subject<CryptoOrder> OrderUpdatedSubject = new Subject<CryptoOrder>();
+        /// <summary>
+        /// Subject for streaming currently active orders
+        /// </summary>
+        protected readonly Subject<CryptoOrder[]> OrderSnapshotSubject = new();
 
-        protected CryptoOrderCollection ExistingOrders = new CryptoOrderCollection();
+        /// <summary>
+        /// Subject for streaming new active orders
+        /// </summary>
+        protected readonly Subject<CryptoOrder> OrderCreatedSubject = new();
+
+        /// <summary>
+        /// Subject for streaming status change of the order
+        /// </summary>
+        protected readonly Subject<CryptoOrder> OrderUpdatedSubject = new();
+
+        /// <summary>
+        /// The existing orders
+        /// </summary>
+        protected CryptoOrderCollection ExistingOrders = new();
 
         /// <summary>
         /// Origin exchange name

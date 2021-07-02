@@ -17,10 +17,10 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
     /// </summary>
     public class BitmexTradeSource : TradeSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private BitmexWebsocketClient _client;
-        private IDisposable _subscription;
+        BitmexWebsocketClient _client;
+        IDisposable _subscription;
 
         /// <inheritdoc />
         public BitmexTradeSource(BitmexWebsocketClient client)
@@ -43,14 +43,14 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             Subscribe();
         }
 
-        private void Subscribe()
+        void Subscribe()
         {
             _subscription = _client.Streams.TradesStream
                 .Where(x => x?.Data != null && x.Data.Any())
                 .Subscribe(HandleTradeSafe);
         }
 
-        private void HandleTradeSafe(TradeResponse response)
+        void HandleTradeSafe(TradeResponse response)
         {
             try
             {
@@ -62,17 +62,17 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             }
         }
 
-        private void HandleTrade(TradeResponse response)
+        void HandleTrade(TradeResponse response)
         {
             TradesSubject.OnNext(ConvertTrades(response.Data));
         }
 
-        private CryptoTrade[] ConvertTrades(Trade[] trades)
+        CryptoTrade[] ConvertTrades(Trade[] trades)
         {
             return trades.Select(ConvertTrade).ToArray();
         }
 
-        private CryptoTrade ConvertTrade(Trade trade)
+        CryptoTrade ConvertTrade(Trade trade)
         {
             var data = new CryptoTrade()
             {
@@ -89,7 +89,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             return data;
         }
 
-        private CryptoTradeSide ConvertSide(BitmexSide tradeSide)
+        static CryptoTradeSide ConvertSide(BitmexSide tradeSide)
         {
             if (tradeSide == BitmexSide.Undefined)
                 return CryptoTradeSide.Undefined;

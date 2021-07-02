@@ -15,10 +15,10 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
     /// </summary>
     public class CoinbaseTradeSource : TradeSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private CoinbaseWebsocketClient _client;
-        private IDisposable _subscription;
+        CoinbaseWebsocketClient _client;
+        IDisposable _subscription;
 
         /// <inheritdoc />
         public CoinbaseTradeSource(CoinbaseWebsocketClient client)
@@ -41,14 +41,14 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             Subscribe();
         }
 
-        private void Subscribe()
+        void Subscribe()
         {
             _subscription = _client.Streams.TradesStream
                 .Where(x => x != null)
                 .Subscribe(HandleTradeSafe);
         }
 
-        private void HandleTradeSafe(TradeResponse response)
+        void HandleTradeSafe(TradeResponse response)
         {
             try
             {
@@ -60,12 +60,12 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             }
         }
 
-        private void HandleTrade(TradeResponse response)
+        void HandleTrade(TradeResponse response)
         {
             TradesSubject.OnNext(new[] { ConvertTrade(response) });
         }
 
-        private CryptoTrade ConvertTrade(TradeResponse trade)
+        CryptoTrade ConvertTrade(TradeResponse trade)
         {
             var data = new CryptoTrade()
             {
@@ -86,7 +86,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             return data;
         }
 
-        private CryptoTradeSide ConvertSide(TradeSide tradeSide)
+        static CryptoTradeSide ConvertSide(TradeSide tradeSide)
         {
             if (tradeSide == TradeSide.Undefined)
                 return CryptoTradeSide.Undefined;

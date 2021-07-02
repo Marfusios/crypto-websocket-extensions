@@ -11,7 +11,7 @@ namespace Crypto.Websocket.Extensions.Tests
 {
     public class CryptoOrdersTests
     {
-        private readonly Random _random = new Random();
+        readonly Random _random = new();
 
         [Theory]
         [InlineData(null)]
@@ -157,7 +157,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(orders.TargetPair, CryptoPairsHelper.Clean(pair));
         }
 
-        private CryptoOrder GetOrderMock(string clientId, string pair, CryptoOrderSide side)
+        CryptoOrder GetOrderMock(string clientId, string pair, CryptoOrderSide side)
         {
             return CryptoOrder.Mock(
                 clientId,
@@ -170,9 +170,9 @@ namespace Crypto.Websocket.Extensions.Tests
                 );
         }
 
-        private OrderSourceMock GetSourceMock()
+        static OrderSourceMock GetSourceMock()
         {
-            return new OrderSourceMock();
+            return new();
         }
     }
 }

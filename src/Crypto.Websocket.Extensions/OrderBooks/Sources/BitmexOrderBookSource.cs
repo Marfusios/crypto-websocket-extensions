@@ -20,17 +20,17 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     /// <inheritdoc />
     public class BitmexOrderBookSource : OrderBookSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private readonly HttpClient _httpClient = new HttpClient();
-        private BitmexWebsocketClient _client;
-        private IDisposable _subscription;
+        readonly HttpClient _httpClient = new();
+        BitmexWebsocketClient _client;
+        IDisposable _subscription;
 
         /// <inheritdoc />
         public BitmexOrderBookSource(BitmexWebsocketClient client, bool isTestnet = false)
         {
-            _httpClient.BaseAddress = isTestnet ? 
-                new Uri("https://testnet.bitmex.com") : 
+            _httpClient.BaseAddress = isTestnet ?
+                new Uri("https://testnet.bitmex.com") :
                 new Uri("https://www.bitmex.com");
 
             ChangeClient(client);
@@ -51,12 +51,19 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             Subscribe();
         }
 
-        private void Subscribe()
+        /// <inheritdoc />
+        public override void Dispose()
+        {
+            base.Dispose();
+            _subscription?.Dispose();
+        }
+
+        void Subscribe()
         {
             _subscription = _client.Streams.BookStream.Subscribe(HandleBookResponse);
         }
 
-        private void HandleBookResponse(BookResponse bookResponse)
+        void HandleBookResponse(BookResponse bookResponse)
         {
             if (bookResponse.Action == BitmexAction.Undefined)
             {
@@ -80,7 +87,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             BufferData(bookResponse);
         }
 
-        private OrderBookLevel[] ConvertLevels(BookLevel[] data)
+        static OrderBookLevel[] ConvertLevels(BookLevel[] data)
         {
             return data
                 .Select(x => new OrderBookLevel
@@ -95,32 +102,25 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                 .ToArray();
         }
 
-        private CryptoOrderSide ConvertSide(BitmexSide side)
+        static CryptoOrderSide ConvertSide(BitmexSide side)
         {
-            switch (side)
+            return side switch
             {
-                case BitmexSide.Buy:
-                    return CryptoOrderSide.Bid;
-                case BitmexSide.Sell:
-                    return CryptoOrderSide.Ask;
-                default:
-                    return CryptoOrderSide.Undefined;
-            }
+                BitmexSide.Buy => CryptoOrderSide.Bid,
+                BitmexSide.Sell => CryptoOrderSide.Ask,
+                _ => CryptoOrderSide.Undefined
+            };
         }
 
-        private OrderBookAction ConvertAction(BitmexAction action)
+        static OrderBookAction ConvertAction(BitmexAction action)
         {
-            switch (action)
+            return action switch
             {
-                case BitmexAction.Insert:
-                    return OrderBookAction.Insert;
-                case BitmexAction.Update:
-                    return OrderBookAction.Update;
-                case BitmexAction.Delete:
-                    return OrderBookAction.Delete;
-                default:
-                    return OrderBookAction.Undefined;
-            }
+                BitmexAction.Insert => OrderBookAction.Insert,
+                BitmexAction.Update => OrderBookAction.Update,
+                BitmexAction.Delete => OrderBookAction.Delete,
+                _ => OrderBookAction.Undefined
+            };
         }
 
         /// <inheritdoc />
@@ -134,14 +134,13 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             try
             {
                 var url = $"/api/v1/orderBook/L2?symbol={pairSafe}&depth={countSafe}";
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                using (HttpContent content = response.Content)
-                {
-                    result = await content.ReadAsStringAsync();
-                    parsed = JsonConvert.DeserializeObject<BookLevel[]>(result);
-                    if (parsed == null || !parsed.Any())
-                        return null;
-                }
+                using var response = await _httpClient.GetAsync(url);
+                using var content = response.Content;
+                result = await content.ReadAsStringAsync();
+                parsed = JsonConvert.DeserializeObject<BookLevel[]>(result);
+
+                if (parsed == null || !parsed.Any())
+                    return null;
             }
             catch (Exception e)
             {
@@ -159,7 +158,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return bulk;
         }
 
-        private OrderBookLevelBulk ConvertDiff(BookResponse response)
+        OrderBookLevelBulk ConvertDiff(BookResponse response)
         {
             var action = ConvertAction(response.Action);
             var bulk = new OrderBookLevelBulk(action, ConvertLevels(response.Data), CryptoOrderBookType.L2)
@@ -175,12 +174,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             var result = new List<OrderBookLevelBulk>();
             foreach (var response in data)
             {
-                var responseSafe = response as BookResponse;
-                if(responseSafe == null)
-                    continue;
-
-                var converted = ConvertDiff(responseSafe);
-                result.Add(converted);
+                if (response is BookResponse responseSafe)
+                {
+                    var converted = ConvertDiff(responseSafe);
+                    result.Add(converted);
+                }
             }
 
             return result.ToArray();

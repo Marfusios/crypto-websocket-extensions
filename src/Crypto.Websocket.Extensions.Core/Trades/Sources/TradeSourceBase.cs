@@ -13,7 +13,7 @@ namespace Crypto.Websocket.Extensions.Core.Trades.Sources
         /// <summary>
         /// Trades subject
         /// </summary>
-        protected readonly Subject<CryptoTrade[]> TradesSubject = new Subject<CryptoTrade[]>();
+        protected readonly Subject<CryptoTrade[]> TradesSubject = new();
 
 
         /// <summary>

@@ -13,7 +13,7 @@ namespace Crypto.Websocket.Extensions.Tests
 {
     public class CryptoOrderBookL3PerformanceTests
     {
-        private readonly ITestOutputHelper _output;
+        readonly ITestOutputHelper _output;
 
         public CryptoOrderBookL3PerformanceTests(ITestOutputHelper output)
         {
@@ -114,7 +114,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.True(elapsedMs < 7000, msg);
         }
 
-        private static long StreamLevels(string pair, OrderBookSourceMock source, ICryptoOrderBook book, int iterations, int maxBidPrice, int maxAskPrice, bool slowDown = false)
+        static long StreamLevels(string pair, OrderBookSourceMock source, ICryptoOrderBook book, int iterations, int maxBidPrice, int maxAskPrice, bool slowDown = false)
         {
             var bid = book.BidLevels[0];
             var ask = book.AskLevels[0];

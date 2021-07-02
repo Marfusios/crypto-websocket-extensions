@@ -17,58 +17,50 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
         public async Task ConnectToSource_ShouldHandleOrderBookCorrectly()
         {
             var url = BitfinexValues.ApiWebsocketUrl;
-            using (var communicator = new BitfinexWebsocketCommunicator(url))
-            {
-                using (var client = new BitfinexWebsocketClient(communicator))
-                {
-                    var pair = "BTCUSD";
+            using var communicator = new BitfinexWebsocketCommunicator(url);
+            using var client = new BitfinexWebsocketClient(communicator);
+            const string pair = "BTCUSD";
 
-                    var source = new BitfinexOrderBookSource(client);
-                    var orderBook = new CryptoOrderBook(pair, source);
+            var source = new BitfinexOrderBookSource(client);
+            var orderBook = new CryptoOrderBook(pair, source);
                     
-                    await communicator.Start();
-                    client.Send(new BookSubscribeRequest(pair, BitfinexPrecision.P0, BitfinexFrequency.Realtime, "100"));
+            await communicator.Start();
+            client.Send(new BookSubscribeRequest(pair, BitfinexPrecision.P0, BitfinexFrequency.Realtime, "100"));
 
-                    await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(5));
 
-                    Assert.True(orderBook.BidPrice > 0);
-                    Assert.True(orderBook.AskPrice > 0);
+            Assert.True(orderBook.BidPrice > 0);
+            Assert.True(orderBook.AskPrice > 0);
 
-                    Assert.NotEmpty(orderBook.BidLevels);
-                    Assert.NotEmpty(orderBook.AskLevels);
-                }
-            }
+            Assert.NotEmpty(orderBook.BidLevels);
+            Assert.NotEmpty(orderBook.AskLevels);
         }
 
         [Fact]
         public async Task AutoSnapshotReloading_ShouldWorkAfterTimeout()
         {
             var url = BitfinexValues.ApiWebsocketUrl;
-            using (var communicator = new BitfinexWebsocketCommunicator(url))
+            using var communicator = new BitfinexWebsocketCommunicator(url);
+            using var client = new BitfinexWebsocketClient(communicator);
+            const string pair = "LTCUSD";
+
+            var source = new BitfinexOrderBookSource(client)
             {
-                using (var client = new BitfinexWebsocketClient(communicator))
-                {
-                    var pair = "LTCUSD";
+                LoadSnapshotEnabled = true
+            };
+            var orderBook = new CryptoOrderBook(pair, source)
+            {
+                SnapshotReloadTimeout = TimeSpan.FromSeconds(5),
+                SnapshotReloadEnabled = true
+            };
 
-                    var source = new BitfinexOrderBookSource(client)
-                    {
-                        LoadSnapshotEnabled = true
-                    };
-                    var orderBook = new CryptoOrderBook(pair, source)
-                    {
-                        SnapshotReloadTimeout = TimeSpan.FromSeconds(5),
-                        SnapshotReloadEnabled = true
-                    };
+            await Task.Delay(TimeSpan.FromSeconds(13));
 
-                    await Task.Delay(TimeSpan.FromSeconds(13));
+            Assert.True(orderBook.BidPrice > 0);
+            Assert.True(orderBook.AskPrice > 0);
 
-                    Assert.True(orderBook.BidPrice > 0);
-                    Assert.True(orderBook.AskPrice > 0);
-
-                    Assert.NotEmpty(orderBook.BidLevels);
-                    Assert.NotEmpty(orderBook.AskLevels);
-                }
-            }
+            Assert.NotEmpty(orderBook.BidLevels);
+            Assert.NotEmpty(orderBook.AskLevels);
         }
     }
 }

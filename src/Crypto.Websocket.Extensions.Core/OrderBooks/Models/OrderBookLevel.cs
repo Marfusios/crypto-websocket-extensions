@@ -23,7 +23,6 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
             Amount = amount;
             Pair = pair == null ? null : CryptoPairsHelper.Clean(pair);
 
-            Price = Price;
             Amount = Abs(Amount);
             Count = Abs(Count);
         }
@@ -104,7 +103,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         /// </summary>
         public OrderBookLevel Clone()
         {
-            return new OrderBookLevel(
+            return new(
                 Id,
                 Side,
                 Price,
@@ -123,14 +122,14 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
             };
         }
 
-        private static double? Abs(double? value)
+        static double? Abs(double? value)
         {
             if (value.HasValue)
                 return Math.Abs(value.Value);
             return null;
         }
 
-        private static int? Abs(int? value)
+        static int? Abs(int? value)
         {
             if (value.HasValue)
                 return Math.Abs(value.Value);

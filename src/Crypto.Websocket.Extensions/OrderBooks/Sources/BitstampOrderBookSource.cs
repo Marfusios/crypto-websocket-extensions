@@ -9,7 +9,6 @@ using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
-using Crypto.Websocket.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 {
@@ -18,12 +17,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     /// </summary>
     public class BitstampOrderBookSource : OrderBookSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
-        private BitstampWebsocketClient _client;
-        private IDisposable _subscription;
-        private IDisposable _subscriptionSnapshot;
-
+        BitstampWebsocketClient _client;
+        IDisposable _snapshotSubscription;
 
         /// <inheritdoc />
         public BitstampOrderBookSource(BitstampWebsocketClient client)
@@ -42,17 +37,23 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             CryptoValidations.ValidateInput(client, nameof(client));
 
             _client = client;
-            _subscriptionSnapshot?.Dispose();
-            _subscription?.Dispose();
+            _snapshotSubscription?.Dispose();
             Subscribe();
         }
 
-        private void Subscribe()
+        /// <inheritdoc />
+        public override void Dispose()
         {
-            _subscriptionSnapshot = _client.Streams.OrderBookStream.Subscribe(HandleSnapshot);
+            base.Dispose();
+            _snapshotSubscription?.Dispose();
         }
 
-        private void HandleSnapshot(OrderBookResponse response)
+        void Subscribe()
+        {
+            _snapshotSubscription = _client.Streams.OrderBookStream.Subscribe(HandleSnapshot);
+        }
+
+        void HandleSnapshot(OrderBookResponse response)
         {
             // received snapshot, convert and stream
             var levels = ConvertLevels(response);
@@ -61,9 +62,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             StreamSnapshot(bulk);
         }
 
-       
-
-        private OrderBookLevel[] ConvertLevels(OrderBookResponse response)
+        static OrderBookLevel[] ConvertLevels(OrderBookResponse response)
         {
             var bids = response.Data?.Bids
                 .Select(x => ConvertLevel(x, CryptoOrderSide.Bid, response.Symbol))
@@ -74,13 +73,13 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return bids.Concat(asks).ToArray();
         }
 
-        private OrderBookLevel ConvertLevel(BookLevel x, CryptoOrderSide side, string pair)
+        static OrderBookLevel ConvertLevel(BookLevel x, CryptoOrderSide side, string pair)
         {
-            return new OrderBookLevel
+            return new
             (
-                x.OrderId > 0 ? 
-                    x.OrderId.ToString(CultureInfo.InvariantCulture) : 
-                    x.Price.ToString(CultureInfo.InvariantCulture),
+                x.OrderId > 0
+                    ? x.OrderId.ToString(CultureInfo.InvariantCulture)
+                    : x.Price.ToString(CultureInfo.InvariantCulture),
                 side,
                 x.Price,
                 x.Amount,
@@ -90,12 +89,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
+        protected override Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
         {
-            return null;
+            return Task.FromResult<OrderBookLevelBulk>(null);
         }
 
-        private void FillBulk(OrderBookResponse response, OrderBookLevelBulk bulk)
+        void FillBulk(OrderBookResponse response, OrderBookLevelBulk bulk)
         {
             if (response == null)
                 return;

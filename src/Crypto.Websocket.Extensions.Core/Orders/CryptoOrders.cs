@@ -17,15 +17,15 @@ namespace Crypto.Websocket.Extensions.Core.Orders
     /// </summary>
     public class CryptoOrders : ICryptoOrders
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private readonly IOrderSource _source;
-        private readonly long? _orderPrefix;
-        private readonly Subject<CryptoOrder> _orderChanged = new Subject<CryptoOrder>();
-        private readonly Subject<CryptoOrder> _ourOrderChanged = new Subject<CryptoOrder>();
-        private readonly CryptoOrderCollection _idToOrder = new CryptoOrderCollection();
+        readonly IOrderSource _source;
+        readonly long? _orderPrefix;
+        readonly Subject<CryptoOrder> _orderChanged = new();
+        readonly Subject<CryptoOrder> _ourOrderChanged = new();
+        readonly CryptoOrderCollection _idToOrder = new();
 
-        private long _cidCounter;
+        long _cidCounter;
 
         /// <summary>
         /// Orders manager
@@ -230,14 +230,14 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         }
 
 
-        private void Subscribe()
+        void Subscribe()
         {
             _source.OrdersInitialStream.Subscribe(OnOrdersUpdated);
             _source.OrderCreatedStream.Subscribe(OnOrderCreated);
             _source.OrderUpdatedStream.Subscribe(OnOrderUpdated);
         }
 
-        private void OnOrdersUpdated(CryptoOrder[] orders)
+        void OnOrdersUpdated(CryptoOrder[] orders)
         {
             if (orders == null) 
                 return;
@@ -248,7 +248,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
             }
         }
 
-        private void OnOrderCreated(CryptoOrder order)
+        void OnOrderCreated(CryptoOrder order)
         {
             if (order == null) 
                 return;
@@ -256,7 +256,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
             HandleOrderUpdated(order);
         }
 
-        private void OnOrderUpdated(CryptoOrder order)
+        void OnOrderUpdated(CryptoOrder order)
         {
             if (order == null) 
                 return;
@@ -269,7 +269,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
             HandleOrderUpdated(order);
         }
 
-        private void HandleOrderUpdated(CryptoOrder order)
+        void HandleOrderUpdated(CryptoOrder order)
         {
             if (IsFilteredOut(order))
             {
@@ -293,7 +293,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
                 _ourOrderChanged.OnNext(order);
         }
 
-        private bool IsFilteredOut(CryptoOrder order)
+        bool IsFilteredOut(CryptoOrder order)
         {
             if (order == null)
                 return true;

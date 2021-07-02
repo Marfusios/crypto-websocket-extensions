@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using Crypto.Websocket.Extensions.Core.Models;
 
 namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
@@ -14,7 +15,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         {
             Action = action;
             OrderBookType = orderBookType;
-            Levels = levels ?? new OrderBookLevel[0];
+            Levels = levels ?? Array.Empty<OrderBookLevel>();
         }
 
         /// <summary>

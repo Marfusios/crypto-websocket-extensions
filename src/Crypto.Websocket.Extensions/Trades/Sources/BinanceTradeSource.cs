@@ -2,7 +2,6 @@
 using System.Reactive.Linq;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Responses.Trades;
-using Bitmex.Client.Websocket.Utils;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
@@ -16,10 +15,10 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
     /// </summary>
     public class BinanceTradeSource : TradeSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private BinanceWebsocketClient _client;
-        private IDisposable _subscription;
+        BinanceWebsocketClient _client;
+        IDisposable _subscription;
 
         /// <inheritdoc />
         public BinanceTradeSource(BinanceWebsocketClient client)
@@ -42,14 +41,14 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             Subscribe();
         }
 
-        private void Subscribe()
+        void Subscribe()
         {
             _subscription = _client.Streams.TradesStream
                 .Where(x => x?.Data != null)
                 .Subscribe(HandleTradeSafe);
         }
 
-        private void HandleTradeSafe(TradeResponse response)
+        void HandleTradeSafe(TradeResponse response)
         {
             try
             {
@@ -61,12 +60,12 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             }
         }
 
-        private void HandleTrade(TradeResponse response)
+        void HandleTrade(TradeResponse response)
         {
             TradesSubject.OnNext(new[] { ConvertTrade(response.Data) });
         }
 
-        private CryptoTrade ConvertTrade(Trade trade)
+        CryptoTrade ConvertTrade(Trade trade)
         {
             var data = new CryptoTrade()
             {
@@ -86,7 +85,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             return data;
         }
 
-        private CryptoTradeSide ConvertSide(TradeSide tradeSide)
+        static CryptoTradeSide ConvertSide(TradeSide tradeSide)
         {
             return tradeSide == TradeSide.Buy ? CryptoTradeSide.Buy : CryptoTradeSide.Sell;
         }
