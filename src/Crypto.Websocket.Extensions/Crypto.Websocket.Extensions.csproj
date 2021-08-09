@@ -30,6 +30,7 @@
     <PackageReference Include="Bitmex.Client.Websocket" Version="3.1.78" />
     <PackageReference Include="Bitstamp.Client.Websocket" Version="1.0.2" />
     <PackageReference Include="Coinbase.Client.Websocket" Version="2.0.16" />
+    <PackageReference Include="Huobi.Client.Websocket" Version="1.0.3" />
     <PackageReference Include="LibLog" Version="5.0.8">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>

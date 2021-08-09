@@ -21,6 +21,11 @@ using Coinbase.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket.Requests;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
 using Crypto.Websocket.Extensions.Trades.Sources;
+using Huobi.Client.Websocket;
+using Huobi.Client.Websocket.Clients;
+using Huobi.Client.Websocket.Config;
+using Huobi.Client.Websocket.Messages.MarketData.MarketTradeDetail;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using Websocket.Client;
 using Channel = Bitstamp.Client.Websocket.Channels.Channel;
@@ -36,12 +41,14 @@ namespace Crypto.Websocket.Extensions.Sample
             var binance = GetBinance("BTCUSDT");
             var coinbase = GetCoinbase("BTC-USD");
             var bitstamp = GetBitstamp("BTCUSD");
+            var huobi = GetHuobi("btcusdt");
 
             LogTrades(bitmex.Item1);
             LogTrades(bitfinex.Item1);
             LogTrades(binance.Item1);
             LogTrades(coinbase.Item1);
             LogTrades(bitstamp.Item1);
+            LogTrades(huobi.Item1);
 
             Log.Information("Waiting for trades...");
 
@@ -50,6 +57,7 @@ namespace Crypto.Websocket.Extensions.Sample
             //_ = binance.Item2.Start();
             //_ = coinbase.Item2.Start();
             _ = bitstamp.Item2.Start();
+            //_ = huobi.Item2.Start();
         }
 
         private static void LogTrades(ITradeSource source)
@@ -155,6 +163,28 @@ namespace Crypto.Websocket.Extensions.Sample
             });
 
             return (source, communicator);
+        }
+
+        private static (ITradeSource, IWebsocketClient) GetHuobi(string pair)
+        {
+            var config = new HuobiMarketWebsocketClientConfig
+            {
+                Url = HuobiConstants.ApiWebsocketUrl,
+                CommunicatorName = "Huobi"
+            };
+            var loggerFactory = new LoggerFactory().AddSerilog(Log.Logger);
+
+            var client = HuobiWebsocketClientsFactory.CreateMarketClient(config, loggerFactory);
+            var source = new HuobiTradeSource(client);
+
+            client.Communicator.ReconnectionHappened.Subscribe(
+                x =>
+                {
+                    var subscribeRequest = new MarketTradeDetailSubscribeRequest("id1", pair);
+                    client.Send(subscribeRequest);
+                });
+
+            return (source, client.Communicator);
         }
     }
 }
