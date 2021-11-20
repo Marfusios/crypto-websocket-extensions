@@ -73,6 +73,10 @@ namespace Crypto.Websocket.Extensions.Tests.data
         {
         }
 
+        public void Send(ArraySegment<byte> message)
+        {
+        }
+
         public virtual Task SendInstant(string message)
         {
             return Task.CompletedTask;
@@ -124,10 +128,10 @@ namespace Crypto.Websocket.Extensions.Tests.data
         {
             var line = new StringBuilder();
             int matchIndex = 0;
+            var nextChar = (char)sr.Read();
 
-            while (sr.Peek() > 0)
-            {               
-                var nextChar = (char)sr.Read();
+            while (nextChar > 0 && nextChar < 65535)
+            {
                 line.Append(nextChar);
                 if (nextChar == delimiter[matchIndex])
                 {
@@ -141,6 +145,7 @@ namespace Crypto.Websocket.Extensions.Tests.data
                 {
                     matchIndex = 0;
                 }
+                nextChar = (char)sr.Read();
             }
 
             return line.Length == 0 ? null : line.ToString();

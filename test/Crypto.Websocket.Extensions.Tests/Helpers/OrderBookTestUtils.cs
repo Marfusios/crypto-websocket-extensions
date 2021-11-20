@@ -93,6 +93,18 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
             );
         }
 
+        public static OrderBookLevel CreateLevelById(string pair, double? price, double? amount, CryptoOrderSide side, int? count = 3, string key = null)
+        {
+            return new OrderBookLevel(
+                key ?? CreateKey(price,side),
+                side,
+                null,
+                amount,
+                count,
+                pair == null ? null : CryptoPairsHelper.Clean(pair)
+            );
+        }
+
         public static OrderBookLevel CreateLevel(string pair, double? price, CryptoOrderSide side, string key = null)
         {
             return new OrderBookLevel(

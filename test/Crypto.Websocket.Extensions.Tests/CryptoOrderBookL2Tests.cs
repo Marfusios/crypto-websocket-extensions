@@ -1048,15 +1048,15 @@ namespace Crypto.Websocket.Extensions.Tests
             ));
 
             source.StreamBulk(GetUpdateBulkL2(
-                CreateLevel(pair, 98, 10, CryptoOrderSide.Bid)
+                CreateLevelById(pair, 98, 10, CryptoOrderSide.Bid)
             ));
 
             source.StreamBulk(GetUpdateBulkL2(
-                CreateLevel(pair, 99, 10, CryptoOrderSide.Bid)
+                CreateLevelById(pair, 99, 10, CryptoOrderSide.Bid)
             ));
 
             source.StreamBulk(GetUpdateBulkL2(
-                CreateLevel(pair, 103, 400, CryptoOrderSide.Ask)
+                CreateLevelById(pair, 103, 400, CryptoOrderSide.Ask)
             ));
 
             source.StreamBulk(GetDeleteBulkL2(
