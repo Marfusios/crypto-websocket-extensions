@@ -4,9 +4,10 @@ using Bitfinex.Client.Websocket;
 using Bitfinex.Client.Websocket.Client;
 using Bitfinex.Client.Websocket.Requests.Subscriptions;
 using Bitfinex.Client.Websocket.Utils;
-using Bitfinex.Client.Websocket.Websockets;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
+using Microsoft.Extensions.Logging.Abstractions;
+using Websocket.Client;
 using Xunit;
 
 namespace Crypto.Websocket.Extensions.Tests.Integration
@@ -16,9 +17,9 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
         [Fact]
         public async Task ConnectToSource_ShouldHandleOrderBookCorrectly()
         {
-            var url = BitfinexValues.ApiWebsocketUrl;
-            using var communicator = new BitfinexWebsocketCommunicator(url);
-            using var client = new BitfinexWebsocketClient(communicator);
+            var url = BitfinexValues.BitfinexPublicWebsocketUrl;
+            using var communicator = new WebsocketClient(url);
+            using var client = new BitfinexPublicWebsocketClient(NullLogger.Instance, communicator);
             const string pair = "BTCUSD";
 
             var source = new BitfinexOrderBookSource(client);
@@ -39,9 +40,9 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
         [Fact]
         public async Task AutoSnapshotReloading_ShouldWorkAfterTimeout()
         {
-            var url = BitfinexValues.ApiWebsocketUrl;
-            using var communicator = new BitfinexWebsocketCommunicator(url);
-            using var client = new BitfinexWebsocketClient(communicator);
+            var url = BitfinexValues.BitfinexPublicWebsocketUrl;
+            using var communicator = new WebsocketClient(url);
+            using var client = new BitfinexPublicWebsocketClient(NullLogger.Instance, communicator);
             const string pair = "LTCUSD";
 
             var source = new BitfinexOrderBookSource(client)

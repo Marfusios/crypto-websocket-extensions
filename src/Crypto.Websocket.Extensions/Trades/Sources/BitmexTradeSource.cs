@@ -19,11 +19,11 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
     {
         static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        BitmexWebsocketClient _client;
+        IBitmexWebsocketClient _client;
         IDisposable _subscription;
 
         /// <inheritdoc />
-        public BitmexTradeSource(BitmexWebsocketClient client)
+        public BitmexTradeSource(IBitmexWebsocketClient client)
         {
             ChangeClient(client);
         }
@@ -34,7 +34,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(BitmexWebsocketClient client)
+        public void ChangeClient(IBitmexWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 

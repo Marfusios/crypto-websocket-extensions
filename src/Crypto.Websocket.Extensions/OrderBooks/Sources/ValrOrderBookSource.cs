@@ -2,37 +2,37 @@
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using Bitstamp.Client.Websocket.Client;
-using Bitstamp.Client.Websocket.Responses.Books;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
+using Valr.Client.Websocket.Client;
+using Valr.Client.Websocket.Responses;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 {
     /// <summary>
-    /// Bitstamp order book source - based only on 100 level snapshots (not diffs) 
+    /// Valr order book source - based only on 100 level snapshots (not diffs)
     /// </summary>
-    public class BitstampOrderBookSource : OrderBookSourceBase
+    public class ValrOrderBookSource : OrderBookSourceBase
     {
-        IBitstampWebsocketClient _client;
+        IValrTradeWebsocketClient _client;
         IDisposable _snapshotSubscription;
 
         /// <inheritdoc />
-        public BitstampOrderBookSource(IBitstampWebsocketClient client)
+        public ValrOrderBookSource(IValrTradeWebsocketClient client)
         {
             ChangeClient(client);
         }
 
         /// <inheritdoc />
-        public override string ExchangeName => "bitstamp";
+        public override string ExchangeName => "valr";
 
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(IBitstampWebsocketClient client)
+        public void ChangeClient(IValrTradeWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 
@@ -50,10 +50,10 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         void Subscribe()
         {
-            _snapshotSubscription = _client.Streams.OrderBookStream.Subscribe(HandleSnapshot);
+            _snapshotSubscription = _client.Streams.AggregatedOrderBookUpdateStream.Subscribe(HandleSnapshot);
         }
 
-        void HandleSnapshot(OrderBookResponse response)
+        void HandleSnapshot(AggregatedOrderBookUpdateResponse response)
         {
             // received snapshot, convert and stream
             var levels = ConvertLevels(response);
@@ -62,28 +62,26 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             StreamSnapshot(bulk);
         }
 
-        static OrderBookLevel[] ConvertLevels(OrderBookResponse response)
+        static OrderBookLevel[] ConvertLevels(AggregatedOrderBookUpdateResponse response)
         {
-            var bids = response.Data?.Bids
-                .Select(x => ConvertLevel(x, CryptoOrderSide.Bid, response.Symbol))
-                .ToArray() ?? Array.Empty<OrderBookLevel>();
-            var asks = response.Data?.Asks
-                .Select(x => ConvertLevel(x, CryptoOrderSide.Ask, response.Symbol))
-                .ToArray() ?? Array.Empty<OrderBookLevel>();
+            var bids = response.Data.Bids
+                .Select(x => ConvertLevel(x, CryptoOrderSide.Bid, response.CurrencyPairSymbol))
+                .ToArray();
+            var asks = response.Data.Asks
+                .Select(x => ConvertLevel(x, CryptoOrderSide.Ask, response.CurrencyPairSymbol))
+                .ToArray();
             return bids.Concat(asks).ToArray();
         }
 
-        static OrderBookLevel ConvertLevel(BookLevel x, CryptoOrderSide side, string pair)
+        static OrderBookLevel ConvertLevel(Quote x, CryptoOrderSide side, string pair)
         {
             return new
             (
-                x.OrderId > 0
-                    ? x.OrderId.ToString(CultureInfo.InvariantCulture)
-                    : x.Price.ToString(CultureInfo.InvariantCulture),
+                x.Price.ToString(CultureInfo.InvariantCulture),
                 side,
                 x.Price,
-                x.Amount,
-                null,
+                x.Quantity,
+                x.OrderCount,
                 pair
             );
         }
@@ -94,13 +92,13 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return Task.FromResult<OrderBookLevelBulk>(null);
         }
 
-        void FillBulk(OrderBookResponse response, OrderBookLevelBulk bulk)
+        void FillBulk(AggregatedOrderBookUpdateResponse response, OrderBookLevelBulk bulk)
         {
             if (response == null)
                 return;
 
             bulk.ExchangeName = ExchangeName;
-            bulk.ServerTimestamp = response.Data?.Microtimestamp;
+            bulk.ServerTimestamp = response.Data.LastChange;
         }
 
         /// <inheritdoc />

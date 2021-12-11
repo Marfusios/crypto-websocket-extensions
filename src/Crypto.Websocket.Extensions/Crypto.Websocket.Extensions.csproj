@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1;net5;net6</TargetFrameworks>
+    <TargetFrameworks>netstandard2.1;net5;net6</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <PackageId>Crypto.Websocket.Extensions</PackageId>
-    <Version>2.6.0</Version>
+    <Version>3.0.0-beta.1</Version>
     <Authors>Mariusz Kotas</Authors>
     <Description>Extensions to cryptocurrency websocket clients</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
@@ -19,8 +19,8 @@
     <RepositoryType>Git</RepositoryType>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile> 
-    <AssemblyVersion>2.6.0.0</AssemblyVersion>
-    <FileVersion>2.6.0.0</FileVersion>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <FileVersion>3.0.0.0</FileVersion>
     
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -28,16 +28,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Binance.Client.Websocket" Version="2.1.10" />
-    <PackageReference Include="Bitfinex.Client.Websocket" Version="4.1.116" />
-    <PackageReference Include="Bitmex.Client.Websocket" Version="3.1.82" />
-    <PackageReference Include="Bitstamp.Client.Websocket" Version="1.0.3" />
-    <PackageReference Include="Coinbase.Client.Websocket" Version="2.1.2" />
-    <PackageReference Include="Huobi.Client.Websocket" Version="1.0.4" />
+    <PackageReference Include="Binance.Client.Websocket" Version="3.0.0-beta.3" />
+    <PackageReference Include="Bitfinex.Client.Websocket" Version="5.0.0-beta.7" />
+    <PackageReference Include="Bitmex.Client.Websocket" Version="4.0.0-beta.2" />
+    <PackageReference Include="Bitstamp.Client.Websocket" Version="2.0.0-beta.7" />
+    <PackageReference Include="Coinbase.Client.Websocket" Version="3.0.0-beta.2" />
+    <PackageReference Include="Huobi.Client.Websocket" Version="2.0.0-beta.1" />
     <PackageReference Include="LibLog" Version="5.0.8">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Luno.Client.Websocket" Version="6.0.0" />
+    <PackageReference Include="Valr.Client.Websocket" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>

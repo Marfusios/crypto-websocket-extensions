@@ -4,9 +4,10 @@ using System.Threading.Tasks;
 using Bitmex.Client.Websocket;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Requests;
-using Bitmex.Client.Websocket.Websockets;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
+using Microsoft.Extensions.Logging.Abstractions;
+using Websocket.Client;
 using Xunit;
 
 namespace Crypto.Websocket.Extensions.Tests.Integration
@@ -17,8 +18,8 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
         public async Task ConnectToSource_ShouldHandleOrderBookCorrectly()
         {
             var url = BitmexValues.ApiWebsocketUrl;
-            using var communicator = new BitmexWebsocketCommunicator(url);
-            using var client = new BitmexWebsocketClient(communicator);
+            using var communicator = new WebsocketClient(url);
+            using var client = new BitmexWebsocketClient(NullLogger.Instance, communicator);
             const string pair = "XBTUSD";
 
             var source = new BitmexOrderBookSource(client);
@@ -40,8 +41,8 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
         public async Task ConnectToSource_ShouldHandleOrderBookOneByOne()
         {
             var url = BitmexValues.ApiWebsocketUrl;
-            using var communicator = new BitmexWebsocketCommunicator(url);
-            using var client = new BitmexWebsocketClient(communicator);
+            using var communicator = new WebsocketClient(url);
+            using var client = new BitmexWebsocketClient(NullLogger.Instance, communicator);
             const string pair = "XBTUSD";
             var called = 0;
 
@@ -71,8 +72,8 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
         public async Task AutoSnapshotReloading_ShouldWorkAfterTimeout()
         {
             var url = BitmexValues.ApiWebsocketUrl;
-            using var communicator = new BitmexWebsocketCommunicator(url);
-            using var client = new BitmexWebsocketClient(communicator);
+            using var communicator = new WebsocketClient(url);
+            using var client = new BitmexWebsocketClient(NullLogger.Instance, communicator);
             const string pair = "XBTUSD";
 
             var source = new BitmexOrderBookSource(client)

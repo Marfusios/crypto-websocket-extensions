@@ -3,20 +3,16 @@ using System.Reactive.Linq;
 using Binance.Client.Websocket;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Subscriptions;
-using Binance.Client.Websocket.Websockets;
 using Bitfinex.Client.Websocket;
 using Bitfinex.Client.Websocket.Client;
-using Bitfinex.Client.Websocket.Websockets;
 using Bitmex.Client.Websocket;
 using Bitmex.Client.Websocket.Client;
-using Bitmex.Client.Websocket.Websockets;
 using Bitstamp.Client.Websocket;
+using Bitstamp.Client.Websocket.Channels;
 using Bitstamp.Client.Websocket.Client;
-using Bitstamp.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket;
 using Coinbase.Client.Websocket.Channels;
 using Coinbase.Client.Websocket.Client;
-using Coinbase.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket.Requests;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
 using Crypto.Websocket.Extensions.Trades.Sources;
@@ -25,9 +21,9 @@ using Huobi.Client.Websocket.Clients;
 using Huobi.Client.Websocket.Config;
 using Huobi.Client.Websocket.Messages.MarketData.MarketTradeDetail;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Serilog;
 using Websocket.Client;
-using Channel = Bitstamp.Client.Websocket.Channels.Channel;
 
 namespace Crypto.Websocket.Extensions.Sample
 {
@@ -82,8 +78,8 @@ namespace Crypto.Websocket.Extensions.Sample
         static (ITradeSource, IWebsocketClient) GetBitmex(string pair, bool isTestnet)
         {
             var url = isTestnet ? BitmexValues.ApiWebsocketTestnetUrl : BitmexValues.ApiWebsocketUrl;
-            var communicator = new BitmexWebsocketCommunicator(url) { Name = "Bitmex" };
-            var client = new BitmexWebsocketClient(communicator);
+            var communicator = new WebsocketClient(url) { Name = "Bitmex" };
+            var client = new BitmexWebsocketClient(NullLogger.Instance, communicator);
 
             var source = new BitmexTradeSource(client);
 
@@ -98,8 +94,8 @@ namespace Crypto.Websocket.Extensions.Sample
         static (ITradeSource, IWebsocketClient) GetBitfinex(string pair)
         {
             var url = BitfinexValues.ApiWebsocketUrl;
-            var communicator = new BitfinexWebsocketCommunicator(url) { Name = "Bitfinex" };
-            var client = new BitfinexWebsocketClient(communicator);
+            var communicator = new WebsocketClient(url) { Name = "Bitfinex" };
+            var client = new BitfinexPublicWebsocketClient(NullLogger.Instance, communicator);
 
             var source = new BitfinexTradeSource(client);
 
@@ -114,14 +110,10 @@ namespace Crypto.Websocket.Extensions.Sample
         static (ITradeSource, IWebsocketClient) GetBinance(string pair)
         {
             var url = BinanceValues.ApiWebsocketUrl;
-            var communicator = new BinanceWebsocketCommunicator(url) { Name = "Binance" };
-            var client = new BinanceWebsocketClient(communicator);
+            var communicator = new WebsocketClient(url) { Name = "Binance" };
+            var client = new BinanceWebsocketClient(NullLogger.Instance, communicator, new TradeSubscription(pair));
 
             var source = new BinanceTradeSource(client);
-
-            client.SetSubscriptions(
-                new TradeSubscription(pair)
-            );
 
             return (source, communicator);
         }
@@ -129,8 +121,8 @@ namespace Crypto.Websocket.Extensions.Sample
         static (ITradeSource, IWebsocketClient) GetCoinbase(string pair)
         {
             var url = CoinbaseValues.ApiWebsocketUrl;
-            var communicator = new CoinbaseWebsocketCommunicator(url) { Name = "Coinbase" };
-            var client = new CoinbaseWebsocketClient(communicator);
+            var communicator = new WebsocketClient(url) { Name = "Coinbase" };
+            var client = new CoinbaseWebsocketClient(NullLogger.Instance, communicator);
 
             var source = new CoinbaseTradeSource(client);
 
@@ -138,7 +130,7 @@ namespace Crypto.Websocket.Extensions.Sample
             {
                 client.Send(new SubscribeRequest(
                     new[] { pair },
-                    ChannelSubscriptionType.Matches
+                    ChannelType.Matches
                 ));
             });
 
@@ -148,8 +140,8 @@ namespace Crypto.Websocket.Extensions.Sample
         static (ITradeSource, IWebsocketClient) GetBitstamp(string pair)
         {
             var url = BitstampValues.ApiWebsocketUrl;
-            var communicator = new BitstampWebsocketCommunicator(url) { Name = "Bitstamp" };
-            var client = new BitstampWebsocketClient(communicator);
+            var communicator = new WebsocketClient(url) { Name = "Bitstamp" };
+            var client = new BitstampWebsocketClient(NullLogger.Instance, communicator);
 
             var source = new BitstampTradeSource(client);
 
@@ -157,7 +149,7 @@ namespace Crypto.Websocket.Extensions.Sample
             {
                 client.Send(new Bitstamp.Client.Websocket.Requests.SubscribeRequest(
                     pair,
-                    Channel.Ticker
+                    PublicChannel.Ticker
                 ));
             });
 

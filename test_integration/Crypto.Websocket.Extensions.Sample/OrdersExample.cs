@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Bitmex.Client.Websocket;
 using Bitmex.Client.Websocket.Client;
-using Bitmex.Client.Websocket.Websockets;
+using Bitmex.Client.Websocket.Requests;
 using Crypto.Websocket.Extensions.Core.Orders;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
 using Crypto.Websocket.Extensions.Core.Positions.Models;
@@ -10,7 +10,9 @@ using Crypto.Websocket.Extensions.Core.Wallets.Models;
 using Crypto.Websocket.Extensions.Orders.Sources;
 using Crypto.Websocket.Extensions.Positions.Sources;
 using Crypto.Websocket.Extensions.Wallets.Sources;
+using Microsoft.Extensions.Logging.Abstractions;
 using Serilog;
+using Websocket.Client;
 
 namespace Crypto.Websocket.Extensions.Sample
 {
@@ -73,8 +75,8 @@ namespace Crypto.Websocket.Extensions.Sample
             Action<CryptoWallet[]> walletHandler, Action<CryptoPosition[]> positionHandler)
         {
             var url = isTestnet ? BitmexValues.ApiWebsocketTestnetUrl : BitmexValues.ApiWebsocketUrl;
-            var communicator = new BitmexWebsocketCommunicator(url) { Name = "Bitmex" };
-            var client = new BitmexWebsocketClient(communicator);
+            var communicator = new WebsocketClient(url) { Name = "Bitmex" };
+            var client = new BitmexWebsocketClient(NullLogger.Instance, communicator);
 
             var source = new BitmexOrderSource(client);
             var orders = new CryptoOrders(source);
@@ -89,15 +91,15 @@ namespace Crypto.Websocket.Extensions.Sample
             client.Streams.AuthenticationStream.Subscribe(x =>
             {
                 Log.Information($"[Bitmex] Authenticated '{x.Success}'");
-                client.Send(new Bitmex.Client.Websocket.Requests.WalletSubscribeRequest());
-                client.Send(new Bitmex.Client.Websocket.Requests.MarginSubscribeRequest());
-                client.Send(new Bitmex.Client.Websocket.Requests.PositionSubscribeRequest());
-                client.Send(new Bitmex.Client.Websocket.Requests.OrderSubscribeRequest());
+                client.Send(new WalletSubscribeRequest());
+                client.Send(new MarginSubscribeRequest());
+                client.Send(new PositionSubscribeRequest());
+                client.Send(new OrderSubscribeRequest());
             });
 
             communicator.ReconnectionHappened.Subscribe(x =>
             {
-                client.Authenticate(API_KEY, API_SECRET);
+                client.Send(new AuthenticationRequest(API_KEY, API_SECRET));
             });
 
             await communicator.Start();

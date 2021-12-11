@@ -18,12 +18,12 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
     {
         static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        BitmexWebsocketClient _client;
+        IBitmexWebsocketClient _client;
         IDisposable _subscription;
         CryptoWallet _lastWallet;
 
         /// <inheritdoc />
-        public BitmexWalletSource(BitmexWebsocketClient client)
+        public BitmexWalletSource(IBitmexWebsocketClient client)
         {
             ChangeClient(client);
         }
@@ -34,7 +34,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(BitmexWebsocketClient client)
+        public void ChangeClient(IBitmexWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 

@@ -3,9 +3,10 @@ using System.Threading.Tasks;
 using Binance.Client.Websocket;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Subscriptions;
-using Binance.Client.Websocket.Websockets;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
+using Microsoft.Extensions.Logging.Abstractions;
+using Websocket.Client;
 using Xunit;
 
 namespace Crypto.Websocket.Extensions.Tests.Integration
@@ -16,13 +17,9 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
         public async Task ConnectToSource_ShouldHandleOrderBookCorrectly()
         {
             var url = BinanceValues.ApiWebsocketUrl;
-            using var communicator = new BinanceWebsocketCommunicator(url);
-            using var client = new BinanceWebsocketClient(communicator);
+            using var communicator = new WebsocketClient(url);
             const string pair = "BTCUSDT";
-
-            client.SetSubscriptions(
-                new OrderBookDiffSubscription(pair)
-            );
+            using var client = new BinanceWebsocketClient(NullLogger.Instance, communicator, new OrderBookDiffSubscription(pair));
 
             var source = new BinanceOrderBookSource(client);
             var orderBook = new CryptoOrderBook(pair, source);
@@ -46,13 +43,9 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
         public async Task AutoSnapshotReloading_ShouldWorkAfterTimeout()
         {
             var url = BinanceValues.ApiWebsocketUrl;
-            using var communicator = new BinanceWebsocketCommunicator(url);
-            using var client = new BinanceWebsocketClient(communicator);
+            using var communicator = new WebsocketClient(url);
             const string pair = "BTCUSDT";
-
-            client.SetSubscriptions(
-                new OrderBookDiffSubscription(pair)
-            );
+            using var client = new BinanceWebsocketClient(NullLogger.Instance, communicator, new OrderBookDiffSubscription(pair));
 
             var source = new BinanceOrderBookSource(client)
             {

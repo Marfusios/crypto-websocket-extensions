@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reactive.Linq;
 using Bitstamp.Client.Websocket.Client;
 using Bitstamp.Client.Websocket.Responses;
+using Bitstamp.Client.Websocket.Responses.Trades;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
@@ -18,11 +19,11 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
     {
         static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        BitstampWebsocketClient _client;
+        IBitstampWebsocketClient _client;
         IDisposable _subscription;
 
         /// <inheritdoc />
-        public BitstampTradeSource(BitstampWebsocketClient client)
+        public BitstampTradeSource(IBitstampWebsocketClient client)
         {
             ChangeClient(client);
         }
@@ -33,7 +34,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(BitstampWebsocketClient client)
+        public void ChangeClient(IBitstampWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 
@@ -49,7 +50,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
                 .Subscribe(HandleTradeSafe);
         }
 
-        void HandleTradeSafe(Ticker response)
+        void HandleTradeSafe(TradeResponse response)
         {
             try
             {
@@ -61,12 +62,12 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             }
         }
 
-        void HandleTrade(Ticker response)
+        void HandleTrade(TradeResponse response)
         {
             TradesSubject.OnNext(new[] { ConvertTrade(response) });
         }
 
-        CryptoTrade ConvertTrade(Ticker trade)
+        CryptoTrade ConvertTrade(TradeResponse trade)
         {
             var data = trade.Data;
 

@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net6</TargetFramework>
 
+    <LangVersion>latest</LangVersion>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -19,6 +20,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Crypto.Websocket.Extensions\Crypto.Websocket.Extensions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Luno-XBTZAR-Websocket-Log.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

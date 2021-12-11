@@ -6,7 +6,6 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Responses.Books;
-using Binance.Client.Websocket.Websockets;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
@@ -14,6 +13,7 @@ using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Logging;
 using Newtonsoft.Json;
+using Websocket.Client;
 using OrderBookLevel = Crypto.Websocket.Extensions.Core.OrderBooks.Models.OrderBookLevel;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
@@ -38,12 +38,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
         readonly HttpClient _httpClient = new();
-        BinanceWebsocketClient _client;
+        IBinanceWebsocketClient _client;
         IDisposable _snapshotSubscription;
         IDisposable _diffSubscription;
 
         /// <inheritdoc />
-        public BinanceOrderBookSource(BinanceWebsocketClient client)
+        public BinanceOrderBookSource(IBinanceWebsocketClient client)
         {
             _httpClient.BaseAddress = new Uri("https://www.binance.com");
 
@@ -56,7 +56,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(BinanceWebsocketClient client)
+        public void ChangeClient(IBinanceWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 
@@ -81,7 +81,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <param name="communicator">Target communicator</param>
         /// <param name="pair">Target pair</param>
         /// <param name="count">Max level count</param>
-        public async Task LoadSnapshot(BinanceWebsocketCommunicator communicator, string pair, int count = 1000)
+        public async Task LoadSnapshot(IWebsocketClient communicator, string pair, int count = 1000)
         {
             CryptoValidations.ValidateInput(communicator, nameof(communicator));
 

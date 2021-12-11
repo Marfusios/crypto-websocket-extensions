@@ -3,10 +3,11 @@ using System.Threading.Tasks;
 using Coinbase.Client.Websocket;
 using Coinbase.Client.Websocket.Channels;
 using Coinbase.Client.Websocket.Client;
-using Coinbase.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket.Requests;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
+using Microsoft.Extensions.Logging.Abstractions;
+using Websocket.Client;
 using Xunit;
 
 namespace Crypto.Websocket.Extensions.Tests.Integration
@@ -17,8 +18,8 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
         public async Task ConnectToSource_ShouldHandleOrderBookCorrectly()
         {
             var url = CoinbaseValues.ApiWebsocketUrl;
-            using var communicator = new CoinbaseWebsocketCommunicator(url);
-            using var client = new CoinbaseWebsocketClient(communicator);
+            using var communicator = new WebsocketClient(url);
+            using var client = new CoinbaseWebsocketClient(NullLogger.Instance, communicator);
             const string pair = "BTC-USD";
 
             var source = new CoinbaseOrderBookSource(client);
@@ -28,7 +29,7 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
 
             client.Send(new SubscribeRequest(
                 new []{pair},
-                ChannelSubscriptionType.Level2
+                ChannelType.Level2
             ));
 
             await Task.Delay(TimeSpan.FromSeconds(5));
@@ -44,8 +45,8 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
         public async Task AutoSnapshotReloading_ShouldWorkAfterTimeout()
         {
             var url = CoinbaseValues.ApiWebsocketUrl;
-            using var communicator = new CoinbaseWebsocketCommunicator(url);
-            using var client = new CoinbaseWebsocketClient(communicator);
+            using var communicator = new WebsocketClient(url);
+            using var client = new CoinbaseWebsocketClient(NullLogger.Instance, communicator);
             const string pair = "BTC-USD";
 
             var source = new CoinbaseOrderBookSource(client)

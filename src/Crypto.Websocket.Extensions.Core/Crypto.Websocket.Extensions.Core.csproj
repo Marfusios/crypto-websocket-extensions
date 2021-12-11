@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1;net5;net6</TargetFrameworks>
+    <TargetFrameworks>netstandard2.1;net5;net6</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <PackageId>Crypto.Websocket.Extensions.Core</PackageId>
-    <Version>2.6.0</Version>
+    <Version>3.0.0-beta.1</Version>
     <Authors>Mariusz Kotas</Authors>
     <Description>Extensions to cryptocurrency websocket clients (core library, only interfaces and feature classes)</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
@@ -19,8 +19,8 @@
     <RepositoryType>Git</RepositoryType>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile> 
-    <AssemblyVersion>2.6.0.0</AssemblyVersion>
-    <FileVersion>2.6.0.0</FileVersion>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <FileVersion>3.0.0.0</FileVersion>
 
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

@@ -22,11 +22,11 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
         static readonly ILog Log = LogProvider.GetCurrentClassLogger();
         readonly ConcurrentDictionary<string, CryptoPosition> _positions = new();
 
-        BitmexWebsocketClient _client;
+        IBitmexWebsocketClient _client;
         IDisposable _subscription;
 
         /// <inheritdoc />
-        public BitmexPositionSource(BitmexWebsocketClient client)
+        public BitmexPositionSource(IBitmexWebsocketClient client)
         {
             ChangeClient(client);
         }
@@ -37,7 +37,7 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(BitmexWebsocketClient client)
+        public void ChangeClient(IBitmexWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 

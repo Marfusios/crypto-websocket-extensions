@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reactive.Linq;
 using Bitfinex.Client.Websocket.Client;
+using Bitfinex.Client.Websocket.Responses;
 using Bitfinex.Client.Websocket.Responses.Trades;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Models;
@@ -17,11 +18,11 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
     {
         static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        BitfinexWebsocketClient _client;
+        IBitfinexPublicWebsocketClient _client;
         IDisposable _subscription;
 
         /// <inheritdoc />
-        public BitfinexTradeSource(BitfinexWebsocketClient client)
+        public BitfinexTradeSource(IBitfinexPublicWebsocketClient client)
         {
             ChangeClient(client);
         }
@@ -32,7 +33,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(BitfinexWebsocketClient client)
+        public void ChangeClient(IBitfinexPublicWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 

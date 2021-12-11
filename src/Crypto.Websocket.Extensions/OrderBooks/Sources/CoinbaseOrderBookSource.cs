@@ -26,12 +26,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
         readonly HttpClient _httpClient = new();
-        CoinbaseWebsocketClient _client;
+        ICoinbaseWebsocketClient _client;
         IDisposable _snapshotSubscription;
         IDisposable _diffSubscription;
 
         /// <inheritdoc />
-        public CoinbaseOrderBookSource(CoinbaseWebsocketClient client)
+        public CoinbaseOrderBookSource(ICoinbaseWebsocketClient client)
         {
             _httpClient.BaseAddress = new Uri("https://api.pro.coinbase.com");
 
@@ -44,7 +44,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(CoinbaseWebsocketClient client)
+        public void ChangeClient(ICoinbaseWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 

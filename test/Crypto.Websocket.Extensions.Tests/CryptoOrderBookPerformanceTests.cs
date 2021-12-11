@@ -10,6 +10,7 @@ using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Tests.data;
 using Crypto.Websocket.Extensions.Tests.Helpers;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Xunit.Abstractions;
 using static Crypto.Websocket.Extensions.Tests.Helpers.OrderBookTestUtils;
@@ -226,7 +227,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 FileNames = _rawFiles
             };
 
-            var client = new BitmexWebsocketClient(communicator);
+            var client = new BitmexWebsocketClient(NullLogger.Instance, communicator);
             var source = new BitmexOrderBookSource(client)
             {
                 LoadSnapshotEnabled = false,

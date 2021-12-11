@@ -20,11 +20,11 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
         readonly CryptoOrderCollection _partiallyFilledOrders = new();
-        BitmexWebsocketClient _client;
+        IBitmexWebsocketClient _client;
         IDisposable _subscription;
 
         /// <inheritdoc />
-        public BitmexOrderSource(BitmexWebsocketClient client)
+        public BitmexOrderSource(IBitmexWebsocketClient client)
         {
             ChangeClient(client);
         }
@@ -35,7 +35,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(BitmexWebsocketClient client)
+        public void ChangeClient(IBitmexWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 

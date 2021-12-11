@@ -23,11 +23,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
         readonly HttpClient _httpClient = new();
-        BitmexWebsocketClient _client;
+        IBitmexWebsocketClient _client;
         IDisposable _subscription;
 
         /// <inheritdoc />
-        public BitmexOrderBookSource(BitmexWebsocketClient client, bool isTestnet = false)
+        public BitmexOrderBookSource(IBitmexWebsocketClient client, bool isTestnet = false)
         {
             _httpClient.BaseAddress = isTestnet ?
                 new Uri("https://testnet.bitmex.com") :
@@ -42,7 +42,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(BitmexWebsocketClient client)
+        public void ChangeClient(IBitmexWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 

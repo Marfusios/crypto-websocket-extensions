@@ -6,17 +6,12 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
 using System.Threading.Tasks;
-using Binance.Client.Websocket.Communicator;
-using Bitfinex.Client.Websocket.Communicator;
-using Bitmex.Client.Websocket.Communicator;
-using Coinbase.Client.Websocket.Communicator;
 using Websocket.Client;
 using Websocket.Client.Models;
 
 namespace Crypto.Websocket.Extensions.Tests.data
 {
-    public class RawFileCommunicator : IBitmexCommunicator, IBitfinexCommunicator, 
-        IBinanceCommunicator, ICoinbaseCommunicator
+    public class RawFileCommunicator : IWebsocketClient
     {
         readonly Subject<ResponseMessage> _messageReceivedSubject = new();
 

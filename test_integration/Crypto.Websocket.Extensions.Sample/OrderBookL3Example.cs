@@ -4,11 +4,12 @@ using System.Reactive.Linq;
 using Bitfinex.Client.Websocket;
 using Bitfinex.Client.Websocket.Client;
 using Bitfinex.Client.Websocket.Requests.Configurations;
-using Bitfinex.Client.Websocket.Websockets;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.OrderBooks.SourcesL3;
+using Microsoft.Extensions.Logging.Abstractions;
 using Serilog;
+using Websocket.Client;
 
 namespace Crypto.Websocket.Extensions.Sample
 {
@@ -72,8 +73,8 @@ namespace Crypto.Websocket.Extensions.Sample
         static CryptoOrderBook StartBitfinex(string pair, bool optimized)
         {
             var url = BitfinexValues.BitfinexPublicWebsocketUrl;
-            var communicator = new BitfinexWebsocketCommunicator(url) { Name = "Bitfinex" };
-            var client = new BitfinexWebsocketClient(communicator);
+            var communicator = new WebsocketClient(url) { Name = "Bitfinex" };
+            var client = new BitfinexPublicWebsocketClient(NullLogger.Instance, communicator);
 
             var source = new BitfinexOrderBookL3Source(client);
             var orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3);

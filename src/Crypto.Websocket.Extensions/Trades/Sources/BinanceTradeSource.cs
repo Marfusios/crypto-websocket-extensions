@@ -17,11 +17,11 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
     {
         static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        BinanceWebsocketClient _client;
+        IBinanceWebsocketClient _client;
         IDisposable _subscription;
 
         /// <inheritdoc />
-        public BinanceTradeSource(BinanceWebsocketClient client)
+        public BinanceTradeSource(IBinanceWebsocketClient client)
         {
             ChangeClient(client);
         }
@@ -32,7 +32,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(BinanceWebsocketClient client)
+        public void ChangeClient(IBinanceWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 

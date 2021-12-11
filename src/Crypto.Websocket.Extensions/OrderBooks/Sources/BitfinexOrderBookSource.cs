@@ -23,12 +23,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
         readonly HttpClient _httpClient = new();
-        BitfinexWebsocketClient _client;
+        IBitfinexPublicWebsocketClient _client;
         IDisposable _snapshotSubscription;
         IDisposable _diffSubscription;
 
         /// <inheritdoc />
-        public BitfinexOrderBookSource(BitfinexWebsocketClient client)
+        public BitfinexOrderBookSource(IBitfinexPublicWebsocketClient client)
         {
             _httpClient.BaseAddress = new Uri("https://api-pub.bitfinex.com");
 
@@ -42,7 +42,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(BitfinexWebsocketClient client)
+        public void ChangeClient(IBitfinexPublicWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 
