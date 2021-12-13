@@ -149,7 +149,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         }
 
         /// <summary>
-        /// Convert received data into output bulk object
+        /// Convert received data into output bulk objects
         /// </summary>
         protected abstract OrderBookLevelBulk[] ConvertData(object[] data);
 

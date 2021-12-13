@@ -94,7 +94,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
         }
 
-        private static void HandleQuoteChanged(IList<IOrderBookChangeInfo> quotes, bool simple)
+        private static void HandleQuoteChanged(IEnumerable<IOrderBookChangeInfo> quotes, bool simple)
         {
             var formattedMessages = quotes
                 .Select(x =>
@@ -106,7 +106,7 @@ namespace Crypto.Websocket.Extensions.Sample
                     }
 
                     var metaString = simple ? string.Empty : $" (" +
-                                   $"{x.Sources.Length} " +
+                                   $"{x.Sources.Count} " +
                                    $"{x.Sources.Sum(y => y.Levels.Length)}" +
                                    $"{time})";
                     return

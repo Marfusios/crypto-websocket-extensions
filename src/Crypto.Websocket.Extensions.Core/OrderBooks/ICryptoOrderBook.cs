@@ -85,7 +85,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         bool IgnoreDiffsBeforeSnapshot { get; set; }
 
         /// <summary>
-        /// Compute index (position) per every updated level, performance is slightly reduced (default: false) 
+        /// Compute index (position) per every updated level, performance is slightly reduced (default: false)
         /// </summary>
         bool IsIndexComputationEnabled { get; set; }
 

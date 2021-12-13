@@ -591,11 +591,11 @@ namespace Crypto.Websocket.Extensions.Tests
             var firstChange = changes.First();
             var secondChange = changes[1];
 
-            Assert.Equal(2, firstChange.Levels.Length);
+            Assert.Equal(2, firstChange.Levels.Count);
             Assert.Equal(499.4, firstChange.Levels.First().Price);
             Assert.Equal(500.2, firstChange.Levels.Last().Price);
 
-            Assert.Equal(6, secondChange.Levels.Length);
+            Assert.Equal(6, secondChange.Levels.Count);
         }
 
         [Fact]
@@ -812,8 +812,14 @@ namespace Crypto.Websocket.Extensions.Tests
                 BufferEnabled = false
             };
 
-            ICryptoOrderBook orderBook1 = new CryptoOrderBookL2(pair1, source) {DebugEnabled = true};
-            ICryptoOrderBook orderBook2 = new CryptoOrderBookL2(pair2, source) {DebugEnabled = true};
+            ICryptoOrderBook orderBook1 = new CryptoOrderBookL2(pair1, source)
+            {
+                DebugEnabled = true
+            };
+            ICryptoOrderBook orderBook2 = new CryptoOrderBookL2(pair2, source)
+            {
+                DebugEnabled = true
+            };
 
             orderBook1.IgnoreDiffsBeforeSnapshot = false;
             orderBook2.IgnoreDiffsBeforeSnapshot = false;

@@ -157,7 +157,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var orderBook = new CryptoOrderBookL2(pair, source);
             var endTime = DateTime.MinValue;
 
-            orderBook.OrderBookUpdatedStream.Subscribe(x => endTime = DateTime.UtcNow);
+            orderBook.OrderBookUpdatedStream.Subscribe(_ => endTime = DateTime.UtcNow);
 
             source.BufferEnabled = true;
             source.BufferInterval = TimeSpan.FromMilliseconds(0);

@@ -31,7 +31,7 @@ namespace Crypto.Websocket.Extensions.Sample
                 .Subscribe(x => HandleQuoteChanged(ob, levelsCount));
         }
 
-        static void HandleQuoteChanged( CryptoOrderBook ob, int levelsCount)
+        static void HandleQuoteChanged(CryptoOrderBook ob, int levelsCount)
         {
             var bids = ob.BidLevelsPerPrice.Take(levelsCount).SelectMany(x => x.Value).ToArray();
             var asks = ob.AskLevelsPerPrice.Take(levelsCount).SelectMany(x => x.Value).ToArray();

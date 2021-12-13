@@ -127,7 +127,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 var newAskPrice = maxBidPrice + (i % maxAskPrice);
 
                 // update levels
-                var bulk = GetUpdateBulkL2(
+                var bulk = GetUpdateBulk(CryptoOrderBookType.L3,
                     CreateLevel(pair, newBidPrice, CryptoOrderSide.Bid, bid.Id),
                     CreateLevel(pair, newAskPrice, CryptoOrderSide.Ask, ask.Id)
                 );
