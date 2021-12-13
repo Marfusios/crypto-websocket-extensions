@@ -58,6 +58,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         protected readonly Subject<OrderBookChangeInfo> OrderBookUpdated = new();
 
         /// <summary>
+        /// Subject for streaming events when the top N bid or ask prices or amounts change.
+        /// </summary>
+        protected readonly Subject<TopNLevelsChangeInfo> TopNLevelsUpdated = new();
+
+        /// <summary>
         /// All the bid levels (not grouped by price).
         /// </summary>
         protected readonly OrderBookLevelsById AllBidLevels = new(500);
@@ -79,9 +84,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         IDisposable _subscriptionDiff;
         IDisposable _subscriptionSnapshot;
+        int _notifyForLevelAndAbove;
 
-        CryptoQuotes _previous;
-        CryptoQuotes _current;
+        L2Snapshot _previous;
+        L2Snapshot _current;
 
         /// <summary>
         /// Cryptocurrency order book.
@@ -94,8 +100,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             CryptoValidations.ValidateInput(targetPair, nameof(targetPair));
             CryptoValidations.ValidateInput(source, nameof(source));
 
-            _previous = new CryptoQuotes(BidPrice, AskPrice, BidAmount, AskAmount);
-            _current = new CryptoQuotes(BidPrice, AskPrice, BidAmount, AskAmount);
+            _previous = new L2Snapshot(this, Array.Empty<CryptoQuote>(), Array.Empty<CryptoQuote>());
+            _current = new L2Snapshot(this, Array.Empty<CryptoQuote>(), Array.Empty<CryptoQuote>());
 
             TargetPairOriginal = targetPair;
             TargetPair = CryptoPairsHelper.Clean(targetPair);
@@ -208,6 +214,29 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         /// <inheritdoc />
         public IObservable<IOrderBookChangeInfo> OrderBookUpdatedStream => OrderBookUpdated.AsObservable();
+
+        /// <inheritdoc />
+        public IObservable<ITopNLevelsChangeInfo> TopNLevelsUpdatedStream => TopNLevelsUpdated.AsObservable();
+
+        /// <inheritdoc />
+        public int NotifyForLevelAndAbove
+        {
+            get => _notifyForLevelAndAbove;
+            set
+            {
+                lock (Locker)
+                {
+                    _notifyForLevelAndAbove = value;
+                    _previous = new L2Snapshot(this, BlankQuotes(), BlankQuotes());
+                    _current = new L2Snapshot(this, BlankQuotes(), BlankQuotes());
+                }
+
+                IReadOnlyList<CryptoQuote> BlankQuotes() => Enumerable
+                    .Range(0, _notifyForLevelAndAbove)
+                    .Select(_ => new CryptoQuote(0, 0))
+                    .ToList();
+            }
+        }
 
         /// <inheritdoc />
         public OrderBookLevel[] BidLevels => ComputeBidLevels();
@@ -340,15 +369,15 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
         }
 
-        void NotifyOrderBookChanges(OrderBookChangeInfo info)
+        void NotifyOrderBookChanges(TopNLevelsChangeInfo levelsChange)
         {
-            OrderBookUpdated.OnNext(info);
+            OrderBookUpdated.OnNext(levelsChange);
 
             (_previous, _current) = (_current, _previous);
 
-            var bidAskChanged = NotifyIfBidAskChanged(info);
-            NotifyIfTopLevelChanged(bidAskChanged, info);
-            UpdateSnapshot(_current);
+            var bidAskChanged = NotifyIfBidAskChanged(levelsChange);
+            var topLevelChanged = NotifyIfTopLevelChanged(bidAskChanged, levelsChange);
+            NotifyIfTopNLevelsChanged(topLevelChanged, levelsChange);
         }
 
         void HandleSnapshot(List<OrderBookLevel> levels)
@@ -386,13 +415,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             _isSnapshotLoaded = true;
         }
 
-        void UpdateSnapshot(CryptoQuotes snapshot)
-        {
-            snapshot.Bid = BidPrice;
-            snapshot.Ask = AskPrice;
-            snapshot.BidAmount = BidAmount;
-            snapshot.AskAmount = AskAmount;
-        }
+        /// <summary>
+        /// Update the given snapshot.
+        /// </summary>
+        /// <param name="snapshot">The snapshot to update.</param>
+        protected abstract void UpdateSnapshot(L2Snapshot snapshot);
 
         /// <summary>
         /// Clears all internal levels state. Called at the beginning of handling a snapshot.
@@ -635,12 +662,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 : AllAskLevels;
         }
 
-        OrderBookChangeInfo CreateBookChangeNotification(IEnumerable<OrderBookLevel> levels, IReadOnlyList<OrderBookLevelBulk> sources, bool isSnapshot)
+        TopNLevelsChangeInfo CreateBookChangeNotification(IEnumerable<OrderBookLevel> levels, IReadOnlyList<OrderBookLevelBulk> sources, bool isSnapshot)
         {
             var quotes = new CryptoQuotes(BidPrice, AskPrice, BidAmount, AskAmount);
             var clonedLevels = DebugEnabled ? levels.Select(x => x.Clone()).ToArray() : Array.Empty<OrderBookLevel>();
             var lastSource = sources.LastOrDefault();
-            var change = new OrderBookChangeInfo(TargetPair, TargetPairOriginal, quotes, clonedLevels, sources, isSnapshot)
+            var change = new TopNLevelsChangeInfo(TargetPair, TargetPairOriginal, quotes, clonedLevels, sources, isSnapshot)
             {
                 ExchangeName = lastSource?.ExchangeName,
                 ServerSequence = lastSource?.ServerSequence,
@@ -670,6 +697,41 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 return true;
             }
             return false;
+        }
+
+        bool NotifyIfTopNLevelsChanged(bool topLevelChanged, TopNLevelsChangeInfo info)
+        {
+            UpdateSnapshot(_current);
+
+            if (topLevelChanged ||
+                HasChange(_previous.Bids, _current.Bids) ||
+                HasChange(_previous.Asks, _current.Asks))
+            {
+                info.Snapshot = new L2Snapshot(this,
+                    _current.Bids.Where(x => x.IsValid).ToList(),
+                    _current.Asks.Where(x => x.IsValid).ToList());
+
+                TopNLevelsUpdated.OnNext(info);
+                return true;
+            }
+            return false;
+
+            static bool HasChange(IReadOnlyList<CryptoQuote> left, IReadOnlyList<CryptoQuote> right)
+            {
+                if (left.Count != right.Count)
+                    return true;
+
+                foreach (var index in Enumerable.Range(0, left.Count))
+                {
+                    var leftQuote = left[index];
+                    var rightQuote = right[index];
+
+                    if (!CryptoMathUtils.IsSame(leftQuote.Price, rightQuote.Price) ||
+                        !CryptoMathUtils.IsSame(leftQuote.Amount, rightQuote.Amount))
+                        return true;
+                }
+                return false;
+            }
         }
 
         async Task ReloadSnapshotWithCheck()

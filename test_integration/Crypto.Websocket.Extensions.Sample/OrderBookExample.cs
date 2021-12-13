@@ -50,6 +50,14 @@ namespace Crypto.Websocket.Extensions.Sample
             var bitstampOb = StartBitstamp("BTCUSD", optimized, l2OrderBook);
             var huobiOb = StartHuobi("btcusdt", optimized, l2OrderBook);
 
+            const int topLevels = 10;
+
+            bitmexOb.NotifyForLevelAndAbove = topLevels;
+            bitfinexOb.NotifyForLevelAndAbove = topLevels;
+            binanceOb.NotifyForLevelAndAbove = topLevels;
+            coinbaseOb.NotifyForLevelAndAbove = topLevels;
+            bitstampOb.NotifyForLevelAndAbove = topLevels;
+
             Log.Information("Waiting for price change...");
 
             Observable.CombineLatest(new[]

@@ -105,6 +105,16 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         IObservable<IOrderBookChangeInfo> OrderBookUpdatedStream { get; }
 
         /// <summary>
+        /// Streams data on subset of order book changes (price or amount within top N price levels, specified by <see cref="NotifyForLevelAndAbove"/>)
+        /// </summary>
+        IObservable<ITopNLevelsChangeInfo> TopNLevelsUpdatedStream { get; }
+
+        /// <summary>
+        /// Specifies how many levels to check for streaming updates
+        /// </summary>
+        int NotifyForLevelAndAbove { get; set; }
+
+        /// <summary>
         /// Current bid side of the order book (ordered from higher to lower price)
         /// </summary>
         OrderBookLevel[] BidLevels { get; }
