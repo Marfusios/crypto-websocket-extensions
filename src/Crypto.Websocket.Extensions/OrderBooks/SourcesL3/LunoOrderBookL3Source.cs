@@ -60,54 +60,54 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
         {
             _snapshotSubscription = _client.Streams.OrderBookSnapshotStream.Subscribe(HandleSnapshot);
             _diffSubscription = _client.Streams.OrderBookDiffStream
-                .Select(response => Observable.FromAsync(() => HandleDiff(response)))
+                .Select(diff => Observable.FromAsync(() => HandleDiff(diff)))
                 .Concat()
                 .Subscribe();
         }
 
-        void HandleSnapshot(OrderBookSnapshotResponse response)
+        void HandleSnapshot(OrderBookSnapshot snapshot)
         {
-            _messageSequence = response.Sequence;
+            _messageSequence = snapshot.Sequence;
 
             _asks.Clear();
-            foreach (var order in response.Asks)
+            foreach (var order in snapshot.Asks)
                 _asks.Add(order.Id, order);
 
             _bids.Clear();
-            foreach (var order in response.Bids)
+            foreach (var order in snapshot.Bids)
                 _bids.Add(order.Id, order);
 
             // received snapshot, convert and stream
-            var levels = ConvertSnapshot(response);
+            var levels = ConvertSnapshot(snapshot);
             var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L3)
             {
                 ExchangeName = ExchangeName,
-                ServerSequence = response.Sequence,
-                ServerTimestamp = response.Timestamp
+                ServerSequence = snapshot.Sequence,
+                ServerTimestamp = snapshot.Timestamp
             };
             StreamSnapshot(bulk);
         }
 
-        async Task<Unit> HandleDiff(OrderBookDiffResponse response)
+        async Task<Unit> HandleDiff(OrderBookDiff diff)
         {
-            if (_messageSequence == 0 || response.Sequence != _messageSequence + 1)
+            if (_messageSequence == 0 || diff.Sequence != _messageSequence + 1)
             {
                 await _client.Reconnect();
                 return Unit.Default;
             }
 
-            _messageSequence = response.Sequence;
+            _messageSequence = diff.Sequence;
 
-            BufferData(response);
+            BufferData(diff);
             return Unit.Default;
         }
 
-        OrderBookLevel[] ConvertLevels(IReadOnlyList<Order> books, CryptoOrderSide side)
+        OrderBookLevel[] ConvertLevels(IReadOnlyList<Order> levels, CryptoOrderSide side)
         {
-            if (books == null)
+            if (levels == null)
                 return Array.Empty<OrderBookLevel>();
 
-            return books
+            return levels
                 .Select(x => ConvertLevel(x, _client.Pair, side))
                 .ToArray();
         }
@@ -126,15 +126,15 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
         }
 
         /// <inheritdoc />
-        protected override Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
+        protected override Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count = 1000)
         {
             return null;
         }
 
-        OrderBookLevel[] ConvertSnapshot(OrderBookSnapshotResponse response)
+        OrderBookLevel[] ConvertSnapshot(OrderBookSnapshot snapshot)
         {
-            var bids = ConvertLevels(response.Bids, CryptoOrderSide.Bid);
-            var asks = ConvertLevels(response.Asks, CryptoOrderSide.Ask);
+            var bids = ConvertLevels(snapshot.Bids, CryptoOrderSide.Bid);
+            var asks = ConvertLevels(snapshot.Asks, CryptoOrderSide.Ask);
 
             var all = bids
                 .Concat(asks)
@@ -143,13 +143,13 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
             return all;
         }
 
-        OrderBookLevelBulk[] ConvertDiff(OrderBookDiffResponse response)
+        OrderBookLevelBulk[] ConvertDiff(OrderBookDiff diff)
         {
             var result = new List<OrderBookLevelBulk>();
             var toUpdate = new List<OrderBookLevel>();
             var toDelete = new List<OrderBookLevel>();
 
-            foreach (var tradeUpdate in response.TradeUpdates)
+            foreach (var tradeUpdate in diff.TradeUpdates)
             {
                 if (_asks.ContainsKey(tradeUpdate.MakerOrderId))
                 {
@@ -182,8 +182,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
                 var bulk = new OrderBookLevelBulk(OrderBookAction.Delete, toDelete.ToArray(), CryptoOrderBookType.L3)
                 {
                     ExchangeName = ExchangeName,
-                    ServerTimestamp = response.Timestamp,
-                    ServerSequence = response.Sequence
+                    ServerTimestamp = diff.Timestamp,
+                    ServerSequence = diff.Sequence
                 };
                 result.Add(bulk);
             }
@@ -193,30 +193,30 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
                 var bulk = new OrderBookLevelBulk(OrderBookAction.Update, toUpdate.ToArray(), CryptoOrderBookType.L3)
                 {
                     ExchangeName = ExchangeName,
-                    ServerTimestamp = response.Timestamp,
-                    ServerSequence = response.Sequence
+                    ServerTimestamp = diff.Timestamp,
+                    ServerSequence = diff.Sequence
                 };
                 result.Add(bulk);
             }
 
-            if (response.CreateUpdate != null)
+            if (diff.CreateUpdate != null)
             {
                 var level = new OrderBookLevel
                 (
-                    response.CreateUpdate.OrderId,
-                    response.CreateUpdate.Type == "BID" ? CryptoOrderSide.Bid : CryptoOrderSide.Ask,
-                    response.CreateUpdate.Price,
-                    response.CreateUpdate.Volume,
+                    diff.CreateUpdate.OrderId,
+                    diff.CreateUpdate.Type == "BID" ? CryptoOrderSide.Bid : CryptoOrderSide.Ask,
+                    diff.CreateUpdate.Price,
+                    diff.CreateUpdate.Volume,
                     null,
                     _client.Pair
                 );
                 var order = new Order
                 {
-                    Id = response.CreateUpdate.OrderId,
-                    Price = response.CreateUpdate.Price,
-                    Volume = response.CreateUpdate.Volume
+                    Id = diff.CreateUpdate.OrderId,
+                    Price = diff.CreateUpdate.Price,
+                    Volume = diff.CreateUpdate.Volume
                 };
-                switch (response.CreateUpdate.Type)
+                switch (diff.CreateUpdate.Type)
                 {
                     case "ASK":
                         _asks.Add(order.Id, order);
@@ -228,23 +228,23 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
                 var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, new[] { level }, CryptoOrderBookType.L3)
                 {
                     ExchangeName = ExchangeName,
-                    ServerTimestamp = response.Timestamp,
-                    ServerSequence = response.Sequence
+                    ServerTimestamp = diff.Timestamp,
+                    ServerSequence = diff.Sequence
                 };
                 result.Add(bulk);
             }
 
             OrderBookLevel delete = null;
-            if (response.DeleteUpdate != null)
+            if (diff.DeleteUpdate != null)
             {
-                if (_asks.TryGetValue(response.DeleteUpdate.OrderId, out var ask))
+                if (_asks.TryGetValue(diff.DeleteUpdate.OrderId, out var ask))
                 {
-                    _asks.Remove(response.DeleteUpdate.OrderId);
+                    _asks.Remove(diff.DeleteUpdate.OrderId);
                     delete = ConvertLevel(ask, _client.Pair, CryptoOrderSide.Ask);
                 }
-                else if (_bids.TryGetValue(response.DeleteUpdate.OrderId, out var bid))
+                else if (_bids.TryGetValue(diff.DeleteUpdate.OrderId, out var bid))
                 {
-                    _bids.Remove(response.DeleteUpdate.OrderId);
+                    _bids.Remove(diff.DeleteUpdate.OrderId);
                     delete = ConvertLevel(bid, _client.Pair, CryptoOrderSide.Bid);
                 }
             }
@@ -254,8 +254,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
                 var bulk = new OrderBookLevelBulk(OrderBookAction.Delete, new[] { delete }, CryptoOrderBookType.L3)
                 {
                     ExchangeName = ExchangeName,
-                    ServerTimestamp = response.Timestamp,
-                    ServerSequence = response.Sequence
+                    ServerTimestamp = diff.Timestamp,
+                    ServerSequence = diff.Sequence
                 };
                 result.Add(bulk);
             }
@@ -269,7 +269,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
             var result = new List<OrderBookLevelBulk>();
             foreach (var response in data)
             {
-                var responseSafe = response as OrderBookDiffResponse;
+                var responseSafe = response as OrderBookDiff;
                 if (responseSafe == null)
                     continue;
 
