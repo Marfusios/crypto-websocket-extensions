@@ -99,6 +99,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
             bulk.ExchangeName = ExchangeName;
             bulk.ServerTimestamp = response.Data.LastChange;
+            bulk.ServerSequence = response.Data.SequenceNumber;
         }
 
         /// <inheritdoc />
