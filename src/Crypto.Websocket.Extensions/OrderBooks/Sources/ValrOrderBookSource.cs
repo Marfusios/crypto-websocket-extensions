@@ -87,7 +87,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
+        protected override Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count = 1000)
         {
             return Task.FromResult<OrderBookLevelBulk>(null);
         }

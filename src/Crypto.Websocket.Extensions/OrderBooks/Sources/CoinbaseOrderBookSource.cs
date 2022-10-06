@@ -129,7 +129,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <inheritdoc />
         protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count = 1000)
         {
-            OrderBookSnapshotDto parsed = null;
+            OrderBookSnapshotDto parsed;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
             var result = string.Empty;
 

@@ -124,7 +124,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
+        protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count = 1000)
         {
             BookLevel[] parsed = null;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();

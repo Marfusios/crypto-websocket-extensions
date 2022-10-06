@@ -139,7 +139,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
+        protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count = 1000)
         {
             var snapshot = await LoadSnapshotRaw(pair, count);
             if (snapshot == null)
