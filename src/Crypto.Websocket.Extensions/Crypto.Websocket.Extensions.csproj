@@ -4,7 +4,7 @@
     <TargetFrameworks>netstandard2.1;net5;net6</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <PackageId>Crypto.Websocket.Extensions</PackageId>
-    <Version>3.0.0-beta.4</Version>
+    <Version>3.0.0-beta.5</Version>
     <Authors>Mariusz Kotas</Authors>
     <Description>Extensions to cryptocurrency websocket clients</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
@@ -31,7 +31,7 @@
     <PackageReference Include="Binance.Client.Websocket" Version="3.0.0-beta.3" />
     <PackageReference Include="Bitfinex.Client.Websocket" Version="5.0.0-beta.7" />
     <PackageReference Include="Bitmex.Client.Websocket" Version="4.0.0-beta.2" />
-    <PackageReference Include="Bitstamp.Client.Websocket" Version="2.0.0-beta.8" />
+    <PackageReference Include="Bitstamp.Client.Websocket" Version="2.0.0-beta.9" />
     <PackageReference Include="Coinbase.Client.Websocket" Version="3.0.0-beta.2" />
     <PackageReference Include="Huobi.Client.Websocket" Version="2.0.0-beta.1" />
     <PackageReference Include="LibLog" Version="5.0.8">
