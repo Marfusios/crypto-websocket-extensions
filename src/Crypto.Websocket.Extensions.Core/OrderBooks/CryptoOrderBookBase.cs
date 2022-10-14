@@ -234,7 +234,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 IReadOnlyList<CryptoQuote> BlankQuotes() => Enumerable
                     .Range(0, _notifyForLevelAndAbove)
                     .Select(_ => new CryptoQuote(0, 0))
-                    .ToList();
+                    .ToList(_notifyForLevelAndAbove);
             }
         }
 
@@ -708,8 +708,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 HasChange(_previous.Asks, _current.Asks))
             {
                 info.Snapshot = new L2Snapshot(this,
-                    _current.Bids.Where(x => x.IsValid).ToList(),
-                    _current.Asks.Where(x => x.IsValid).ToList());
+                    _current.Bids.Where(x => x.IsValid).ToList(_current.Bids.Count),
+                    _current.Asks.Where(x => x.IsValid).ToList(_current.Asks.Count));
 
                 TopNLevelsUpdated.OnNext(info);
                 return true;
