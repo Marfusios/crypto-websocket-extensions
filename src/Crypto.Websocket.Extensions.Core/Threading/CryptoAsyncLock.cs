@@ -17,9 +17,9 @@ namespace Crypto.Websocket.Extensions.Core.Threading
     /// </summary>
     public class CryptoAsyncLock
     {
-        private readonly Task<IDisposable> _releaserTask;
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-        private readonly IDisposable _releaser;
+        readonly Task<IDisposable> _releaserTask;
+        readonly SemaphoreSlim _semaphore = new(1, 1);
+        readonly IDisposable _releaser;
 
         /// <summary>
         /// Class that wraps SemaphoreSlim and enables to use locking inside 'using' blocks easily
@@ -58,9 +58,9 @@ namespace Crypto.Websocket.Extensions.Core.Threading
                     TaskScheduler.Default);
         }
 
-        private class Releaser : IDisposable
+        class Releaser : IDisposable
         {
-            private readonly SemaphoreSlim _semaphore;
+            readonly SemaphoreSlim _semaphore;
 
             public Releaser(SemaphoreSlim semaphore)
             {

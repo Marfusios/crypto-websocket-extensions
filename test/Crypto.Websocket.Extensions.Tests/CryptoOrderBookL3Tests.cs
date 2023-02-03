@@ -132,11 +132,15 @@ namespace Crypto.Websocket.Extensions.Tests
         {
             var pair1 = "BTC/USD";
 
-            var source = new OrderBookSourceMock();
-            source.BufferEnabled = false;
+            var source = new OrderBookSourceMock
+            {
+                BufferEnabled = false
+            };
 
-            ICryptoOrderBook orderBook = new CryptoOrderBook(pair1, source);
-            orderBook.IgnoreDiffsBeforeSnapshot = false;
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair1, source)
+            {
+                IgnoreDiffsBeforeSnapshot = false
+            };
 
             source.StreamBulk(
                 GetInsertBulk(CryptoOrderBookType.L3, CreateLevel(pair1, 100.111, 0.123, CryptoOrderSide.Ask, null, "ASK1"))
@@ -191,11 +195,15 @@ namespace Crypto.Websocket.Extensions.Tests
             var data = GetOrderBookSnapshotMockDataL3(pair1, 200);
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L3);
 
-            var source = new OrderBookSourceMock(snapshot);
-            source.BufferEnabled = false;
+            var source = new OrderBookSourceMock(snapshot)
+            {
+                BufferEnabled = false
+            };
 
-            var orderBook = new CryptoOrderBook(pair1, source);
-            orderBook.IgnoreDiffsBeforeSnapshot = true;
+            var orderBook = new CryptoOrderBook(pair1, source)
+            {
+                IgnoreDiffsBeforeSnapshot = true
+            };
 
             source.StreamBulk(
                 GetInsertBulk(CryptoOrderBookType.L3, CreateLevel(pair1, 100.111, 0.123, CryptoOrderSide.Ask, null, "ASK1"))
@@ -255,11 +263,15 @@ namespace Crypto.Websocket.Extensions.Tests
         {
             var pair1 = "BTC/USD";
 
-            var source = new OrderBookSourceMock();
-            source.BufferEnabled = false;
+            var source = new OrderBookSourceMock
+            {
+                BufferEnabled = false
+            };
 
-            var orderBook = new CryptoOrderBook(pair1, source);
-            orderBook.IgnoreDiffsBeforeSnapshot = false;
+            var orderBook = new CryptoOrderBook(pair1, source)
+            {
+                IgnoreDiffsBeforeSnapshot = false
+            };
 
             source.StreamBulk(
                 GetInsertBulk(CryptoOrderBookType.L3, CreateLevel(pair1, 100.111, 0.123, CryptoOrderSide.Ask, null, "ASK1"))
@@ -349,11 +361,15 @@ namespace Crypto.Websocket.Extensions.Tests
         {
             var pair1 = "BTC/USD";
 
-            var source = new OrderBookSourceMock();
-            source.BufferEnabled = false;
+            var source = new OrderBookSourceMock
+            {
+                BufferEnabled = false
+            };
 
-            var orderBook = new CryptoOrderBook(pair1, source);
-            orderBook.IgnoreDiffsBeforeSnapshot = false;
+            var orderBook = new CryptoOrderBook(pair1, source)
+            {
+                IgnoreDiffsBeforeSnapshot = false
+            };
 
             source.StreamBulk(
                 GetInsertBulk(CryptoOrderBookType.L3, CreateLevel(pair1, 100.111, 0.123, CryptoOrderSide.Ask, null, "ASK1"))
@@ -391,11 +407,15 @@ namespace Crypto.Websocket.Extensions.Tests
         {
             var pair1 = "BTC/USD";
 
-            var source = new OrderBookSourceMock();
-            source.BufferEnabled = false;
+            var source = new OrderBookSourceMock
+            {
+                BufferEnabled = false
+            };
 
-            ICryptoOrderBook orderBook = new CryptoOrderBook(pair1, source);
-            orderBook.IgnoreDiffsBeforeSnapshot = false;
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair1, source)
+            {
+                IgnoreDiffsBeforeSnapshot = false
+            };
 
             source.StreamBulk(
                 GetInsertBulk(CryptoOrderBookType.L3, CreateLevel(pair1, 100.111, 0.123, CryptoOrderSide.Ask, null, "ASK1"))

@@ -9,8 +9,8 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
 {
     public class OrderBookSourceMock : OrderBookSourceBase
     {
-        private readonly OrderBookLevelBulk _snapshot;
-        private readonly OrderBookLevelBulk[] _bulks;
+        readonly OrderBookLevelBulk _snapshot;
+        readonly OrderBookLevelBulk[] _bulks;
 
         public int SnapshotCalledCount { get; private set; }
         public string SnapshotLastPair { get; private set; }
@@ -62,7 +62,7 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
             SnapshotCalledCount++;
             SnapshotLastPair = pair;
 
-            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, new OrderBookLevel[0], CryptoOrderBookType.L2);
+            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, Array.Empty<OrderBookLevel>(), CryptoOrderBookType.L2);
 
             return Task.FromResult(bulk);
         }

@@ -14,25 +14,25 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
     /// <inheritdoc />
     public abstract class OrderBookSourceBase : IOrderBookSource
     {
-        private static readonly ILog LogBase = LogProvider.GetCurrentClassLogger();
+        static readonly ILog LogBase = LogProvider.GetCurrentClassLogger();
 
-        private readonly object _bufferLocker = new object();
-        private readonly CryptoAsyncLock _snapshotLocker = new CryptoAsyncLock();
-        private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
+        readonly object _bufferLocker = new();
+        readonly CryptoAsyncLock _snapshotLocker = new();
+        readonly CancellationTokenSource _cancellation = new();
 
-        private readonly Queue<object> _dataBuffer = new Queue<object>();
-        private bool _bufferEnabled = true;
-        private readonly ManualResetEvent _bufferPauseEvent = new ManualResetEvent(false);
+        readonly Queue<object> _dataBuffer = new();
+        bool _bufferEnabled = true;
+        readonly ManualResetEvent _bufferPauseEvent = new(false);
 
         /// <summary>
         /// Use this subject to stream order book snapshot data
         /// </summary>
-        private readonly Subject<OrderBookLevelBulk> _orderBookSnapshotSubject = new Subject<OrderBookLevelBulk>();
+        readonly Subject<OrderBookLevelBulk> _orderBookSnapshotSubject = new();
 
         /// <summary>
         /// Use this subject to stream order book data (level difference)
         /// </summary>
-        private readonly Subject<OrderBookLevelBulk[]> _orderBookSubject = new Subject<OrderBookLevelBulk[]>();
+        readonly Subject<OrderBookLevelBulk[]> _orderBookSubject = new();
 
         /// <summary>
         /// Hidden constructor
@@ -45,7 +45,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// <summary>
         /// Dispose background processing
         /// </summary>
-        public void Dispose()
+        public virtual void Dispose()
         {
             _cancellation.Cancel();
         }
@@ -149,37 +149,40 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         }
 
         /// <summary>
-        /// Convert received data into output bulk object
+        /// Convert received data into output bulk objects
         /// </summary>
         protected abstract OrderBookLevelBulk[] ConvertData(object[] data);
 
-        private void StartProcessingFromBufferThread()
-        {
-            Task.Factory.StartNew(_ => ProcessData(), 
-                _cancellation.Token, 
-                TaskCreationOptions.LongRunning);
-        }
+        void StartProcessingFromBufferThread() => _ = ProcessData();
 
-        private async Task ProcessData()
+        async Task ProcessData()
         {
             var bufferIntervalMs = BufferInterval.TotalMilliseconds;
 
             while (!_cancellation.IsCancellationRequested && _bufferEnabled)
             {
-                if (bufferIntervalMs > 0)
-                {
-                    // delay only if enabled
-                    await Task.Delay(BufferInterval);
-                }
+	            try
+	            {
+		            if (bufferIntervalMs > 0)
+		            {
+			            // delay only if enabled
+			            await Task.Delay(BufferInterval);
+		            }
 
-                // wait when there is no message
-                _bufferPauseEvent.WaitOne();
+		            // wait when there is no message
+		            _bufferPauseEvent.WaitOne();
 
-                StreamDataSynchronized();
+		            StreamDataSynchronized();
+	            }
+	            catch (Exception e)
+	            {
+		            LogBase.Debug($"[{ExchangeName}] Failed while buffering orderbook changes. " +
+		                          $"Error: {e.Message}");
+	            }
             }
         }
 
-        private void StreamDataSynchronized()
+        void StreamDataSynchronized()
         {
             if (LoadSnapshotEnabled)
             {
@@ -194,7 +197,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
             }
         }
 
-        private void StreamData()
+        void StreamData()
         {
             object[] data;
             lock (_bufferLocker)
@@ -213,7 +216,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
             ConvertAndStream(data);
         }
 
-        private void ConvertAndStream(object[] dataArr)
+        void ConvertAndStream(object[] dataArr)
         {
             var converted = ConvertData(dataArr);
             _orderBookSubject.OnNext(converted);

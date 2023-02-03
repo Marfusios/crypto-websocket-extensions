@@ -11,9 +11,9 @@ namespace Crypto.Websocket.Extensions.Core.Trades.Models
     [DebuggerDisplay("Trade: {Id} - {Pair} - {Price} {Amount}/{AmountQuote}")]
     public class CryptoTrade : CryptoChangeInfo
     {
-        private CryptoTradeSide _side;
-        private double _amount;
-        private double _amountQuote;
+        CryptoTradeSide _side;
+        double _amount;
+        double _amountQuote;
 
         /// <summary>
         /// Unique trade id (provided by exchange)
@@ -84,8 +84,7 @@ namespace Crypto.Websocket.Extensions.Core.Trades.Models
         }
 
 
-
-        private double WithCorrectSign(double value)
+        double WithCorrectSign(double value)
         {
             if (_side == CryptoTradeSide.Undefined)
                 return value;

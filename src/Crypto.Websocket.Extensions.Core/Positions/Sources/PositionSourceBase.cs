@@ -13,7 +13,7 @@ namespace Crypto.Websocket.Extensions.Core.Positions.Sources
         /// <summary>
         /// Position subject
         /// </summary>
-        protected readonly Subject<CryptoPosition[]> PositionsSubject = new Subject<CryptoPosition[]>();
+        protected readonly Subject<CryptoPosition[]> PositionsSubject = new();
 
 
         /// <summary>

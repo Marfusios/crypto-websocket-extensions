@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reactive.Linq;
 using Bitstamp.Client.Websocket.Client;
 using Bitstamp.Client.Websocket.Responses;
+using Bitstamp.Client.Websocket.Responses.Trades;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
@@ -16,13 +17,13 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
     /// </summary>
     public class BitstampTradeSource : TradeSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private BitstampWebsocketClient _client;
-        private IDisposable _subscription;
+        IBitstampWebsocketClient _client;
+        IDisposable _subscription;
 
         /// <inheritdoc />
-        public BitstampTradeSource(BitstampWebsocketClient client)
+        public BitstampTradeSource(IBitstampWebsocketClient client)
         {
             ChangeClient(client);
         }
@@ -33,7 +34,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(BitstampWebsocketClient client)
+        public void ChangeClient(IBitstampWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 
@@ -42,14 +43,14 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             Subscribe();
         }
 
-        private void Subscribe()
+        void Subscribe()
         {
             _subscription = _client.Streams.TickerStream
                 .Where(x => x?.Data != null && x.Data.Side != TradeSide.Undefined)
                 .Subscribe(HandleTradeSafe);
         }
 
-        private void HandleTradeSafe(Ticker response)
+        void HandleTradeSafe(TradeResponse response)
         {
             try
             {
@@ -61,12 +62,12 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             }
         }
 
-        private void HandleTrade(Ticker response)
+        void HandleTrade(TradeResponse response)
         {
             TradesSubject.OnNext(new[] { ConvertTrade(response) });
         }
 
-        private CryptoTrade ConvertTrade(Ticker trade)
+        CryptoTrade ConvertTrade(TradeResponse trade)
         {
             var data = trade.Data;
 
@@ -92,7 +93,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             return result;
         }
 
-        private CryptoTradeSide ConvertSide(TradeSide side)
+        static CryptoTradeSide ConvertSide(TradeSide side)
         {
             return side == TradeSide.Buy ? CryptoTradeSide.Buy : CryptoTradeSide.Sell;
         }

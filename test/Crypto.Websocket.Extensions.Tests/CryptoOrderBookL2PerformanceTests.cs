@@ -10,6 +10,7 @@ using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Tests.data;
 using Crypto.Websocket.Extensions.Tests.Helpers;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Xunit.Abstractions;
 using static Crypto.Websocket.Extensions.Tests.Helpers.OrderBookTestUtils;
@@ -18,8 +19,9 @@ namespace Crypto.Websocket.Extensions.Tests
 {
     public class CryptoOrderBookL2PerformanceTests
     {
-        private readonly ITestOutputHelper _output;
-        private readonly string[] _rawFiles = {
+        readonly ITestOutputHelper _output;
+
+        readonly string[] _rawFiles = {
             "data/bitmex_raw_xbtusd_2018-11-13.txt.gz"
         };
 
@@ -37,7 +39,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var data = GetOrderBookSnapshotMockData(pair, 500);
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
-            var orderBook = new CryptoOrderBookL2(pair, source);
+            var orderBook = new CryptoOrderBookL2(pair, source)
+            {
+                NotifyForLevelAndAbove = 300
+            };
 
             source.BufferEnabled = false;
             source.LoadSnapshotEnabled = false;
@@ -68,7 +73,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var data = GetOrderBookSnapshotMockData(pair, 500);
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
-            var orderBook = new CryptoOrderBookL2(pair, source);
+            var orderBook = new CryptoOrderBookL2(pair, source)
+            {
+                NotifyForLevelAndAbove = 300
+            };
 
             source.BufferEnabled = false;
             source.LoadSnapshotEnabled = false;
@@ -99,7 +107,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var data = GetOrderBookSnapshotMockData(pair, 500);
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
-            var orderBook = new CryptoOrderBookL2(pair, source);
+            var orderBook = new CryptoOrderBookL2(pair, source)
+            {
+                NotifyForLevelAndAbove = 300
+            };
 
             source.BufferEnabled = false;
             source.LoadSnapshotEnabled = false;
@@ -130,7 +141,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var data = GetOrderBookSnapshotMockData(pair, 500);
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
-            var orderBook = new CryptoOrderBookL2(pair, source);
+            var orderBook = new CryptoOrderBookL2(pair, source)
+            {
+                NotifyForLevelAndAbove = 30
+            };
 
             source.BufferEnabled = false;
             source.LoadSnapshotEnabled = false;
@@ -153,10 +167,13 @@ namespace Crypto.Websocket.Extensions.Tests
             var data = GetOrderBookSnapshotMockData(pair, 500);
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
             var source = new OrderBookSourceMock(snapshot);
-            var orderBook = new CryptoOrderBookL2(pair, source);
+            var orderBook = new CryptoOrderBookL2(pair, source)
+            {
+                NotifyForLevelAndAbove = 300
+            };
             var endTime = DateTime.MinValue;
 
-            orderBook.OrderBookUpdatedStream.Subscribe(x => endTime = DateTime.UtcNow);
+            orderBook.OrderBookUpdatedStream.Subscribe(_ => endTime = DateTime.UtcNow);
 
             source.BufferEnabled = true;
             source.BufferInterval = TimeSpan.FromMilliseconds(0);
@@ -220,17 +237,23 @@ namespace Crypto.Websocket.Extensions.Tests
         public async Task StreamFromFile_ShouldBeFast()
         {
             var pair = "XBTUSD";
-            var communicator = new RawFileCommunicator();
-            communicator.FileNames = _rawFiles;
+            var communicator = new RawFileCommunicator
+            {
+                FileNames = _rawFiles
+            };
 
-            var client = new BitmexWebsocketClient(communicator);
-            var source = new BitmexOrderBookSource(client);
-            source.LoadSnapshotEnabled = false;
-            source.BufferEnabled = false;
-            
-            var orderBook = new CryptoOrderBookL2(pair, source);
-            orderBook.SnapshotReloadEnabled = false;
-            orderBook.ValidityCheckEnabled = false;
+            var client = new BitmexWebsocketClient(NullLogger.Instance, communicator);
+            var source = new BitmexOrderBookSource(client)
+            {
+                LoadSnapshotEnabled = false,
+                BufferEnabled = false
+            };
+
+            var orderBook = new CryptoOrderBookL2(pair, source)
+            {
+                SnapshotReloadEnabled = false,
+                ValidityCheckEnabled = false
+            };
 
             var snapshotCount = 0;
             var diffCount = 0;
@@ -250,7 +273,7 @@ namespace Crypto.Websocket.Extensions.Tests
         }
 #endif
 
-        private static long StreamLevels(string pair, OrderBookSourceMock source, int iterations, int maxBidPrice, int maxAskCount, bool slowDown = false)
+        static long StreamLevels(string pair, OrderBookSourceMock source, int iterations, int maxBidPrice, int maxAskCount, bool slowDown = false)
         {
             var sw = new Stopwatch();
             for (int i = 0; i < iterations; i++)

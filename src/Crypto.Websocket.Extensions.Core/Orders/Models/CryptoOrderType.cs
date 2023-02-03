@@ -5,6 +5,7 @@
     /// </summary>
     public enum CryptoOrderType
     {
+#pragma warning disable 1591
         Undefined,
         Limit,
         Market,
@@ -14,5 +15,6 @@
         StopLimit,
         TakeProfitLimit,
         TakeProfitMarket
+#pragma warning restore 1591
     }
 }

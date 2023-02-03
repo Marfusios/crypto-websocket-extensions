@@ -28,6 +28,8 @@ It helps to unify data models and usage of more clients together.
 | [![binance](https://user-images.githubusercontent.com/1294454/29604020-d5483cdc-87ee-11e7-94c7-d1a8d9169293.jpg)](https://www.binance.com/?ref=21773680)  | [Binance](https://www.binance.com/?ref=21773680)  | [binance-client-websocket](https://github.com/Marfusios/binance-client-websocket) |
 | [![coinbase](https://user-images.githubusercontent.com/1294454/41764625-63b7ffde-760a-11e8-996d-a6328fa9347a.jpg)](https://www.coinbase.com/join/kotas_4)  | [Coinbase](https://www.coinbase.com/join/kotas_4)  | [coinbase-client-websocket](https://github.com/Marfusios/coinbase-client-websocket) |
 | [![bitstamp](https://user-images.githubusercontent.com/1294454/27786377-8c8ab57e-5fe9-11e7-8ea4-2b05b6bcceec.jpg)](https://www.bitstamp.net)  | [Bitstamp](https://www.bitstamp.net)  | [bitstamp-client-websocket](https://github.com/Marfusios/bitstamp-client-websocket) |
+| [![luno](https://github.com/shaynevanasperen/Luno.Client.Websocket/blob/4aa8c4b18001416529615a03841bdebcb614c5a6/Luno.png)](https://www.luno.com)  | [Luno](https://https://www.luno.com)  | [Luno.Client.Websocket](https://github.com/shaynevanasperen/Luno.Client.Websocket) |
+| [![valr](https://github.com/shaynevanasperen/Valr.Client.Websocket/blob/f7af0f705b51019e5c69ff3cf1c2c0b9b411a9db/Valr.png)](https://www.valr.com)  | [Valr](https:///www.valr.com)  | [Valr.Client.Websocket](https://github.com/shaynevanasperen/Valr.Client.Websocket) |
 
 
 ## Extensions
@@ -51,7 +53,7 @@ Usage:
 
 ```csharp
 var url = BitmexValues.ApiWebsocketUrl;
-var communicator = new BitmexWebsocketCommunicator(url);
+var communicator = new WebsocketClient(url);
 var client = new BitmexWebsocketClient(communicator);
 
 var pair = "XBTUSD";

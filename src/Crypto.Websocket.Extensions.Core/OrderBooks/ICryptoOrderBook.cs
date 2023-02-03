@@ -85,7 +85,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         bool IgnoreDiffsBeforeSnapshot { get; set; }
 
         /// <summary>
-        /// Compute index (position) per every updated level, performance is slightly reduced (default: false) 
+        /// Compute index (position) per every updated level, performance is slightly reduced (default: false)
         /// </summary>
         bool IsIndexComputationEnabled { get; set; }
 
@@ -103,6 +103,16 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// Streams data on every order book change (price or amount at any level)
         /// </summary>
         IObservable<IOrderBookChangeInfo> OrderBookUpdatedStream { get; }
+
+        /// <summary>
+        /// Streams data on subset of order book changes (price or amount within top N price levels, specified by <see cref="NotifyForLevelAndAbove"/>)
+        /// </summary>
+        IObservable<ITopNLevelsChangeInfo> TopNLevelsUpdatedStream { get; }
+
+        /// <summary>
+        /// Specifies how many levels to check for streaming updates
+        /// </summary>
+        int NotifyForLevelAndAbove { get; set; }
 
         /// <summary>
         /// Current bid side of the order book (ordered from higher to lower price)

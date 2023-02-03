@@ -24,7 +24,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Crypto.Websocket.Extensions
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Crypto.Websocket.Extensions.Tests.Integration", "test_integration\Crypto.Websocket.Extensions.Tests.Integration\Crypto.Websocket.Extensions.Tests.Integration.csproj", "{2AFCA5EA-E46D-40FF-A79A-310B60E23632}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crypto.Websocket.Extensions.Core", "src\Crypto.Websocket.Extensions.Core\Crypto.Websocket.Extensions.Core.csproj", "{BDE39220-9DBC-4799-A5DC-89D631A8F4A0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Crypto.Websocket.Extensions.Core", "src\Crypto.Websocket.Extensions.Core\Crypto.Websocket.Extensions.Core.csproj", "{BDE39220-9DBC-4799-A5DC-89D631A8F4A0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

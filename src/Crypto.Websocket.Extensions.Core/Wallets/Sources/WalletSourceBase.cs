@@ -13,7 +13,7 @@ namespace Crypto.Websocket.Extensions.Core.Wallets.Sources
         /// <summary>
         /// Wallet subject
         /// </summary>
-        protected readonly Subject<CryptoWallet[]> WalletChangedSubject = new Subject<CryptoWallet[]>();
+        protected readonly Subject<CryptoWallet[]> WalletChangedSubject = new();
 
 
         /// <summary>

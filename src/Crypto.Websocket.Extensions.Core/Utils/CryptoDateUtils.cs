@@ -10,7 +10,7 @@ namespace Crypto.Websocket.Extensions.Core.Utils
         /// <summary>
         /// Unix base datetime (1.1. 1970)
         /// </summary>
-        public static readonly DateTime UnixBase = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        public static readonly DateTime UnixBase = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         /// <summary>
         /// Convert from unix seconds into DateTime with high resolution (6 decimal places for milliseconds)

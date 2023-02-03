@@ -13,7 +13,7 @@ namespace Crypto.Websocket.Extensions.Tests
 {
     public class CryptoOrderBookL3PerformanceTests
     {
-        private readonly ITestOutputHelper _output;
+        readonly ITestOutputHelper _output;
 
         public CryptoOrderBookL3PerformanceTests(ITestOutputHelper output)
         {
@@ -30,7 +30,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L3);
             var source = new OrderBookSourceMock(snapshot);
 
-            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3);
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3)
+            {
+                NotifyForLevelAndAbove = 30
+            };
 
             source.BufferEnabled = false;
             source.LoadSnapshotEnabled = false;
@@ -53,7 +56,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L3);
             var source = new OrderBookSourceMock(snapshot);
 
-            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3);
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3)
+            {
+                NotifyForLevelAndAbove = 10
+            };
 
             source.BufferEnabled = false;
             source.LoadSnapshotEnabled = false;
@@ -76,7 +82,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L3);
             var source = new OrderBookSourceMock(snapshot);
 
-            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3);
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3)
+            {
+                NotifyForLevelAndAbove = 3
+            };
 
             source.BufferEnabled = false;
             source.LoadSnapshotEnabled = false;
@@ -114,7 +123,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.True(elapsedMs < 7000, msg);
         }
 
-        private static long StreamLevels(string pair, OrderBookSourceMock source, ICryptoOrderBook book, int iterations, int maxBidPrice, int maxAskPrice, bool slowDown = false)
+        static long StreamLevels(string pair, OrderBookSourceMock source, ICryptoOrderBook book, int iterations, int maxBidPrice, int maxAskPrice, bool slowDown = false)
         {
             var bid = book.BidLevels[0];
             var ask = book.AskLevels[0];
@@ -127,7 +136,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 var newAskPrice = maxBidPrice + (i % maxAskPrice);
 
                 // update levels
-                var bulk = GetUpdateBulkL2(
+                var bulk = GetUpdateBulk(CryptoOrderBookType.L3,
                     CreateLevel(pair, newBidPrice, CryptoOrderSide.Bid, bid.Id),
                     CreateLevel(pair, newAskPrice, CryptoOrderSide.Ask, ask.Id)
                 );

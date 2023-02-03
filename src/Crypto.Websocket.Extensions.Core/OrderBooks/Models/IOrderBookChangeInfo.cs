@@ -1,4 +1,5 @@
-﻿using Crypto.Websocket.Extensions.Core.Models;
+﻿using System.Collections.Generic;
+using Crypto.Websocket.Extensions.Core.Models;
 
 namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
 {
@@ -26,12 +27,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         /// Order book levels that caused the change.
         /// Streamed only when debug mode is enabled. 
         /// </summary>
-        OrderBookLevel[] Levels { get; }
+        IReadOnlyList<OrderBookLevel> Levels { get; }
 
         /// <summary>
         /// Source bulks that caused this update (all levels)
         /// </summary>
-        OrderBookLevelBulk[] Sources { get; }
+        IReadOnlyList<OrderBookLevelBulk> Sources { get; }
 
         /// <summary>
         /// Whenever this order book change update comes from snapshot or diffs

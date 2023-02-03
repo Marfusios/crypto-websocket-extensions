@@ -1,5 +1,4 @@
-﻿using System;
-using Crypto.Websocket.Extensions.Core.Utils;
+﻿using Crypto.Websocket.Extensions.Core.Utils;
 using Xunit;
 
 namespace Crypto.Websocket.Extensions.Tests
@@ -30,7 +29,7 @@ namespace Crypto.Websocket.Extensions.Tests
             TestDecimal(0m, "0.000000");
         }
 
-        private static void TestDecimal(decimal? timeInSec, string result)
+        static void TestDecimal(decimal? timeInSec, string result)
         {
             var converted = CryptoDateUtils.ConvertFromUnixSeconds(timeInSec);
             var convertedBack = converted.ToUnixSecondsDecimal();

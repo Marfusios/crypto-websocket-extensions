@@ -205,16 +205,16 @@ namespace Crypto.Websocket.Extensions.Tests
         }
 #endif
 
-        private MockSource GetMock(OrderBookLevelBulk snapshot, OrderBookLevelBulk[] bulks)
+        static MockSource GetMock(OrderBookLevelBulk snapshot, OrderBookLevelBulk[] bulks)
         {
-            return new MockSource(snapshot, bulks);
+            return new(snapshot, bulks);
         }
     }
 
     public class MockSource : OrderBookSourceBase
     {
-        private readonly OrderBookLevelBulk _snapshot;
-        private readonly OrderBookLevelBulk[] _bulks;
+        readonly OrderBookLevelBulk _snapshot;
+        readonly OrderBookLevelBulk[] _bulks;
 
         public MockSource(OrderBookLevelBulk snapshot, OrderBookLevelBulk[] bulks)
         {

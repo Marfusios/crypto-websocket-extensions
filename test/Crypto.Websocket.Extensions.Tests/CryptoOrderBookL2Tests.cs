@@ -11,6 +11,7 @@ using Crypto.Websocket.Extensions.Core.Utils;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Tests.data;
 using Crypto.Websocket.Extensions.Tests.Helpers;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 using static Crypto.Websocket.Extensions.Tests.Helpers.OrderBookTestUtils;
@@ -19,7 +20,7 @@ namespace Crypto.Websocket.Extensions.Tests
 {
     public class CryptoOrderBookL2Tests
     {
-        private readonly string[] _rawFiles = {
+        readonly string[] _rawFiles = {
             "data/bitmex_raw_xbtusd_2018-11-13.txt.gz"
         };
 
@@ -536,8 +537,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var pair = "BTC/USD";
             var data = GetOrderBookSnapshotMockData(pair, 500);
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
-            var source = new OrderBookSourceMock(snapshot);
-            source.BufferInterval = TimeSpan.FromMilliseconds(10);
+            var source = new OrderBookSourceMock(snapshot)
+            {
+                BufferInterval = TimeSpan.FromMilliseconds(10)
+            };
 
             var notificationCount = 0;
 
@@ -589,11 +592,11 @@ namespace Crypto.Websocket.Extensions.Tests
             var firstChange = changes.First();
             var secondChange = changes[1];
 
-            Assert.Equal(2, firstChange.Levels.Length);
+            Assert.Equal(2, firstChange.Levels.Count);
             Assert.Equal(499.4, firstChange.Levels.First().Price);
             Assert.Equal(500.2, firstChange.Levels.Last().Price);
 
-            Assert.Equal(6, secondChange.Levels.Length);
+            Assert.Equal(6, secondChange.Levels.Count);
         }
 
         [Fact]
@@ -608,7 +611,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 BufferInterval = TimeSpan.FromMilliseconds(100)
             };
 
-            var orderBook = new CryptoOrderBookL2(pair, source)
+            _ = new CryptoOrderBookL2(pair, source)
             {
                 SnapshotReloadTimeout = TimeSpan.FromMilliseconds(500), 
                 SnapshotReloadEnabled = true
@@ -631,8 +634,10 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 520, 50, CryptoOrderSide.Ask),
             };
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
-            var source = new OrderBookSourceMock(snapshot);
-            source.BufferInterval = TimeSpan.FromMilliseconds(100);
+            var source = new OrderBookSourceMock(snapshot)
+            {
+                BufferInterval = TimeSpan.FromMilliseconds(100)
+            };
             var orderBookUpdatedCount = 0;
 
             var orderBook = new CryptoOrderBookL2(pair, source)
@@ -704,8 +709,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var pair = "BTC/USD";
             var data = GetOrderBookSnapshotMockData(pair, 500);
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
-            var source = new OrderBookSourceMock(snapshot);
-            source.BufferEnabled = false;
+            var source = new OrderBookSourceMock(snapshot)
+            {
+                BufferEnabled = false
+            };
 
             var orderBook = new CryptoOrderBookL2(pair, source) {DebugEnabled = true};
             orderBook.IgnoreDiffsBeforeSnapshot = false;
@@ -733,8 +740,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var pair = "BTC/USD";
             var data = GetOrderBookSnapshotMockData(pair, 500);
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
-            var source = new OrderBookSourceMock(snapshot);
-            source.BufferEnabled = false;
+            var source = new OrderBookSourceMock(snapshot)
+            {
+                BufferEnabled = false
+            };
 
             var orderBook = new CryptoOrderBookL2(pair, source) {DebugEnabled = true};
             orderBook.IgnoreDiffsBeforeSnapshot = false;
@@ -799,11 +808,19 @@ namespace Crypto.Websocket.Extensions.Tests
             var data1 = GetOrderBookSnapshotMockData(pair1, 500);
 
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data1, CryptoOrderBookType.L2);
-            var source = new OrderBookSourceMock(snapshot);
-            source.BufferEnabled = false;
+            var source = new OrderBookSourceMock(snapshot)
+            {
+                BufferEnabled = false
+            };
 
-            ICryptoOrderBook orderBook1 = new CryptoOrderBookL2(pair1, source) {DebugEnabled = true};
-            ICryptoOrderBook orderBook2 = new CryptoOrderBookL2(pair2, source) {DebugEnabled = true};
+            ICryptoOrderBook orderBook1 = new CryptoOrderBookL2(pair1, source)
+            {
+                DebugEnabled = true
+            };
+            ICryptoOrderBook orderBook2 = new CryptoOrderBookL2(pair2, source)
+            {
+                DebugEnabled = true
+            };
 
             orderBook1.IgnoreDiffsBeforeSnapshot = false;
             orderBook2.IgnoreDiffsBeforeSnapshot = false;
@@ -840,17 +857,23 @@ namespace Crypto.Websocket.Extensions.Tests
         public async Task StreamingFromFile_ShouldHandleCorrectly()
         {
             var pair = "XBTUSD";
-            var communicator = new RawFileCommunicator();
-            communicator.FileNames = _rawFiles;
+            var communicator = new RawFileCommunicator
+            {
+                FileNames = _rawFiles
+            };
 
-            var client = new BitmexWebsocketClient(communicator);
-            var source = new BitmexOrderBookSource(client);
-            source.LoadSnapshotEnabled = false;
-            source.BufferEnabled = false;
-            
-            var orderBook = new CryptoOrderBookL2(pair, source);
-            orderBook.SnapshotReloadEnabled = false;
-            orderBook.ValidityCheckEnabled = false;
+            var client = new BitmexWebsocketClient(NullLogger.Instance, communicator);
+            var source = new BitmexOrderBookSource(client)
+            {
+                LoadSnapshotEnabled = false,
+                BufferEnabled = false
+            };
+
+            var orderBook = new CryptoOrderBookL2(pair, source)
+            {
+                SnapshotReloadEnabled = false,
+                ValidityCheckEnabled = false
+            };
 
             var receivedUpdate = 0;
             IOrderBookChangeInfo lastReceivedUpdate = null;
@@ -921,8 +944,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var pair = "BTC/USD";
             var data = GetOrderBookSnapshotMockData(pair, 500);
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
-            var source = new OrderBookSourceMock(snapshot);
-            source.BufferEnabled = false;
+            var source = new OrderBookSourceMock(snapshot)
+            {
+                BufferEnabled = false
+            };
 
             var amountDifferenceBid = 0.0;
             var amountDifferenceAsk = 0.0;
@@ -998,8 +1023,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var pair = "BTC/USD";
             var data = GetOrderBookSnapshotMockData(pair, 500);
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
-            var source = new OrderBookSourceMock(snapshot);
-            source.BufferEnabled = false;
+            var source = new OrderBookSourceMock(snapshot)
+            {
+                BufferEnabled = false
+            };
 
             ICryptoOrderBook orderBook = new CryptoOrderBookL2(pair, source) {DebugEnabled = true};
             orderBook.SnapshotReloadEnabled = false;

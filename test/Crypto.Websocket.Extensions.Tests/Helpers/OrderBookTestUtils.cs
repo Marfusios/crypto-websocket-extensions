@@ -53,37 +53,37 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
 
         public static OrderBookLevelBulk GetInsertBulkL2(params OrderBookLevel[] levels)
         {
-            return new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2);
+            return new(OrderBookAction.Insert, levels, CryptoOrderBookType.L2);
         }
 
         public static OrderBookLevelBulk GetUpdateBulkL2(params OrderBookLevel[] levels)
         {
-            return new OrderBookLevelBulk(OrderBookAction.Update, levels, CryptoOrderBookType.L2);
+            return new(OrderBookAction.Update, levels, CryptoOrderBookType.L2);
         }
 
         public static OrderBookLevelBulk GetDeleteBulkL2(params OrderBookLevel[] levels)
         {
-            return new OrderBookLevelBulk(OrderBookAction.Delete, levels, CryptoOrderBookType.L2);
+            return new(OrderBookAction.Delete, levels, CryptoOrderBookType.L2);
         }
 
         public static OrderBookLevelBulk GetInsertBulk(CryptoOrderBookType type, params OrderBookLevel[] levels)
         {
-            return new OrderBookLevelBulk(OrderBookAction.Insert, levels, type);
+            return new(OrderBookAction.Insert, levels, type);
         }
 
         public static OrderBookLevelBulk GetUpdateBulk(CryptoOrderBookType type, params OrderBookLevel[] levels)
         {
-            return new OrderBookLevelBulk(OrderBookAction.Update, levels, type);
+            return new(OrderBookAction.Update, levels, type);
         }
 
         public static OrderBookLevelBulk GetDeleteBulk(CryptoOrderBookType type, params OrderBookLevel[] levels)
         {
-            return new OrderBookLevelBulk(OrderBookAction.Delete, levels, type);
+            return new(OrderBookAction.Delete, levels, type);
         }
 
         public static OrderBookLevel CreateLevel(string pair, double? price, double? amount, CryptoOrderSide side, int? count = 3, string key = null)
         {
-            return new OrderBookLevel(
+            return new(
                 key ?? CreateKey(price,side),
                 side,
                 price,
@@ -107,7 +107,7 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
 
         public static OrderBookLevel CreateLevel(string pair, double? price, CryptoOrderSide side, string key = null)
         {
-            return new OrderBookLevel(
+            return new(
                 key ?? CreateKey(price,side),
                 side,
                 null,

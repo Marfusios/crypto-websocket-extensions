@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Reactive.Linq;
 using Coinbase.Client.Websocket.Client;
-using Coinbase.Client.Websocket.Responses.Trades;
+using Coinbase.Client.Websocket.Responses;
+using Coinbase.Client.Websocket.Responses.Full;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
@@ -15,13 +16,13 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
     /// </summary>
     public class CoinbaseTradeSource : TradeSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
+        static readonly ILog Log = LogProvider.GetCurrentClassLogger();
 
-        private CoinbaseWebsocketClient _client;
-        private IDisposable _subscription;
+        ICoinbaseWebsocketClient _client;
+        IDisposable _subscription;
 
         /// <inheritdoc />
-        public CoinbaseTradeSource(CoinbaseWebsocketClient client)
+        public CoinbaseTradeSource(ICoinbaseWebsocketClient client)
         {
             ChangeClient(client);
         }
@@ -32,7 +33,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
-        public void ChangeClient(CoinbaseWebsocketClient client)
+        public void ChangeClient(ICoinbaseWebsocketClient client)
         {
             CryptoValidations.ValidateInput(client, nameof(client));
 
@@ -41,14 +42,14 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             Subscribe();
         }
 
-        private void Subscribe()
+        void Subscribe()
         {
-            _subscription = _client.Streams.TradesStream
+            _subscription = _client.Streams.MatchesStream
                 .Where(x => x != null)
                 .Subscribe(HandleTradeSafe);
         }
 
-        private void HandleTradeSafe(TradeResponse response)
+        void HandleTradeSafe(MatchResponse response)
         {
             try
             {
@@ -60,12 +61,12 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             }
         }
 
-        private void HandleTrade(TradeResponse response)
+        void HandleTrade(MatchResponse response)
         {
             TradesSubject.OnNext(new[] { ConvertTrade(response) });
         }
 
-        private CryptoTrade ConvertTrade(TradeResponse trade)
+        CryptoTrade ConvertTrade(MatchResponse trade)
         {
             var data = new CryptoTrade()
             {
@@ -86,7 +87,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             return data;
         }
 
-        private CryptoTradeSide ConvertSide(TradeSide tradeSide)
+        static CryptoTradeSide ConvertSide(TradeSide tradeSide)
         {
             if (tradeSide == TradeSide.Undefined)
                 return CryptoTradeSide.Undefined;

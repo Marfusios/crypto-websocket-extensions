@@ -67,7 +67,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return result.ToArray();
         }
 
-        protected override Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
+        protected override Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count = 1000)
         {
             // TODO: how to simulate and what to do with count?
 
