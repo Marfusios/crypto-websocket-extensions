@@ -153,12 +153,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// </summary>
         protected abstract OrderBookLevelBulk[] ConvertData(object[] data);
 
-        void StartProcessingFromBufferThread()
-        {
-            Task.Factory.StartNew(_ => ProcessData(), 
-                _cancellation.Token, 
-                TaskCreationOptions.LongRunning);
-        }
+        void StartProcessingFromBufferThread() => _ = ProcessData();
 
         async Task ProcessData()
         {
@@ -166,16 +161,24 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 
             while (!_cancellation.IsCancellationRequested && _bufferEnabled)
             {
-                if (bufferIntervalMs > 0)
-                {
-                    // delay only if enabled
-                    await Task.Delay(BufferInterval);
-                }
+	            try
+	            {
+		            if (bufferIntervalMs > 0)
+		            {
+			            // delay only if enabled
+			            await Task.Delay(BufferInterval);
+		            }
 
-                // wait when there is no message
-                _bufferPauseEvent.WaitOne();
+		            // wait when there is no message
+		            _bufferPauseEvent.WaitOne();
 
-                StreamDataSynchronized();
+		            StreamDataSynchronized();
+	            }
+	            catch (Exception e)
+	            {
+		            LogBase.Debug($"[{ExchangeName}] Failed while buffering orderbook changes. " +
+		                          $"Error: {e.Message}");
+	            }
             }
         }
 
