@@ -16,6 +16,7 @@ using static Crypto.Websocket.Extensions.Tests.Helpers.OrderBookTestUtils;
 
 namespace Crypto.Websocket.Extensions.Tests
 {
+    [Collection("Non-Parallel Collection")]
     public class CryptoOrderBookL2PerformanceTests
     {
         private readonly ITestOutputHelper _output;
@@ -227,7 +228,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var source = new BitmexOrderBookSource(client);
             source.LoadSnapshotEnabled = false;
             source.BufferEnabled = false;
-            
+
             var orderBook = new CryptoOrderBookL2(pair, source);
             orderBook.SnapshotReloadEnabled = false;
             orderBook.ValidityCheckEnabled = false;

@@ -11,6 +11,7 @@ using static Crypto.Websocket.Extensions.Tests.Helpers.OrderBookTestUtils;
 
 namespace Crypto.Websocket.Extensions.Tests
 {
+    [Collection("Non-Parallel Collection")]
     public class CryptoOrderBookL3PerformanceTests
     {
         private readonly ITestOutputHelper _output;

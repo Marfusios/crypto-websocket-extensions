@@ -11,6 +11,7 @@ using static Crypto.Websocket.Extensions.Tests.Helpers.OrderBookTestUtils;
 
 namespace Crypto.Websocket.Extensions.Tests
 {
+    [Collection("Non-Parallel Collection")]
     public class CryptoOrderBookL3Tests
     {
         [Fact]
@@ -94,7 +95,7 @@ namespace Crypto.Websocket.Extensions.Tests
 
             Assert.Equal(20, orderBook2.AskLevels.First().Price);
             Assert.Equal(1009, orderBook2.AskLevels.First().Amount);
-            
+
             var levels = orderBook1.Levels;
             foreach (var level in levels)
             {
@@ -250,7 +251,7 @@ namespace Crypto.Websocket.Extensions.Tests
             Assert.Equal(1019, orderBook.AskAmount);
         }
 
-         [Fact]
+        [Fact]
         public void UpdatePrice_ShouldConstructCorrectOrderBook()
         {
             var pair1 = "BTC/USD";
