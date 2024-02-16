@@ -12,7 +12,7 @@ using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
-using Crypto.Websocket.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
@@ -20,16 +20,14 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     /// <inheritdoc />
     public class BitfinexOrderBookSource : OrderBookSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
         private readonly HttpClient _httpClient = new HttpClient();
-        private BitfinexWebsocketClient _client;
-        private IDisposable _subscription;
-        private IDisposable _subscriptionSnapshot;
+        private BitfinexWebsocketClient _client = null!;
+        private IDisposable? _subscription;
+        private IDisposable? _subscriptionSnapshot;
 
 
         /// <inheritdoc />
-        public BitfinexOrderBookSource(BitfinexWebsocketClient client)
+        public BitfinexOrderBookSource(BitfinexWebsocketClient client) : base(client.Logger)
         {
             _httpClient.BaseAddress = new Uri("https://api-pub.bitfinex.com");
 
@@ -110,9 +108,9 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
+        protected override async Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count)
         {
-            Book[] parsed = null;
+            Book[]? parsed = null;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
             pairSafe = $"t{pairSafe}";
             var countSafe = count > 100 ? 100 : count;
@@ -121,24 +119,23 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             try
             {
                 var url = $"/v2/book/{pairSafe}/P0?len={countSafe}";
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                using (HttpContent content = response.Content)
-                {
-                    result = await content.ReadAsStringAsync();
-                    parsed = JsonConvert.DeserializeObject<Book[]>(result);
-                    if (parsed == null || !parsed.Any())
-                        return null;
+                using HttpResponseMessage response = await _httpClient.GetAsync(url);
+                using HttpContent content = response.Content;
 
-                    foreach (var book in parsed)
-                    {
-                        book.Pair = pair;
-                    }
+                result = await content.ReadAsStringAsync();
+                parsed = JsonConvert.DeserializeObject<Book[]>(result);
+                if (parsed == null || !parsed.Any())
+                    return null;
+
+                foreach (var book in parsed)
+                {
+                    book.Pair = pair;
                 }
             }
             catch (Exception e)
             {
-                Log.Debug($"[ORDER BOOK {ExchangeName}] Failed to load L2 orderbook snapshot for pair '{pairSafe}'. " +
-                         $"Error: '{e.Message}'.  Content: '{result}'");
+                _client.Logger.LogDebug("[ORDER BOOK {exchangeName}] Failed to load L2 orderbook snapshot for pair '{pair}'. " +
+                         "Error: '{error}'.  Content: '{content}'", ExchangeName, pairSafe, e.Message, result);
                 return null;
             }
 
@@ -153,12 +150,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         {
             var converted = ConvertLevel(book);
             var action = RecognizeAction(book);
-            var bulk = new OrderBookLevelBulk(action, new[] {converted}, CryptoOrderBookType.L2);
+            var bulk = new OrderBookLevelBulk(action, new[] { converted }, CryptoOrderBookType.L2);
             FillBulk(book, bulk);
             return bulk;
         }
 
-        private void FillBulk(ResponseBase response, OrderBookLevelBulk bulk)
+        private void FillBulk(ResponseBase? response, OrderBookLevelBulk bulk)
         {
             if (response == null)
                 return;
@@ -175,7 +172,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             foreach (var response in data)
             {
                 var responseSafe = response as Book;
-                if(responseSafe == null)
+                if (responseSafe == null)
                     continue;
 
                 var converted = ConvertDiff(responseSafe);

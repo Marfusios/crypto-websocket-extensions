@@ -11,21 +11,21 @@ using Bitfinex.Client.Websocket.Communicator;
 using Bitmex.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket.Communicator;
 using Websocket.Client;
-using Websocket.Client.Models;
 
 namespace Crypto.Websocket.Extensions.Tests.data
 {
-    public class RawFileCommunicator : IBitmexCommunicator, IBitfinexCommunicator, 
+    public class RawFileCommunicator : IBitmexCommunicator, IBitfinexCommunicator,
         IBinanceCommunicator, ICoinbaseCommunicator
     {
         private readonly Subject<ResponseMessage> _messageReceivedSubject = new Subject<ResponseMessage>();
 
         public IObservable<ResponseMessage> MessageReceived => _messageReceivedSubject.AsObservable();
         public IObservable<ReconnectionInfo> ReconnectionHappened => Observable.Empty<ReconnectionInfo>();
-        public IObservable<DisconnectionInfo> DisconnectionHappened  => Observable.Empty<DisconnectionInfo>();
+        public IObservable<DisconnectionInfo> DisconnectionHappened => Observable.Empty<DisconnectionInfo>();
 
         public TimeSpan? ReconnectTimeout { get; set; } = TimeSpan.FromSeconds(60);
         public TimeSpan? ErrorReconnectTimeout { get; set; } = TimeSpan.FromSeconds(60);
+        public TimeSpan? LostReconnectTimeout { get; set; } = TimeSpan.FromSeconds(60);
         public string Name { get; set; }
         public bool IsStarted { get; private set; }
         public bool IsRunning { get; private set; }
@@ -40,7 +40,7 @@ namespace Crypto.Websocket.Extensions.Tests.data
 
         public virtual void Dispose()
         {
-            
+
         }
 
         public virtual Task Start()
@@ -65,16 +65,19 @@ namespace Crypto.Websocket.Extensions.Tests.data
             return Task.FromResult(true);
         }
 
-        public virtual void Send(string message)
+        public virtual bool Send(string message)
         {
+            return true;
         }
 
-        public void Send(byte[] message)
+        public bool Send(byte[] message)
         {
+            return true;
         }
 
-        public void Send(ArraySegment<byte> message)
+        public bool Send(ArraySegment<byte> message)
         {
+            return true;
         }
 
         public virtual Task SendInstant(string message)
@@ -85,6 +88,16 @@ namespace Crypto.Websocket.Extensions.Tests.data
         public Task SendInstant(byte[] message)
         {
             return Task.CompletedTask;
+        }
+
+        public bool SendAsText(byte[] message)
+        {
+            return true;
+        }
+
+        public bool SendAsText(ArraySegment<byte> message)
+        {
+            return true;
         }
 
         public Task Reconnect()
@@ -108,7 +121,7 @@ namespace Crypto.Websocket.Extensions.Tests.data
         {
             if (FileNames == null)
                 throw new InvalidOperationException("FileNames are not set, provide at least one path to historical data");
-            if(string.IsNullOrEmpty(Delimiter))
+            if (string.IsNullOrEmpty(Delimiter))
                 throw new InvalidOperationException("Delimiter is not set (separator between messages in the file)");
 
             foreach (var fileName in FileNames)
@@ -123,7 +136,7 @@ namespace Crypto.Websocket.Extensions.Tests.data
             }
         }
 
- 
+
         private static string ReadByDelimeter(StreamReader sr, string delimiter)
         {
             var line = new StringBuilder();
@@ -135,7 +148,7 @@ namespace Crypto.Websocket.Extensions.Tests.data
                 line.Append(nextChar);
                 if (nextChar == delimiter[matchIndex])
                 {
-                    if(matchIndex == delimiter.Length - 1)
+                    if (matchIndex == delimiter.Length - 1)
                     {
                         return line.ToString().Substring(0, line.Length - delimiter.Length);
                     }
@@ -155,7 +168,8 @@ namespace Crypto.Websocket.Extensions.Tests.data
         {
             var fs = new FileStream(fileName, FileMode.Open);
             if (fileName.EndsWith("gz", StringComparison.OrdinalIgnoreCase) ||
-                fileName.EndsWith("gzip", StringComparison.OrdinalIgnoreCase)) {
+                fileName.EndsWith("gzip", StringComparison.OrdinalIgnoreCase))
+            {
                 return new StreamReader(new GZipStream(fs, CompressionMode.Decompress), Encoding);
             }
 

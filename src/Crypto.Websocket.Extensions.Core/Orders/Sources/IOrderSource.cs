@@ -1,5 +1,6 @@
 ﻿using System;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Core.Orders.Sources
 {
@@ -27,6 +28,11 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
         /// Stream on every status change of the order
         /// </summary>
         IObservable<CryptoOrder> OrderUpdatedStream { get; }
+
+        /// <summary>
+        /// Exposed logger
+        /// </summary>
+        ILogger Logger { get; }
 
         /// <summary>
         /// Set collection of existing orders (to correctly handle orders state)

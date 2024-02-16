@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Crypto.Websocket.Extensions.Tests.Helpers
 {
@@ -15,18 +16,18 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
         public int SnapshotCalledCount { get; private set; }
         public string SnapshotLastPair { get; private set; }
 
-        public OrderBookSourceMock()
+        public OrderBookSourceMock() : base(NullLogger.Instance)
         {
             BufferInterval = TimeSpan.FromMilliseconds(10);
         }
 
-        public OrderBookSourceMock(OrderBookLevelBulk snapshot)
+        public OrderBookSourceMock(OrderBookLevelBulk snapshot) : this()
         {
             BufferInterval = TimeSpan.FromMilliseconds(10);
             _snapshot = snapshot;
         }
 
-        public OrderBookSourceMock(params OrderBookLevelBulk[] bulks)
+        public OrderBookSourceMock(params OrderBookLevelBulk[] bulks) : this()
         {
             BufferInterval = TimeSpan.FromMilliseconds(10);
             _bulks = bulks;

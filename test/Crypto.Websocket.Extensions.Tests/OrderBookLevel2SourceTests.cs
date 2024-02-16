@@ -6,6 +6,7 @@ using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Utils;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Crypto.Websocket.Extensions.Tests
@@ -216,7 +217,7 @@ namespace Crypto.Websocket.Extensions.Tests
         private readonly OrderBookLevelBulk _snapshot;
         private readonly OrderBookLevelBulk[] _bulks;
 
-        public MockSource(OrderBookLevelBulk snapshot, OrderBookLevelBulk[] bulks)
+        public MockSource(OrderBookLevelBulk snapshot, OrderBookLevelBulk[] bulks) : base(NullLogger.Instance)
         {
             _snapshot = snapshot;
             _bulks = bulks;

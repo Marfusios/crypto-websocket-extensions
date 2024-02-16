@@ -10,7 +10,7 @@ using Crypto.Websocket.Extensions.Core.Positions.Models;
 using Crypto.Websocket.Extensions.Core.Positions.Sources;
 using Crypto.Websocket.Extensions.Core.Utils;
 using Crypto.Websocket.Extensions.Core.Validations;
-using Crypto.Websocket.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Positions.Sources
 {
@@ -19,11 +19,10 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
     /// </summary>
     public class BitmexPositionSource : PositionSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
         private readonly ConcurrentDictionary<string, CryptoPosition> _positions = new ConcurrentDictionary<string, CryptoPosition>();
 
-        private BitmexWebsocketClient _client;
-        private IDisposable _subscription;
+        private BitmexWebsocketClient _client = null!;
+        private IDisposable? _subscription;
 
         /// <inheritdoc />
         public BitmexPositionSource(BitmexWebsocketClient client)
@@ -61,7 +60,7 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
             }
             catch (Exception e)
             {
-                Log.Error(e, $"[Bitmex] Failed to handle position info, error: '{e.Message}'");
+                _client.Logger.LogError(e, "[Bitmex] Failed to handle position info, error: '{error}'", e.Message);
             }
         }
 
@@ -94,7 +93,7 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
                 LiquidationPrice = position.LiquidationPrice ?? existing?.LiquidationPrice ?? 0,
 
                 Amount = position.HomeNotional ?? existing?.Amount ?? 0,
-                AmountQuote = position.CurrentQty ?? existing?.AmountQuote ??  0,
+                AmountQuote = position.CurrentQty ?? existing?.AmountQuote ?? 0,
 
                 Side = ConvertSide(position.CurrentQty ?? existing?.AmountQuote),
 

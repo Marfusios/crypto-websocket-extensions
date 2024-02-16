@@ -3,12 +3,12 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
-using Crypto.Websocket.Extensions.Core.Logging;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
 using Crypto.Websocket.Extensions.Core.Orders.Sources;
 using Crypto.Websocket.Extensions.Core.Utils;
 using Crypto.Websocket.Extensions.Core.Validations;
+using Microsoft.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Core.Orders
 {
@@ -17,8 +17,6 @@ namespace Crypto.Websocket.Extensions.Core.Orders
     /// </summary>
     public class CryptoOrders : ICryptoOrders
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
         private readonly IOrderSource _source;
         private readonly long? _orderPrefix;
         private readonly Subject<CryptoOrder> _orderChanged = new Subject<CryptoOrder>();
@@ -239,7 +237,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
 
         private void OnOrdersUpdated(CryptoOrder[] orders)
         {
-            if (orders == null) 
+            if (orders == null)
                 return;
 
             foreach (var order in orders)
@@ -250,7 +248,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
 
         private void OnOrderCreated(CryptoOrder order)
         {
-            if (order == null) 
+            if (order == null)
                 return;
 
             HandleOrderUpdated(order);
@@ -258,12 +256,12 @@ namespace Crypto.Websocket.Extensions.Core.Orders
 
         private void OnOrderUpdated(CryptoOrder order)
         {
-            if (order == null) 
+            if (order == null)
                 return;
 
             if (order.OrderStatus == CryptoOrderStatus.Undefined)
             {
-                Log.Debug($"[ORDERS] Received order with weird status ({order.ClientId} - {order.PriceGrouped}/{order.AmountGrouped})");
+                _source.Logger.LogDebug("[ORDERS] Received order with weird status ({clientId} - {price}/{amount})", order.ClientId, order.PriceGrouped, order.AmountGrouped);
             }
 
             HandleOrderUpdated(order);
@@ -289,7 +287,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
 
             _orderChanged.OnNext(order);
 
-            if(IsOurOrder(order))
+            if (IsOurOrder(order))
                 _ourOrderChanged.OnNext(order);
         }
 

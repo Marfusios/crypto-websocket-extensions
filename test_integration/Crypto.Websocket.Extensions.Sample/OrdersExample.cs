@@ -10,14 +10,15 @@ using Crypto.Websocket.Extensions.Core.Wallets.Models;
 using Crypto.Websocket.Extensions.Orders.Sources;
 using Crypto.Websocket.Extensions.Positions.Sources;
 using Crypto.Websocket.Extensions.Wallets.Sources;
+using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace Crypto.Websocket.Extensions.Sample
 {
     public static class OrdersExample
     {
-        private static readonly string API_KEY = "";
-        private static readonly string API_SECRET = "";
+        private const string ApiKey = "";
+        private const string ApiSecret = "";
 
         public static async Task RunEverything()
         {
@@ -69,12 +70,12 @@ namespace Crypto.Websocket.Extensions.Sample
         }
 
 
-        private static async Task<ICryptoOrders> StartBitmex(bool isTestnet, Action<CryptoOrder> handler, 
+        private static async Task<ICryptoOrders> StartBitmex(bool isTestnet, Action<CryptoOrder> handler,
             Action<CryptoWallet[]> walletHandler, Action<CryptoPosition[]> positionHandler)
         {
             var url = isTestnet ? BitmexValues.ApiWebsocketTestnetUrl : BitmexValues.ApiWebsocketUrl;
-            var communicator = new BitmexWebsocketCommunicator(url) { Name = "Bitmex" };
-            var client = new BitmexWebsocketClient(communicator);
+            var communicator = new BitmexWebsocketCommunicator(url, Program.Logger.CreateLogger<BitmexWebsocketCommunicator>()) { Name = "Bitmex" };
+            var client = new BitmexWebsocketClient(communicator, Program.Logger.CreateLogger<BitmexWebsocketClient>());
 
             var source = new BitmexOrderSource(client);
             var orders = new CryptoOrders(source);
@@ -97,11 +98,11 @@ namespace Crypto.Websocket.Extensions.Sample
 
             communicator.ReconnectionHappened.Subscribe(x =>
             {
-                client.Authenticate(API_KEY, API_SECRET);
+                client.Authenticate(ApiKey, ApiSecret);
             });
 
             await communicator.Start();
-            
+
 
             return orders;
         }

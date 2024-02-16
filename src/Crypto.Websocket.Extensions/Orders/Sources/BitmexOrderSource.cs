@@ -8,7 +8,7 @@ using Crypto.Websocket.Extensions.Core.Orders;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
 using Crypto.Websocket.Extensions.Core.Orders.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
-using Crypto.Websocket.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Orders.Sources
 {
@@ -17,14 +17,12 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
     /// </summary>
     public class BitmexOrderSource : OrderSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
         private readonly CryptoOrderCollection _partiallyFilledOrders = new CryptoOrderCollection();
-        private BitmexWebsocketClient _client;
-        private IDisposable _subscription;
+        private BitmexWebsocketClient _client = null!;
+        private IDisposable? _subscription;
 
         /// <inheritdoc />
-        public BitmexOrderSource(BitmexWebsocketClient client)
+        public BitmexOrderSource(BitmexWebsocketClient client) : base(client.Logger)
         {
             ChangeClient(client);
         }
@@ -57,7 +55,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             }
             catch (Exception e)
             {
-                Log.Error(e, $"[Bitmex] Failed to handle order info, error: '{e.Message}'");
+                _client.Logger.LogError(e, "[Bitmex] Failed to handle order info, error: '{error}'", e.Message);
             }
         }
 
@@ -162,7 +160,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             }
 
             var currentStatus = existing != null &&
-                                existing.OrderStatus != CryptoOrderStatus.Undefined && 
+                                existing.OrderStatus != CryptoOrderStatus.Undefined &&
                                 existing.OrderStatus != CryptoOrderStatus.New &&
                                 order.OrdStatus == OrderStatus.Undefined ?
                 existing.OrderStatus :
@@ -172,7 +170,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             {
                 Id = id,
                 GroupId = existing?.GroupId ?? null,
-                ClientId = !string.IsNullOrWhiteSpace(order.ClOrdId) ? 
+                ClientId = !string.IsNullOrWhiteSpace(order.ClOrdId) ?
                     order.ClOrdId :
                     existing?.ClientId,
                 Pair = order.Symbol ?? existing?.Pair,

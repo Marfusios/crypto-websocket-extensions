@@ -2,12 +2,11 @@
 using System.Reactive.Linq;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Responses.Trades;
-using Bitmex.Client.Websocket.Utils;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
-using Crypto.Websocket.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Trades.Sources
 {
@@ -16,10 +15,8 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
     /// </summary>
     public class BinanceTradeSource : TradeSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
-        private BinanceWebsocketClient _client;
-        private IDisposable _subscription;
+        private BinanceWebsocketClient _client = null!;
+        private IDisposable? _subscription;
 
         /// <inheritdoc />
         public BinanceTradeSource(BinanceWebsocketClient client)
@@ -57,7 +54,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             }
             catch (Exception e)
             {
-                Log.Error(e, $"[Binance] Failed to handle trade info, error: '{e.Message}'");
+                _client.Logger.LogError(e, "[Binance] Failed to handle trade info, error: '{error}'", e.Message);
             }
         }
 

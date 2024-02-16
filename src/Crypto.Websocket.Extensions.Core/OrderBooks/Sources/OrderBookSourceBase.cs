@@ -5,17 +5,16 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
-using Crypto.Websocket.Extensions.Core.Logging;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 {
     /// <inheritdoc />
     public abstract class OrderBookSourceBase : IOrderBookSource
     {
-        private static readonly ILog LogBase = LogProvider.GetCurrentClassLogger();
-
+        private readonly ILogger _logger;
         private readonly object _bufferLocker = new object();
         private readonly CryptoAsyncLock _snapshotLocker = new CryptoAsyncLock();
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
@@ -37,10 +36,16 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// <summary>
         /// Hidden constructor
         /// </summary>
-        protected OrderBookSourceBase()
+        protected OrderBookSourceBase(ILogger logger)
         {
+            _logger = logger;
             StartProcessingFromBufferThread();
         }
+
+        /// <summary>
+        /// Exposed logger
+        /// </summary>
+        public ILogger Logger => _logger;
 
         /// <summary>
         /// Dispose background processing
@@ -87,15 +92,15 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         {
             using (await _snapshotLocker.LockAsync())
             {
-                OrderBookLevelBulk data = null;
+                OrderBookLevelBulk? data = null;
                 try
                 {
                     data = await LoadSnapshotInternal(pair, count);
                 }
                 catch (Exception e)
                 {
-                    LogBase.Debug($"[{ExchangeName}] Failed to load orderbook snapshot for pair '{pair}'. " +
-                              $"Error: {e.Message}");
+                    _logger.LogDebug("[{exchangeName}] Failed to load orderbook snapshot for pair '{pair}'. " +
+                                  "Error: {error}", ExchangeName, pair, e.Message);
                 }
 
                 StreamSnapshot(data);
@@ -114,12 +119,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// <summary>
         /// Implement snapshot loading, it should not throw an exception
         /// </summary>
-        protected abstract Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count = 1000);
+        protected abstract Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count = 1000);
 
         /// <summary>
         /// Check null and empty, then stream snapshot
         /// </summary>
-        protected void StreamSnapshot(OrderBookLevelBulk data)
+        protected void StreamSnapshot(OrderBookLevelBulk? data)
         {
             if (data?.Levels != null && data.Levels.Any())
             {
@@ -144,8 +149,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
                 _bufferPauseEvent.Set();
                 return;
             }
-            
-            ConvertAndStream(new []{data});
+
+            ConvertAndStream(new[] { data });
         }
 
         /// <summary>
@@ -155,8 +160,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 
         private void StartProcessingFromBufferThread()
         {
-            Task.Factory.StartNew(_ => ProcessData(), 
-                _cancellation.Token, 
+            Task.Factory.StartNew(_ => ProcessData(),
+                _cancellation.Token,
                 TaskCreationOptions.LongRunning);
         }
 

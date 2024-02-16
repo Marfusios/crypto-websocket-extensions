@@ -147,7 +147,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// <summary>
         /// Find bid level for provided price (returns null in case of missing)
         /// </summary>
-        OrderBookLevel FindBidLevelByPrice(double price);
+        OrderBookLevel? FindBidLevelByPrice(double price);
 
         /// <summary>
         /// Find all bid levels for provided price (returns empty when not found)
@@ -157,7 +157,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// <summary>
         /// Find ask level for provided price (returns null in case of missing)
         /// </summary>
-        OrderBookLevel FindAskLevelByPrice(double price);
+        OrderBookLevel? FindAskLevelByPrice(double price);
 
         /// <summary>
         /// Find all ask levels for provided price (returns empty when not found)
@@ -167,18 +167,18 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// <summary>
         /// Find bid level by provided identification (returns null in case of not found)
         /// </summary>
-        OrderBookLevel FindBidLevelById(string id);
+        OrderBookLevel? FindBidLevelById(string id);
 
         /// <summary>
         /// Find ask level by provided identification (returns null in case of not found)
         /// </summary>
-        OrderBookLevel FindAskLevelById(string id);
+        OrderBookLevel? FindAskLevelById(string id);
 
         /// <summary>
         /// Find level by provided identification (returns null in case of not found).
         /// You need to specify side.
         /// </summary>
-        OrderBookLevel FindLevelById(string id, CryptoOrderSide side);
+        OrderBookLevel? FindLevelById(string id, CryptoOrderSide side);
 
         /// <summary>
         /// Returns true if order book is in valid state

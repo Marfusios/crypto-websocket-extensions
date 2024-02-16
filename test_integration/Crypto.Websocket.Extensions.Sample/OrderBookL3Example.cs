@@ -6,9 +6,11 @@ using Bitfinex.Client.Websocket;
 using Bitfinex.Client.Websocket.Client;
 using Bitfinex.Client.Websocket.Requests.Configurations;
 using Bitfinex.Client.Websocket.Websockets;
+using Bitmex.Client.Websocket.Websockets;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.OrderBooks.SourcesL3;
+using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace Crypto.Websocket.Extensions.Sample
@@ -32,7 +34,7 @@ namespace Crypto.Websocket.Extensions.Sample
                 .Subscribe(x => HandleQuoteChanged(ob, levelsCount));
         }
 
-        private static void HandleQuoteChanged( CryptoOrderBook ob, int levelsCount)
+        private static void HandleQuoteChanged(CryptoOrderBook ob, int levelsCount)
         {
             var bids = ob.BidLevelsPerPrice.Take(levelsCount).SelectMany(x => x.Value).ToArray();
             var asks = ob.AskLevelsPerPrice.Take(levelsCount).SelectMany(x => x.Value).ToArray();
@@ -47,21 +49,21 @@ namespace Crypto.Websocket.Extensions.Sample
                 var ask = asks.Length > i ? asks[i] : null;
 
                 var bidMsg =
-                    bid != null ? $"#{i+1} {bid?.Id} " +
+                    bid != null ? $"#{i + 1} {bid?.Id} " +
                                   $"{"p: " + (bid?.Price ?? 0).ToString("#.00#") + " a: " + (bid?.Amount ?? 0).ToString("0.00#")} " +
-                                  $"[{bid.PriceUpdatedCount}/{bid.AmountUpdatedCount}] [{bid.AmountDifference:0.000}/{bid.AmountDifferenceAggregated:0.000}]" 
+                                  $"[{bid.PriceUpdatedCount}/{bid.AmountUpdatedCount}] [{bid.AmountDifference:0.000}/{bid.AmountDifferenceAggregated:0.000}]"
                         : " ";
                 var askMsg =
-                    ask != null ? $"#{i+1} {ask?.Id} " +
+                    ask != null ? $"#{i + 1} {ask?.Id} " +
                                   $"{"p: " + (ask?.Price ?? 0).ToString("#.00#") + " a: " + (ask?.Amount ?? 0).ToString("0.00#")} " +
-                                  $"[{ask.PriceUpdatedCount}/{ask.AmountUpdatedCount}] [{ask.AmountDifference:0.000}/{ask.AmountDifferenceAggregated:0.000}]" 
+                                  $"[{ask.PriceUpdatedCount}/{ask.AmountUpdatedCount}] [{ask.AmountDifference:0.000}/{ask.AmountDifferenceAggregated:0.000}]"
                         : " ";
 
                 bidMsg = $"{bidMsg,80}";
                 askMsg = $"{askMsg,80}";
 
-                msg+= $"{Environment.NewLine}{bidMsg}  {askMsg}";
-                
+                msg += $"{Environment.NewLine}{bidMsg}  {askMsg}";
+
             }
 
             Log.Information($"TOP LEVEL {ob.ExchangeName} {ob.TargetPairOriginal}: {msg}{Environment.NewLine}");
@@ -69,13 +71,13 @@ namespace Crypto.Websocket.Extensions.Sample
         }
 
 
-       
+
 
         private static async Task<CryptoOrderBook> StartBitfinex(string pair, bool optimized)
         {
             var url = BitfinexValues.BitfinexPublicWebsocketUrl;
-            var communicator = new BitfinexWebsocketCommunicator(url) { Name = "Bitfinex" };
-            var client = new BitfinexWebsocketClient(communicator);
+            var communicator = new BitfinexWebsocketCommunicator(url, Program.Logger.CreateLogger<BitfinexWebsocketCommunicator>()) { Name = "Bitfinex" };
+            var client = new BitfinexWebsocketClient(communicator, Program.Logger.CreateLogger<BitfinexWebsocketClient>());
 
             var source = new BitfinexOrderBookL3Source(client);
             var orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3);
@@ -91,7 +93,7 @@ namespace Crypto.Websocket.Extensions.Sample
             client.Send(new ConfigurationRequest(ConfigurationFlag.Sequencing | ConfigurationFlag.Timestamp));
 
             // Send subscription request to raw order book data
-            client.Send(new Bitfinex.Client.Websocket.Requests.Subscriptions.RawBookSubscribeRequest(pair,"100"));
+            client.Send(new Bitfinex.Client.Websocket.Requests.Subscriptions.RawBookSubscribeRequest(pair, "100"));
 
             return orderBook;
         }

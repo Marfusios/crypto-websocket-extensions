@@ -7,7 +7,8 @@ using Bitmex.Client.Websocket.Utils;
 using Crypto.Websocket.Extensions.Core.Validations;
 using Crypto.Websocket.Extensions.Core.Wallets.Models;
 using Crypto.Websocket.Extensions.Core.Wallets.Sources;
-using Crypto.Websocket.Extensions.Logging;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Crypto.Websocket.Extensions.Wallets.Sources
 {
@@ -16,15 +17,15 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
     /// </summary>
     public class BitmexWalletSource : WalletSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
-        private BitmexWebsocketClient _client;
-        private IDisposable _subscription;
-        private CryptoWallet _lastWallet;
+        private readonly ILogger<BitmexWalletSource> _logger;
+        private BitmexWebsocketClient _client = null!;
+        private IDisposable? _subscription;
+        private CryptoWallet? _lastWallet;
 
         /// <inheritdoc />
-        public BitmexWalletSource(BitmexWebsocketClient client)
+        public BitmexWalletSource(BitmexWebsocketClient client, ILogger<BitmexWalletSource>? logger = null)
         {
+            _logger = logger ?? NullLogger<BitmexWalletSource>.Instance;
             ChangeClient(client);
         }
 
@@ -58,7 +59,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
             }
             catch (Exception e)
             {
-                Log.Error(e, $"[Bitmex] Failed to handle wallet info, error: '{e.Message}'");
+                _logger.LogError(e, "[Bitmex] Failed to handle wallet info, error: '{error}'", e.Message);
             }
         }
 
@@ -79,7 +80,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
                 Leverage = margin.MarginLeverage ?? _lastWallet?.Leverage,
                 RealizedPnl = ConvertToBtc(currency, margin.RealisedPnl) ?? _lastWallet?.RealizedPnl,
                 UnrealizedPnl = ConvertToBtc(currency, margin.UnrealisedPnl) ?? _lastWallet?.UnrealizedPnl,
-                Type = margin.Account.ToString()
+                Type = margin.Account?.ToString() ?? string.Empty
             };
             _lastWallet = wallet;
             return wallet;

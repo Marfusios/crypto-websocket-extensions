@@ -8,7 +8,7 @@ using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
-using Crypto.Websocket.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Trades.Sources
 {
@@ -17,8 +17,6 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
     /// </summary>
     public class BitmexTradeSource : TradeSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
         private BitmexWebsocketClient _client;
         private IDisposable _subscription;
 
@@ -58,7 +56,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             }
             catch (Exception e)
             {
-                Log.Error(e, $"[Bitmex] Failed to handle trade info, error: '{e.Message}'");
+                _client.Logger.LogError(e, "[Bitmex] Failed to handle trade info, error: '{error}'", e.Message);
             }
         }
 

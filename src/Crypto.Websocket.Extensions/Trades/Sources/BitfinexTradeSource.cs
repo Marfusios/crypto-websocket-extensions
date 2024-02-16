@@ -6,7 +6,7 @@ using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
-using Crypto.Websocket.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Trades.Sources
 {
@@ -15,10 +15,8 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
     /// </summary>
     public class BitfinexTradeSource : TradeSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
-        private BitfinexWebsocketClient _client;
-        private IDisposable _subscription;
+        private BitfinexWebsocketClient _client = null!;
+        private IDisposable? _subscription;
 
         /// <inheritdoc />
         public BitfinexTradeSource(BitfinexWebsocketClient client)
@@ -56,13 +54,13 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             }
             catch (Exception e)
             {
-                Log.Error(e, $"[Bitfinex] Failed to handle trade info, error: '{e.Message}'");
+                _client.Logger.LogError(e, "[Bitfinex] Failed to handle trade info, error: '{error}'", e.Message);
             }
         }
 
         private void HandleTrade(Trade response)
         {
-            TradesSubject.OnNext(new []{ ConvertTrade(response) });
+            TradesSubject.OnNext(new[] { ConvertTrade(response) });
         }
 
         private CryptoTrade ConvertTrade(Trade trade)

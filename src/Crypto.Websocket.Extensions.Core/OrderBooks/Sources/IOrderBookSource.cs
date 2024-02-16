@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 {
@@ -35,6 +36,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// Default: 10 ms
         /// </summary>
         TimeSpan BufferInterval { get; set; }
+
+        /// <summary>
+        /// Exposed logger
+        /// </summary>
+        ILogger Logger { get; }
 
         /// <summary>
         /// Streams initial snapshot of the order book

@@ -9,7 +9,6 @@ using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
-using Crypto.Websocket.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 {
@@ -18,15 +17,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     /// </summary>
     public class BitstampOrderBookSource : OrderBookSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
-        private BitstampWebsocketClient _client;
-        private IDisposable _subscription;
-        private IDisposable _subscriptionSnapshot;
-
+        private BitstampWebsocketClient _client = null!;
+        private IDisposable? _subscriptionSnapshot;
 
         /// <inheritdoc />
-        public BitstampOrderBookSource(BitstampWebsocketClient client)
+        public BitstampOrderBookSource(BitstampWebsocketClient client) : base(client.Logger)
         {
             ChangeClient(client);
         }
@@ -43,7 +38,6 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
             _client = client;
             _subscriptionSnapshot?.Dispose();
-            _subscription?.Dispose();
             Subscribe();
         }
 
@@ -61,7 +55,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             StreamSnapshot(bulk);
         }
 
-       
+
 
         private OrderBookLevel[] ConvertLevels(OrderBookResponse response)
         {
@@ -78,8 +72,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         {
             return new OrderBookLevel
             (
-                x.OrderId > 0 ? 
-                    x.OrderId.ToString(CultureInfo.InvariantCulture) : 
+                x.OrderId > 0 ?
+                    x.OrderId.ToString(CultureInfo.InvariantCulture) :
                     x.Price.ToString(CultureInfo.InvariantCulture),
                 side,
                 x.Price,
@@ -90,12 +84,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
+        protected override async Task<OrderBookLevelBulk?> LoadSnapshotInternal(string pair, int count)
         {
             return null;
         }
 
-        private void FillBulk(OrderBookResponse response, OrderBookLevelBulk bulk)
+        private void FillBulk(OrderBookResponse? response, OrderBookLevelBulk bulk)
         {
             if (response == null)
                 return;

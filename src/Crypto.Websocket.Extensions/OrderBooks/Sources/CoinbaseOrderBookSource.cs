@@ -12,7 +12,7 @@ using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
-using Crypto.Websocket.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OrderBookLevel = Crypto.Websocket.Extensions.Core.OrderBooks.Models.OrderBookLevel;
@@ -23,16 +23,14 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     /// <inheritdoc />
     public class CoinbaseOrderBookSource : OrderBookSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
         private readonly HttpClient _httpClient = new HttpClient();
-        private CoinbaseWebsocketClient _client;
-        private IDisposable _subscription;
-        private IDisposable _subscriptionSnapshot;
+        private CoinbaseWebsocketClient _client = null!;
+        private IDisposable? _subscription;
+        private IDisposable? _subscriptionSnapshot;
 
 
         /// <inheritdoc />
-        public CoinbaseOrderBookSource(CoinbaseWebsocketClient client)
+        public CoinbaseOrderBookSource(CoinbaseWebsocketClient client) : base(client.Logger)
         {
             _httpClient.BaseAddress = new Uri("https://api.pro.coinbase.com");
 
@@ -120,28 +118,27 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count = 1000)
+        protected override async Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count = 1000)
         {
-            OrderBookSnapshotDto parsed = null;
+            OrderBookSnapshotDto? parsed = null;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
             var result = string.Empty;
 
             try
             {
                 var url = $"/products/{pairSafe}/book?level=2";
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                using (HttpContent content = response.Content)
-                {
-                    result = await content.ReadAsStringAsync();
-                    parsed = JsonConvert.DeserializeObject<OrderBookSnapshotDto>(result);
-                    if (parsed == null)
-                        return null;
-                }
+                using HttpResponseMessage response = await _httpClient.GetAsync(url);
+                using HttpContent content = response.Content;
+
+                result = await content.ReadAsStringAsync();
+                parsed = JsonConvert.DeserializeObject<OrderBookSnapshotDto>(result);
+                if (parsed == null)
+                    return null;
             }
             catch (Exception e)
             {
-                Log.Debug($"[ORDER BOOK {ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
-                         $"Error: '{e.Message}'.  Content: '{result}'");
+                _client.Logger.LogDebug("[ORDER BOOK {exchangeName}] Failed to load orderbook snapshot for pair '{pair}'. " +
+                         "Error: '{error}'.  Content: '{content}'", ExchangeName, pairSafe, e.Message, result);
                 return null;
             }
 
@@ -180,7 +177,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             foreach (var response in data)
             {
                 var responseSafe = response as OrderBookUpdateResponse;
-                if(responseSafe == null)
+                if (responseSafe == null)
                     continue;
 
                 var converted = ConvertDiff(responseSafe);
@@ -210,7 +207,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         public OrderBookLevelConverter()
         {
-            
+
         }
 
         public OrderBookLevelConverter(OrderBookSide side)
@@ -245,8 +242,8 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                 var array = item.ToArray();
 
                 var level = new CoinbaseOrderBookLevel();
-                level.Price = (double) array[0];
-                level.Amount = (double) array[1];
+                level.Price = (double)array[0];
+                level.Amount = (double)array[1];
                 level.Side = _side;
 
                 result.Add(level);

@@ -2,6 +2,7 @@
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Crypto.Websocket.Extensions.Core.Orders.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Core.Orders.Sources
 {
@@ -16,10 +17,20 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
 
         protected CryptoOrderCollection ExistingOrders = new CryptoOrderCollection();
 
+        protected OrderSourceBase(ILogger logger)
+        {
+            Logger = logger;
+        }
+
         /// <summary>
         /// Origin exchange name
         /// </summary>
         public abstract string ExchangeName { get; }
+
+        /// <summary>
+        /// Exposed logger
+        /// </summary>
+        public ILogger Logger { get; }
 
         /// <summary>
         /// Stream snapshot of currently active orders
@@ -39,7 +50,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
         /// <summary>
         /// Set collection of existing orders (to correctly handle orders state)
         /// </summary>
-        public void SetExistingOrders(CryptoOrderCollection orders)
+        public void SetExistingOrders(CryptoOrderCollection? orders)
         {
             ExistingOrders = orders ?? new CryptoOrderCollection();
         }

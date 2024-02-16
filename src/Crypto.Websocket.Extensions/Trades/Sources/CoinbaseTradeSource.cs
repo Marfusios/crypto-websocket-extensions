@@ -6,7 +6,7 @@ using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
-using Crypto.Websocket.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Trades.Sources
 {
@@ -15,10 +15,8 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
     /// </summary>
     public class CoinbaseTradeSource : TradeSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
-        private CoinbaseWebsocketClient _client;
-        private IDisposable _subscription;
+        private CoinbaseWebsocketClient _client = null!;
+        private IDisposable? _subscription;
 
         /// <inheritdoc />
         public CoinbaseTradeSource(CoinbaseWebsocketClient client)
@@ -56,7 +54,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             }
             catch (Exception e)
             {
-                Log.Error(e, $"[Coinbase] Failed to handle trade info, error: '{e.Message}'");
+                _client.Logger.LogError(e, "[Coinbase] Failed to handle trade info, error: '{error}'", e.Message);
             }
         }
 
@@ -82,7 +80,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
                 ExchangeName = ExchangeName,
                 ServerSequence = trade.Sequence,
                 ServerTimestamp = trade.Time
-        };
+            };
             return data;
         }
 

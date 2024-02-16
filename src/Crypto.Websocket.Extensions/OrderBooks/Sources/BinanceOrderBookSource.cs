@@ -12,7 +12,7 @@ using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Validations;
-using Crypto.Websocket.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OrderBookLevel = Crypto.Websocket.Extensions.Core.OrderBooks.Models.OrderBookLevel;
 
@@ -35,15 +35,13 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
     /// <inheritdoc />
     public class BinanceOrderBookSource : OrderBookSourceBase
     {
-        private static readonly ILog Log = LogProvider.GetCurrentClassLogger();
-
         private readonly HttpClient _httpClient = new HttpClient();
-        private BinanceWebsocketClient _client;
-        private IDisposable _subscriptionSnapshot;
-        private IDisposable _subscription;
+        private BinanceWebsocketClient _client = null!;
+        private IDisposable? _subscriptionSnapshot;
+        private IDisposable? _subscription;
 
         /// <inheritdoc />
-        public BinanceOrderBookSource(BinanceWebsocketClient client)
+        public BinanceOrderBookSource(BinanceWebsocketClient client) : base(client.Logger)
         {
             _httpClient.BaseAddress = new Uri("https://www.binance.com");
 
@@ -61,6 +59,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             CryptoValidations.ValidateInput(client, nameof(client));
 
             _client = client;
+            _subscriptionSnapshot?.Dispose();
             _subscription?.Dispose();
             Subscribe();
         }
@@ -106,18 +105,18 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             BufferData(response);
         }
 
-        private OrderBookLevel[] ConvertLevels(Binance.Client.Websocket.Responses.Books.OrderBookLevel[] books, 
+        private OrderBookLevel[] ConvertLevels(Binance.Client.Websocket.Responses.Books.OrderBookLevel[]? books,
             string pair, CryptoOrderSide side)
         {
             if (books == null)
-                return new OrderBookLevel[0];
+                return Array.Empty<OrderBookLevel>();
 
             return books
-                .Select(x => ConvertLevel(x , pair, side))
+                .Select(x => ConvertLevel(x, pair, side))
                 .ToArray();
         }
 
-        private OrderBookLevel ConvertLevel(Binance.Client.Websocket.Responses.Books.OrderBookLevel x, 
+        private OrderBookLevel ConvertLevel(Binance.Client.Websocket.Responses.Books.OrderBookLevel x,
             string pair, CryptoOrderSide side)
         {
             return new OrderBookLevel
@@ -132,7 +131,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevelBulk> LoadSnapshotInternal(string pair, int count)
+        protected override async Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count)
         {
             var snapshot = await LoadSnapshotRaw(pair, count);
             if (snapshot == null)
@@ -147,7 +146,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return bulk;
         }
 
-        private async Task<OrderBookPartial> LoadSnapshotRaw(string pair, int count)
+        private async Task<OrderBookPartial?> LoadSnapshotRaw(string? pair, int count)
         {
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
             var countSafe = count > 1000 ? 1000 : count;
@@ -156,21 +155,20 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             try
             {
                 var url = $"/api/v1/depth?symbol={pairSafe}&limit={countSafe}";
-                using (HttpResponseMessage response = await _httpClient.GetAsync(url))
-                using (HttpContent content = response.Content)
-                {
-                    result = await content.ReadAsStringAsync();
-                    var parsed = JsonConvert.DeserializeObject<OrderBookPartial>(result);
-                    if (parsed == null)
-                        return null;
+                using HttpResponseMessage response = await _httpClient.GetAsync(url);
+                using HttpContent content = response.Content;
 
-                    parsed.Symbol = pairSafe;
-                    return parsed;
-                }
+                result = await content.ReadAsStringAsync();
+                var parsed = JsonConvert.DeserializeObject<OrderBookPartial>(result);
+                if (parsed == null)
+                    return null;
+
+                parsed.Symbol = pairSafe;
+                return parsed;
             }
             catch (Exception e)
             {
-                Log.Debug($"[ORDER BOOK {ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
+                _client.Logger.LogDebug($"[ORDER BOOK {ExchangeName}] Failed to load orderbook snapshot for pair '{pairSafe}'. " +
                           $"Error: '{e.Message}'.  Content: '{result}'");
                 return null;
             }
@@ -230,12 +228,12 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             foreach (var response in data)
             {
                 var responseSafe = response as OrderBookDiffResponse;
-                if(responseSafe == null)
+                if (responseSafe == null)
                     continue;
 
                 var bulks = ConvertDiff(responseSafe);
 
-                if(!bulks.Any())
+                if (!bulks.Any())
                     continue;
 
                 result.AddRange(bulks);
@@ -244,6 +242,6 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return result.ToArray();
         }
 
-        
+
     }
 }

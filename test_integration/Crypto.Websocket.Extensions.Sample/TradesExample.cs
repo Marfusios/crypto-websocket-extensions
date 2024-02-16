@@ -21,10 +21,6 @@ using Coinbase.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket.Requests;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
 using Crypto.Websocket.Extensions.Trades.Sources;
-using Huobi.Client.Websocket;
-using Huobi.Client.Websocket.Clients;
-using Huobi.Client.Websocket.Config;
-using Huobi.Client.Websocket.Messages.MarketData.MarketTradeDetail;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Websocket.Client;
@@ -38,25 +34,25 @@ namespace Crypto.Websocket.Extensions.Sample
         {
             var bitmex = GetBitmex("XBTUSD", false);
             var bitfinex = GetBitfinex("BTCUSD");
-            var binance = GetBinance("BTCUSDT");
+            var binance = GetBinance("BTCFDUSD");
             var coinbase = GetCoinbase("BTC-USD");
             var bitstamp = GetBitstamp("BTCUSD");
-            var huobi = GetHuobi("btcusdt");
+            //var huobi = GetHuobi("btcusdt");
 
             LogTrades(bitmex.Item1);
             LogTrades(bitfinex.Item1);
             LogTrades(binance.Item1);
             LogTrades(coinbase.Item1);
             LogTrades(bitstamp.Item1);
-            LogTrades(huobi.Item1);
+            //LogTrades(huobi.Item1);
 
             Log.Information("Waiting for trades...");
 
             //_ = bitmex.Item2.Start();
             //_ = bitfinex.Item2.Start();
-            //_ = binance.Item2.Start();
+            _ = binance.Item2.Start();
             //_ = coinbase.Item2.Start();
-            _ = bitstamp.Item2.Start();
+            //_ = bitstamp.Item2.Start();
             //_ = huobi.Item2.Start();
         }
 
@@ -115,8 +111,8 @@ namespace Crypto.Websocket.Extensions.Sample
         private static (ITradeSource, IWebsocketClient) GetBinance(string pair)
         {
             var url = BinanceValues.ApiWebsocketUrl;
-            var communicator = new BinanceWebsocketCommunicator(url) { Name = "Binance" };
-            var client = new BinanceWebsocketClient(communicator);
+            var communicator = new BinanceWebsocketCommunicator(url, Program.Logger.CreateLogger<BinanceWebsocketCommunicator>()) { Name = "Binance" };
+            var client = new BinanceWebsocketClient(communicator, Program.Logger.CreateLogger<BinanceWebsocketClient>());
 
             var source = new BinanceTradeSource(client);
 
@@ -165,26 +161,26 @@ namespace Crypto.Websocket.Extensions.Sample
             return (source, communicator);
         }
 
-        private static (ITradeSource, IWebsocketClient) GetHuobi(string pair)
-        {
-            var config = new HuobiMarketWebsocketClientConfig
-            {
-                Url = HuobiConstants.ApiWebsocketUrl,
-                CommunicatorName = "Huobi"
-            };
-            var loggerFactory = new LoggerFactory().AddSerilog(Log.Logger);
+        //private static (ITradeSource, IWebsocketClient) GetHuobi(string pair)
+        //{
+        //    var config = new HuobiMarketWebsocketClientConfig
+        //    {
+        //        Url = HuobiConstants.ApiWebsocketUrl,
+        //        CommunicatorName = "Huobi"
+        //    };
+        //    var loggerFactory = new LoggerFactory().AddSerilog(Log.Logger);
 
-            var client = HuobiWebsocketClientsFactory.CreateMarketClient(config, loggerFactory);
-            var source = new HuobiTradeSource(client);
+        //    var client = HuobiWebsocketClientsFactory.CreateMarketClient(config, loggerFactory);
+        //    var source = new HuobiTradeSource(client);
 
-            client.Communicator.ReconnectionHappened.Subscribe(
-                x =>
-                {
-                    var subscribeRequest = new MarketTradeDetailSubscribeRequest("id1", pair);
-                    client.Send(subscribeRequest);
-                });
+        //    client.Communicator.ReconnectionHappened.Subscribe(
+        //        x =>
+        //        {
+        //            var subscribeRequest = new MarketTradeDetailSubscribeRequest("id1", pair);
+        //            client.Send(subscribeRequest);
+        //        });
 
-            return (source, client.Communicator);
-        }
+        //    return (source, client.Communicator);
+        //}
     }
 }
