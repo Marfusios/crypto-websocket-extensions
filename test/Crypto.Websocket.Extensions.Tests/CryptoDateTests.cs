@@ -10,7 +10,7 @@ namespace Crypto.Websocket.Extensions.Tests
         [InlineData(1577573034.123456, "1577573034.123456")]
         [InlineData(1577573034.123451, "1577573034.123451")]
         [InlineData(0000000000.123456, "0.123456")]
-        [InlineData(0, "0.000000")]
+        [InlineData(0.0, "0.000000")]
         public void UnixTimeConversion_ShouldSupportSixDecimalMilliseconds(double? timeInSec, string result)
         {
             var converted = CryptoDateUtils.ConvertFromUnixSeconds(timeInSec);

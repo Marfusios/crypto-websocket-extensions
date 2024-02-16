@@ -6,7 +6,6 @@ using Coinbase.Client.Websocket.Client;
 using Coinbase.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket.Requests;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
-using Crypto.Websocket.Extensions.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 using Xunit;
 
@@ -14,7 +13,7 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
 {
     public class CoinbaseOrderBookSourceTests
     {
-        [Fact]
+        [Fact(Skip = "Coinbase no longer working")]
         public async Task ConnectToSource_ShouldHandleOrderBookCorrectly()
         {
             var url = CoinbaseValues.ApiWebsocketUrl;
@@ -26,11 +25,11 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
 
                     var source = new CoinbaseOrderBookSource(client);
                     var orderBook = new CryptoOrderBook(pair, source);
-                    
+
                     await communicator.Start();
 
                     client.Send(new SubscribeRequest(
-                        new []{pair},
+                        new[] { pair },
                         ChannelSubscriptionType.Level2
                         ));
 
