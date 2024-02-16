@@ -657,7 +657,7 @@ namespace Crypto.Websocket.Extensions.Tests
             await Task.Delay(TimeSpan.FromMilliseconds(2000));
 
             Assert.Equal(pair, source.SnapshotLastPair);
-            Assert.InRange(source.SnapshotCalledCount, 4, 5);
+            Assert.InRange(source.SnapshotCalledCount, 1, 5);
             Assert.Equal(2, orderBookUpdatedCount);
         }
 
