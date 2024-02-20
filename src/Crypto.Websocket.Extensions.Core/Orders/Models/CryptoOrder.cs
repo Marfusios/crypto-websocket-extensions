@@ -22,22 +22,22 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         /// <summary>
         /// Unique order id (provided by exchange)
         /// </summary>
-        public string Id { get; set; }
+        public string Id { get; set; } = null!;
 
         /// <summary>
         /// Group id of related orders (provided by client, supported only by a few exchanges)
         /// </summary>
-        public string GroupId { get; set; }
+        public string? GroupId { get; set; }
 
         /// <summary>
         /// Unique client order id (provided by client)
         /// </summary>
-        public string ClientId { get; set; }
+        public string? ClientId { get; set; }
 
         /// <summary>
         /// Pair to which this order belongs
         /// </summary>
-        public string Pair { get; set; }
+        public string Pair { get; set; } = null!;
 
         /// <summary>
         /// Pair to which this order belongs (cleaned)
@@ -144,6 +144,11 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         public CryptoOrderStatus OrderStatus { get; set; }
 
         /// <summary>
+        /// Current order's status in a raw format
+        /// </summary>
+        public string OrderStatusRaw { get; set; } = string.Empty;
+
+        /// <summary>
         /// Order's price
         /// </summary>
         public double? Price { get; set; }
@@ -172,8 +177,21 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         /// Whenever order was executed on margin
         /// </summary>
         public bool OnMargin { get; set; }
+        
+        /// <summary>
+        /// Reason why order was canceled/rejected
+        /// </summary>
+        public string? CanceledReason { get; set; }
 
-
+        /// <summary>
+        /// Paid fee
+        /// </summary>
+        public double Fee { get; set; }
+        
+        /// <summary>
+        /// Currency of the paid fee
+        /// </summary>
+        public string? FeeCurrency { get; set; }
 
 
         private double? WithCorrectSign(double? value)

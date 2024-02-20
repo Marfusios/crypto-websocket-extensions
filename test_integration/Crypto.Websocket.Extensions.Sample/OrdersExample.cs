@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Binance.Client.Websocket;
+using Binance.Client.Websocket.Client;
+using Binance.Client.Websocket.Signing;
+using Binance.Client.Websocket.Websockets;
 using Bitmex.Client.Websocket;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Websockets;
@@ -22,7 +26,8 @@ namespace Crypto.Websocket.Extensions.Sample
 
         public static async Task RunEverything()
         {
-            var ordBitmex = await StartBitmex(false, HandleOrderChanged, HandleWalletsChanged, HandlePositionsChanged);
+            //var ordBitmex = await StartBitmex(false, HandleOrderChanged, HandleWalletsChanged, HandlePositionsChanged);
+            var ordBinance = await StartBinance(HandleOrderChanged);
 
             Log.Information("Waiting for orders...");
         }
@@ -33,7 +38,7 @@ namespace Crypto.Websocket.Extensions.Sample
                             $"Price: {order.PriceGrouped}, Amount: {order.AmountOrig:#.#####}/{order.AmountOrigQuote}, " +
                             $"cumulative: {order.AmountFilledCumulative:#.#####}/{order.AmountFilledCumulativeQuote}, " +
                             $"filled: {order.AmountFilled:#.#####}/{order.AmountFilledQuote}, " +
-                            $"Status: {order.OrderStatus}");
+                            $"Status: {order.OrderStatus} ({order.OrderStatusRaw})");
         }
 
         private static void HandleWalletsChanged(CryptoWallet[] wallets)
@@ -98,11 +103,33 @@ namespace Crypto.Websocket.Extensions.Sample
 
             communicator.ReconnectionHappened.Subscribe(x =>
             {
+                Log.Information("[Bitmex] Reconnected, type: {type}", x.Type);
                 client.Authenticate(ApiKey, ApiSecret);
             });
 
             await communicator.Start();
 
+
+            return orders;
+        }
+        
+        private static async Task<ICryptoOrders> StartBinance(Action<CryptoOrder> handler)
+        {
+            var url = BinanceValues.ApiWebsocketUrl;
+            var communicator = new BinanceWebsocketCommunicator(url, Program.Logger.CreateLogger<BinanceWebsocketCommunicator>()) { Name = "Binance" };
+            var client = new BinanceWebsocketClient(communicator, Program.Logger.CreateLogger<BinanceWebsocketClient>());
+
+            var source = new BinanceOrderSource(client);
+            var orders = new CryptoOrders(source);
+            orders.OrderChangedStream.Subscribe(handler);
+
+            communicator.ReconnectionHappened.Subscribe(x =>
+            {
+                Log.Information("[Binance] Reconnected, type: {type}", x.Type);
+            });
+            
+            await communicator.Authenticate(ApiKey, new BinanceHmac(ApiSecret));
+            await communicator.Start();
 
             return orders;
         }

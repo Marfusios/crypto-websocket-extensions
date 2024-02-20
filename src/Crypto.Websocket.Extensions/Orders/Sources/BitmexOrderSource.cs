@@ -173,7 +173,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 ClientId = !string.IsNullOrWhiteSpace(order.ClOrdId) ?
                     order.ClOrdId :
                     existing?.ClientId,
-                Pair = order.Symbol ?? existing?.Pair,
+                Pair = order.Symbol ?? existing?.Pair ?? string.Empty,
                 Side = order.Side == BitmexSide.Sell ? CryptoOrderSide.Ask : CryptoOrderSide.Bid,
                 AmountFilled = amountFilled,
                 AmountFilledCumulative = amountFilledCumulative,

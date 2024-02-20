@@ -45,17 +45,17 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Originally provided target pair for this orders data
         /// </summary>
-        string TargetPairOriginal { get; }
+        string? TargetPairOriginal { get; }
 
         /// <summary>
         /// Last executed (or partially filled) buy order
         /// </summary>
-        CryptoOrder LastExecutedBuyOrder { get; }
+        CryptoOrder? LastExecutedBuyOrder { get; }
 
         /// <summary>
         /// Last executed (or partially filled) sell order
         /// </summary>
-        CryptoOrder LastExecutedSellOrder { get; }
+        CryptoOrder? LastExecutedSellOrder { get; }
 
         /// <summary>
         /// Generate a new client id (with prefix)
@@ -80,22 +80,22 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Find active order by provided unique id
         /// </summary>
-        CryptoOrder FindActiveOrder(string id);
+        CryptoOrder? FindActiveOrder(string id);
 
         /// <summary>
         /// Find order by provided unique id
         /// </summary>
-        CryptoOrder FindOrder(string id);
+        CryptoOrder? FindOrder(string id);
 
         /// <summary>
         /// Find active order by provided client id
         /// </summary>
-        CryptoOrder FindActiveOrderByClientId(string clientId);
+        CryptoOrder? FindActiveOrderByClientId(string clientId);
 
         /// <summary>
         /// Find order by provided client id
         /// </summary>
-        CryptoOrder FindOrderByClientId(string clientId);
+        CryptoOrder? FindOrderByClientId(string clientId);
 
         /// <summary>
         /// Returns true if client id matches prefix

@@ -25,7 +25,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Binance.Client.Websocket" Version="2.2.1" />
+		<PackageReference Include="Binance.Client.Websocket" Version="2.3.1" />
 		<PackageReference Include="Bitfinex.Client.Websocket" Version="4.2.0" />
 		<PackageReference Include="Bitmex.Client.Websocket" Version="3.2.1" />
 		<PackageReference Include="Bitstamp.Client.Websocket" Version="1.1.1" />

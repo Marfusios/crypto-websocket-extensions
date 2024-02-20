@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -31,7 +32,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <param name="source">Orders source</param>
         /// <param name="orderPrefix">Select prefix if you want to distinguish orders</param>
         /// <param name="targetPair">Select target pair, if you want to filter monitored orders</param>
-        public CryptoOrders(IOrderSource source, long? orderPrefix = null, string targetPair = null)
+        public CryptoOrders(IOrderSource source, long? orderPrefix = null, string? targetPair = null)
         {
             CryptoValidations.ValidateInput(source, nameof(source));
 
@@ -82,17 +83,17 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Originally provided target pair for this orders data
         /// </summary>
-        public string TargetPairOriginal { get; private set; }
+        public string? TargetPairOriginal { get; private set; }
 
         /// <summary>
         /// Last executed (or partially filled) buy order
         /// </summary>
-        public CryptoOrder LastExecutedBuyOrder { get; private set; }
+        public CryptoOrder? LastExecutedBuyOrder { get; private set; }
 
         /// <summary>
         /// Last executed (or partially filled) sell order
         /// </summary>
-        public CryptoOrder LastExecutedSellOrder { get; private set; }
+        public CryptoOrder? LastExecutedSellOrder { get; private set; }
 
 
         /// <summary>
@@ -145,7 +146,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Find active order by provided unique id
         /// </summary>
-        public CryptoOrder FindActiveOrder(string id)
+        public CryptoOrder? FindActiveOrder(string id)
         {
             if (GetActiveOrders().ContainsKey(id))
                 return _idToOrder[id];
@@ -155,11 +156,9 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Find order by provided unique id
         /// </summary>
-        public CryptoOrder FindOrder(string id)
+        public CryptoOrder? FindOrder(string id)
         {
-            if (_idToOrder.ContainsKey(id))
-                return _idToOrder[id];
-            return null;
+            return _idToOrder.GetValueOrDefault(id);
         }
 
         /// <summary>
@@ -191,7 +190,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Returns true if client id matches prefix
         /// </summary>
-        public bool IsOurOrder(string clientId)
+        public bool IsOurOrder(string? clientId)
         {
             if (string.IsNullOrWhiteSpace(ClientIdPrefixString))
                 return true;
@@ -235,7 +234,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
             _source.OrderUpdatedStream.Subscribe(OnOrderUpdated);
         }
 
-        private void OnOrdersUpdated(CryptoOrder[] orders)
+        private void OnOrdersUpdated(CryptoOrder[]? orders)
         {
             if (orders == null)
                 return;
@@ -246,7 +245,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
             }
         }
 
-        private void OnOrderCreated(CryptoOrder order)
+        private void OnOrderCreated(CryptoOrder? order)
         {
             if (order == null)
                 return;
@@ -254,7 +253,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
             HandleOrderUpdated(order);
         }
 
-        private void OnOrderUpdated(CryptoOrder order)
+        private void OnOrderUpdated(CryptoOrder? order)
         {
             if (order == null)
                 return;
@@ -291,7 +290,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
                 _ourOrderChanged.OnNext(order);
         }
 
-        private bool IsFilteredOut(CryptoOrder order)
+        private bool IsFilteredOut(CryptoOrder? order)
         {
             if (order == null)
                 return true;

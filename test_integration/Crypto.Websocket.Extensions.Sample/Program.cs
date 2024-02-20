@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime;
@@ -17,6 +18,10 @@ namespace Crypto.Websocket.Extensions.Sample
 
         static void Main(string[] args)
         {
+            var defaultCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = defaultCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = defaultCulture;
+            
             GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
 
             Logger = InitLogging();

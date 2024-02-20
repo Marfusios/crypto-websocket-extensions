@@ -8,7 +8,7 @@
         /// <summary>
         /// Clean pair from any unnecessary characters and make lowercase
         /// </summary>
-        public static string Clean(string pair)
+        public static string Clean(string? pair)
         {
             return (pair ?? string.Empty)
                 .Trim()
@@ -21,7 +21,7 @@
         /// <summary>
         /// Compare two pairs, clean them before
         /// </summary>
-        public static bool AreSame(string firstPair, string secondPair)
+        public static bool AreSame(string? firstPair, string? secondPair)
         {
             var first = Clean(firstPair);
             var second = Clean(secondPair);
