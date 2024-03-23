@@ -3,6 +3,7 @@
 	<!-- Project defaults -->
 
 	<PropertyGroup>
+		<LangVersion>latest</LangVersion>
 		<Version>2.7.1</Version>
 	</PropertyGroup>
 

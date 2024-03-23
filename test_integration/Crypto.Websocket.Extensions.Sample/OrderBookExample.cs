@@ -103,7 +103,7 @@ namespace Crypto.Websocket.Extensions.Sample
                     }
 
                     var metaString = simple ? string.Empty : $" (" +
-                                   $"{x.Sources.Length} " +
+                                   $"{x.Sources.Count} " +
                                    $"{x.Sources.Sum(y => y.Levels.Length)}" +
                                    $"{time})";
                     return
