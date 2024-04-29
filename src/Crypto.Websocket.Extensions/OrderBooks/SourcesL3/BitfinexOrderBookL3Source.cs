@@ -108,7 +108,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count)
+        protected override async Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count = 1000)
         {
             RawBook[]? parsed = null;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
@@ -129,7 +129,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
 
                 foreach (var book in parsed)
                 {
-                    book.Pair = pair;
+                    book.Pair = pair ?? string.Empty;
                 }
             }
             catch (Exception e)

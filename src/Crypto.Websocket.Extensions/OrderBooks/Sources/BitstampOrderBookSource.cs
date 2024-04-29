@@ -84,9 +84,9 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevelBulk?> LoadSnapshotInternal(string pair, int count)
+        protected override Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count = 1000)
         {
-            return null;
+            return Task.FromResult<OrderBookLevelBulk?>(null);
         }
 
         private void FillBulk(OrderBookResponse? response, OrderBookLevelBulk bulk)

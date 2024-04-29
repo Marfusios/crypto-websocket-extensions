@@ -178,7 +178,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var msg = $"Elapsed time for processing was: {elapsedEnd} ms";
             _output.WriteLine(msg);
 
-            Assert.True(elapsedEnd < 5000, msgInserting);
+            Assert.True(elapsedEnd < 5000, msg);
             Assert.True(elapsedInsertingMs < 1000, msgInserting);
         }
 
@@ -213,7 +213,7 @@ namespace Crypto.Websocket.Extensions.Tests
             var msg = $"Elapsed time for processing was: {elapsedEnd} ms";
             _output.WriteLine(msg);
 
-            Assert.True(elapsedEnd < 5000, msgInserting);
+            Assert.True(elapsedEnd < 5000, msg);
             Assert.True(elapsedInsertingMs < 1000, msgInserting);
         }
 

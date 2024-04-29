@@ -91,6 +91,9 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         private void HandleSnapshot(OrderBookPartialResponse response)
         {
             // received snapshot, convert and stream
+            if (response.Data == null)
+                return;
+            
             var levels = ConvertSnapshot(response.Data);
             var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2)
             {
@@ -106,7 +109,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         private OrderBookLevel[] ConvertLevels(Binance.Client.Websocket.Responses.Books.OrderBookLevel[]? books,
-            string pair, CryptoOrderSide side)
+            string? pair, CryptoOrderSide side)
         {
             if (books == null)
                 return Array.Empty<OrderBookLevel>();
@@ -117,7 +120,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         private OrderBookLevel ConvertLevel(Binance.Client.Websocket.Responses.Books.OrderBookLevel x,
-            string pair, CryptoOrderSide side)
+            string? pair, CryptoOrderSide side)
         {
             return new OrderBookLevel
             (
@@ -131,7 +134,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        protected override async Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count)
+        protected override async Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count = 1000)
         {
             var snapshot = await LoadSnapshotRaw(pair, count);
             if (snapshot == null)

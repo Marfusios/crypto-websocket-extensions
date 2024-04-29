@@ -10,7 +10,7 @@ namespace Crypto.Websocket.Extensions.Core.Models
         /// <summary>
         /// Origin exchange name
         /// </summary>
-        public string ExchangeName { get; set; }
+        public string? ExchangeName { get; set; }
 
         /// <summary>
         /// Server timestamp when available (only few exchanges support it)

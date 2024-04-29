@@ -14,7 +14,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         /// <summary>
         /// Level constructor
         /// </summary>
-        public OrderBookLevel(string id, CryptoOrderSide side, double? price, double? amount, int? count, string pair)
+        public OrderBookLevel(string id, CryptoOrderSide side, double? price, double? amount, int? count, string? pair)
         {
             Id = id;
             Side = side;
@@ -56,7 +56,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         /// <summary>
         /// Pair to which this level or order belongs
         /// </summary>
-        public string Pair { get; internal set; }
+        public string? Pair { get; internal set; }
 
         /// <summary>
         /// Ordering index to determine position in the queue

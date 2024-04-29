@@ -66,17 +66,17 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         protected readonly OrderBookLevelsById AllAskLevels = new(500);
 
         bool _isSnapshotLoaded;
-        Timer _snapshotReloadTimer;
+        Timer? _snapshotReloadTimer;
         TimeSpan _snapshotReloadTimeout = TimeSpan.FromMinutes(1);
         bool _snapshotReloadEnabled;
 
-        Timer _validityCheckTimer;
+        Timer? _validityCheckTimer;
         TimeSpan _validityCheckTimeout = TimeSpan.FromSeconds(5);
         bool _validityCheckEnabled = true;
         int _validityCheckCounter;
 
-        IDisposable _subscriptionDiff;
-        IDisposable _subscriptionSnapshot;
+        IDisposable? _subscriptionDiff;
+        IDisposable? _subscriptionSnapshot;
 
         CryptoQuotes _previous;
         CryptoQuotes _current;
@@ -239,33 +239,31 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         }
 
         /// <inheritdoc />
-        public abstract OrderBookLevel FindBidLevelByPrice(double price);
+        public abstract OrderBookLevel? FindBidLevelByPrice(double price);
 
         /// <inheritdoc />
         public abstract OrderBookLevel[] FindBidLevelsByPrice(double price);
 
         /// <inheritdoc />
-        public abstract OrderBookLevel FindAskLevelByPrice(double price);
+        public abstract OrderBookLevel? FindAskLevelByPrice(double price);
 
         /// <inheritdoc />
         public abstract OrderBookLevel[] FindAskLevelsByPrice(double price);
 
         /// <inheritdoc />
-        public OrderBookLevel FindBidLevelById(string id) => FindLevelById(id, CryptoOrderSide.Bid);
+        public OrderBookLevel? FindBidLevelById(string id) => FindLevelById(id, CryptoOrderSide.Bid);
 
         /// <inheritdoc />
-        public OrderBookLevel FindAskLevelById(string id) => FindLevelById(id, CryptoOrderSide.Ask);
+        public OrderBookLevel? FindAskLevelById(string id) => FindLevelById(id, CryptoOrderSide.Ask);
 
         /// <inheritdoc />
-        public OrderBookLevel FindLevelById(string id, CryptoOrderSide side)
+        public OrderBookLevel? FindLevelById(string id, CryptoOrderSide side)
         {
             if (side == CryptoOrderSide.Undefined)
                 return null;
 
             var collection = GetAllCollection(side);
-            return collection.ContainsKey(id)
-                ? collection[id]
-                : null;
+            return collection.GetValueOrDefault(id);
         }
 
         void Subscribe()
@@ -274,7 +272,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             _subscriptionDiff = Source.OrderBookStream.Subscribe(HandleDiffsSynchronized);
         }
 
-        void HandleSnapshotSynchronized(OrderBookLevelBulk bulk)
+        void HandleSnapshotSynchronized(OrderBookLevelBulk? bulk)
         {
             if (bulk == null || !IsForThis(bulk))
                 return;
@@ -532,13 +530,13 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// Gets the first bid.
         /// </summary>
         /// <returns>The first bid.</returns>
-        protected abstract OrderBookLevel GetFirstBid();
+        protected abstract OrderBookLevel? GetFirstBid();
 
         /// <summary>
         /// Gets the first ask.
         /// </summary>
         /// <returns>The first ask.</returns>
-        protected abstract OrderBookLevel GetFirstAsk();
+        protected abstract OrderBookLevel? GetFirstAsk();
 
         void RecomputeAfterChangeAndSetIndexes(IEnumerable<OrderBookLevel> levels)
         {
@@ -588,7 +586,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// </summary>
         /// <param name="side">The side.</param>
         /// <returns>The levels for the specified side.</returns>
-        protected SortedList<double, T> GetLevelsCollection(CryptoOrderSide side)
+        protected SortedList<double, T>? GetLevelsCollection(CryptoOrderSide side)
         {
             if (side == CryptoOrderSide.Undefined)
                 return null;
@@ -626,7 +624,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         protected OrderBookLevelsById GetAllCollection(CryptoOrderSide side)
         {
             if (side == CryptoOrderSide.Undefined)
-                return null;
+                throw new InvalidOperationException("Cannot get collection for undefined order side");
 
             return side == CryptoOrderSide.Bid
                 ? AllBidLevels
@@ -723,7 +721,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             await ReloadSnapshot();
         }
 
-        void RestartAutoSnapshotReloading()
+        private void RestartAutoSnapshotReloading()
         {
             DeactivateAutoSnapshotReloading();
 

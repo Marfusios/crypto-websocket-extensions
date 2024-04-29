@@ -92,7 +92,7 @@ namespace Crypto.Websocket.Extensions.Core.Utils
         /// <summary>
         /// Convert DateTime into unix seconds string with high resolution (6 decimal places for milliseconds)
         /// </summary>
-        public static string ToUnixSecondsString(this DateTime? value)
+        public static string? ToUnixSecondsString(this DateTime? value)
         {
             return value?.ToUnixSecondsString();
         }

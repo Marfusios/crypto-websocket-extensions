@@ -81,14 +81,14 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             BufferData(update);
         }
 
-        private OrderBookLevel[] ConvertLevels(string pair, CoinbaseOrderBookLevel[] data)
+        private OrderBookLevel[] ConvertLevels(string? pair, CoinbaseOrderBookLevel[] data)
         {
             return data
                 .Select(x => ConvertLevel(pair, x))
                 .ToArray();
         }
 
-        private OrderBookLevel ConvertLevel(string pair, CoinbaseOrderBookLevel x)
+        private OrderBookLevel ConvertLevel(string? pair, CoinbaseOrderBookLevel x)
         {
             return new OrderBookLevel
             (
@@ -120,7 +120,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <inheritdoc />
         protected override async Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count = 1000)
         {
-            OrderBookSnapshotDto? parsed = null;
+            OrderBookSnapshotDto? parsed;
             var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
             var result = string.Empty;
 
@@ -193,10 +193,10 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             public long Sequence { get; set; }
 
             [JsonConverter(typeof(OrderBookLevelConverter), OrderBookSide.Buy)]
-            public CoinbaseOrderBookLevel[] Bids { get; set; }
+            public CoinbaseOrderBookLevel[] Bids { get; set; } = Array.Empty<CoinbaseOrderBookLevel>();
 
             [JsonConverter(typeof(OrderBookLevelConverter), OrderBookSide.Sell)]
-            public CoinbaseOrderBookLevel[] Asks { get; set; }
+            public CoinbaseOrderBookLevel[] Asks { get; set; } = Array.Empty<CoinbaseOrderBookLevel>();
         }
     }
 
@@ -220,7 +220,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             return objectType == typeof(double[][]);
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue,
+        public override object ReadJson(JsonReader reader, Type objectType, object? existingValue,
             JsonSerializer serializer)
         {
             var array = JArray.Load(reader);
@@ -229,7 +229,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         public override bool CanWrite => false;
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
             throw new NotImplementedException();
         }

@@ -129,7 +129,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
                 foreach (var book in parsed)
                 {
-                    book.Pair = pair;
+                    book.Pair = pair ?? string.Empty;
                 }
             }
             catch (Exception e)
