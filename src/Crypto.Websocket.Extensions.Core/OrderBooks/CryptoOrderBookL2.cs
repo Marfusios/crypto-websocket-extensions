@@ -67,6 +67,38 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         protected override bool IsForThis(OrderBookLevelBulk bulk) => bulk.OrderBookType is CryptoOrderBookType.L1 or CryptoOrderBookType.L2;
 
         /// <inheritdoc />
+        protected override void UpdateSnapshot(L2Snapshot snapshot)
+        {
+            snapshot.Update(BidPrice, AskPrice, BidAmount, AskAmount);
+
+            if (snapshot.Bids.Any())
+                UpdateQuotes(snapshot.Bids, BidLevelsInternal.Values.Take(snapshot.Bids.Count).ToList());
+
+            if (snapshot.Asks.Any())
+                UpdateQuotes(snapshot.Asks, AskLevelsInternal.Values.Take(snapshot.Asks.Count).ToList());
+
+            static void UpdateQuotes(IEnumerable<CryptoQuote> quotes, IReadOnlyList<OrderBookLevel> levels)
+            {
+                var index = 0;
+                foreach (var quote in quotes)
+                {
+                    if (index < levels.Count)
+                    {
+                        quote.Price = levels[index].Price ?? 0;
+                        quote.Amount = levels[index].Amount ?? 0;
+                    }
+                    else
+                    {
+                        quote.Price = 0;
+                        quote.Amount = 0;
+                    }
+
+                    index++;
+                }
+            }
+        }
+
+        /// <inheritdoc />
         protected override void ClearLevels()
         {
             BidLevelsInternal.Clear();

@@ -116,6 +116,38 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         }
 
         /// <inheritdoc />
+        protected override void UpdateSnapshot(L2Snapshot snapshot)
+        {
+            snapshot.Update(BidPrice, AskPrice, BidAmount, AskAmount);
+            
+            if (snapshot.Bids.Any())
+                UpdateQuotes(snapshot.Bids, BidLevelsInternal.Take(snapshot.Bids.Count).ToList());
+            
+            if (snapshot.Asks.Any())
+                UpdateQuotes(snapshot.Asks, AskLevelsInternal.Take(snapshot.Asks.Count).ToList());
+
+            static void UpdateQuotes(IEnumerable<CryptoQuote> quotes, IReadOnlyList<KeyValuePair<double, OrderedDictionary>> levels)
+            {
+                var index = 0;
+                foreach (var quote in quotes)
+                {
+                    if (index < levels.Count)
+                    {
+                        quote.Price = levels[index].Key;
+                        quote.Amount = levels[index].Value.Values.Cast<OrderBookLevel>().Sum(x => x.Amount ?? 0);
+                    }
+                    else
+                    {
+                        quote.Price = 0;
+                        quote.Amount = 0;
+                    }
+
+                    index++;
+                }
+            }
+        }
+
+        /// <inheritdoc />
         protected override void ClearLevels()
         {
             BidLevelsInternal.Clear();
