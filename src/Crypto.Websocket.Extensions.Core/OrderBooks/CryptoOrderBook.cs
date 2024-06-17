@@ -11,7 +11,7 @@ using Crypto.Websocket.Extensions.Core.Utils;
 namespace Crypto.Websocket.Extensions.Core.OrderBooks
 {
     /// <summary>
-    /// Cryptocurrency order book (supports all levels L2, L3, etc).
+    /// Cryptocurrency order book (supports all levels L2, L3, etc.).
     /// Process order book data from one source and one target pair.
     /// Only first levels are computed in advance, allocates more memory than CryptoOrderBookL2 counterpart. 
     /// </summary>
@@ -103,7 +103,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         }
 
         /// <inheritdoc />
-        protected override bool IsForThis(OrderBookLevelBulk bulk)
+        protected override bool IsForThis(OrderBookLevelBulk? bulk)
         {
             if (TargetType == CryptoOrderBookType.All)
             {
@@ -112,17 +112,17 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
 
             // handle only same type as selected
-            return TargetType == bulk.OrderBookType;
+            return TargetType == bulk?.OrderBookType;
         }
 
         /// <inheritdoc />
         protected override void UpdateSnapshot(L2Snapshot snapshot)
         {
             snapshot.Update(BidPrice, AskPrice, BidAmount, AskAmount);
-            
+
             if (snapshot.Bids.Any())
                 UpdateQuotes(snapshot.Bids, BidLevelsInternal.Take(snapshot.Bids.Count).ToList());
-            
+
             if (snapshot.Asks.Any())
                 UpdateQuotes(snapshot.Asks, AskLevelsInternal.Take(snapshot.Asks.Count).ToList());
 
@@ -215,7 +215,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             if (orderingGroup == null || level.Price == null)
                 return;
-            
+
             // remove from last location if needed (price updated)
             if (previousPrice.HasValue && !CryptoMathUtils.IsSame(previousPrice, level.Price) && collection.ContainsKey(previousPrice.Value))
             {

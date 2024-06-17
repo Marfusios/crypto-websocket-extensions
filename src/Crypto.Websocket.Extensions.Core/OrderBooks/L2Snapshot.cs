@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using Crypto.Websocket.Extensions.Core.Models;
 
 namespace Crypto.Websocket.Extensions.Core.OrderBooks
@@ -6,6 +7,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
     /// <summary>
     /// A snapshot of bid and ask levels.
     /// </summary>
+    [DebuggerDisplay("Bid: {Bid}/{BidAmount}, Ask: {Ask}/{AskAmount}, Bids: {Bids.Count}, Asks: {Asks.Count}")]
     public class L2Snapshot : CryptoQuotes
     {
         /// <summary>

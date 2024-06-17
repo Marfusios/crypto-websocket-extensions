@@ -1,8 +1,11 @@
-﻿namespace Crypto.Websocket.Extensions.Core.OrderBooks
+﻿using System.Diagnostics;
+
+namespace Crypto.Websocket.Extensions.Core.OrderBooks
 {
     /// <summary>
     /// A price and amount.
     /// </summary>
+    [DebuggerDisplay("Price: {Price}, Amount: {Amount}")]
     public class CryptoQuote
     {
         /// <summary>

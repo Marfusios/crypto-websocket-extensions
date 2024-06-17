@@ -47,13 +47,6 @@ namespace Crypto.Websocket.Extensions.Sample
             var bitstampOb = await StartBitstamp("BTCUSD", optimized, l2OrderBook);
             //var huobiOb = await StartHuobi("btcusdt", optimized, l2OrderBook);
 
-            const int topLevels = 10;
-
-            bitmexOb.NotifyForLevelAndAbove = topLevels;
-            bitfinexOb.NotifyForLevelAndAbove = topLevels;
-            binanceOb.NotifyForLevelAndAbove = topLevels;
-            bitstampOb.NotifyForLevelAndAbove = topLevels;
-
             Log.Information("Waiting for price change...");
 
             Observable.CombineLatest(new[]
@@ -73,8 +66,8 @@ namespace Crypto.Websocket.Extensions.Sample
             var optimized = true;
             var l2OrderBook = false;
 
-            //var ob = await StartBitmex("XBTUSD", optimized, l2OrderBook);
-            var ob = await StartBinance("BTCUSDT", optimized, l2OrderBook);
+            var ob = await StartBitmex("XBTUSD", optimized, l2OrderBook);
+            //var ob = await StartBinance("BTCUSDT", optimized, l2OrderBook);
             //var ob = await StartBitfinex("BTCUSD", optimized, l2OrderBook);
             //var ob = await StartCoinbase("BTC-USD", optimized, l2OrderBook);
             //var ob = await StartBitstamp("BTCUSD", optimized, l2OrderBook);
@@ -335,6 +328,7 @@ namespace Crypto.Websocket.Extensions.Sample
             orderBook.DebugEnabled = true;
             orderBook.DebugLogEnabled = true;
             orderBook.ValidityCheckEnabled = false;
+            orderBook.NotifyForLevelAndAbove = 10;
         }
     }
 }

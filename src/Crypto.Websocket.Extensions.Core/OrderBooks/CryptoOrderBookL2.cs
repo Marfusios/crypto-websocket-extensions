@@ -64,7 +64,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         }
 
         /// <inheritdoc />
-        protected override bool IsForThis(OrderBookLevelBulk bulk) => bulk.OrderBookType is CryptoOrderBookType.L1 or CryptoOrderBookType.L2;
+        protected override bool IsForThis(OrderBookLevelBulk? bulk) => bulk?.OrderBookType is CryptoOrderBookType.L1 or CryptoOrderBookType.L2;
 
         /// <inheritdoc />
         protected override void UpdateSnapshot(L2Snapshot snapshot)
