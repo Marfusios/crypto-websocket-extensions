@@ -47,6 +47,13 @@ namespace Crypto.Websocket.Extensions.Sample
             var bitstampOb = await StartBitstamp("BTCUSD", optimized, l2OrderBook);
             //var huobiOb = await StartHuobi("btcusdt", optimized, l2OrderBook);
 
+            const int topLevels = 10;
+
+            bitmexOb.NotifyForLevelAndAbove = topLevels;
+            bitfinexOb.NotifyForLevelAndAbove = topLevels;
+            binanceOb.NotifyForLevelAndAbove = topLevels;
+            bitstampOb.NotifyForLevelAndAbove = topLevels;
+
             Log.Information("Waiting for price change...");
 
             Observable.CombineLatest(new[]

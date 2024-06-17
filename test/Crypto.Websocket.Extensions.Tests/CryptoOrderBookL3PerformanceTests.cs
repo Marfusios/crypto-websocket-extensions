@@ -31,7 +31,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L3);
             var source = new OrderBookSourceMock(snapshot);
 
-            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3);
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3)
+            {
+                NotifyForLevelAndAbove = 30
+            };
 
             source.BufferEnabled = false;
             source.LoadSnapshotEnabled = false;
@@ -54,7 +57,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L3);
             var source = new OrderBookSourceMock(snapshot);
 
-            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3);
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3)
+            {
+                NotifyForLevelAndAbove = 10
+            };
 
             source.BufferEnabled = false;
             source.LoadSnapshotEnabled = false;
@@ -77,7 +83,10 @@ namespace Crypto.Websocket.Extensions.Tests
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L3);
             var source = new OrderBookSourceMock(snapshot);
 
-            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3);
+            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3)
+            {
+                NotifyForLevelAndAbove = 3
+            };
 
             source.BufferEnabled = false;
             source.LoadSnapshotEnabled = false;

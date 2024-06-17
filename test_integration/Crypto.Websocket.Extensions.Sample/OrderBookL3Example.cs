@@ -24,12 +24,14 @@ namespace Crypto.Websocket.Extensions.Sample
 
             //var ob = await StartBitfinex("BTCUSD", optimized);
             var ob = await StartBitfinex("btcf0:ustf0", optimized);
+			ob.NotifyForLevelAndAbove = 30;
 
             Log.Information("Waiting for price change...");
 
             Observable.CombineLatest(new[]
                 {
-                    ob.OrderBookUpdatedStream
+                    //ob.OrderBookUpdatedStream
+                    ob.TopNLevelsUpdatedStream
                 })
                 .Subscribe(x => HandleQuoteChanged(ob, levelsCount));
         }
