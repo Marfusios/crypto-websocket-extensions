@@ -697,13 +697,13 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         private bool NotifyIfTopNLevelsChanged(bool topLevelChanged, TopNLevelsChangeInfo info)
         {
+            UpdateSnapshot(_current);
+
             if (NotifyForLevelAndAbove <= 0)
             {
                 // do nothing, save resources
                 return false;
             }
-
-            UpdateSnapshot(_current);
 
             if (topLevelChanged ||
                 HasChange(_previous.Bids, _current.Bids) ||
