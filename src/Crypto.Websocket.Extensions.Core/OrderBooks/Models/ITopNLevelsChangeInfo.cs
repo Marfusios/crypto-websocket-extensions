@@ -4,7 +4,7 @@
 public interface ITopNLevelsChangeInfo : IOrderBookChangeInfo
 {
     /// <summary>
-    /// A snapshot of the the orderbook.
+    /// A snapshot of the orderbook.
     /// </summary>
     L2Snapshot Snapshot { get; }
 }
