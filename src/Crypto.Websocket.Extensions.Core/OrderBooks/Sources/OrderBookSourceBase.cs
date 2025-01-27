@@ -171,17 +171,25 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 
             while (!_cancellation.IsCancellationRequested && _bufferEnabled)
             {
-                if (bufferIntervalMs > 0)
+                try
                 {
-                    // delay only if enabled
-                    await Task.Delay(BufferInterval);
+                    if (bufferIntervalMs > 0)
+                    {
+                        // delay only if enabled
+                        await Task.Delay(BufferInterval);
+                    }
+
+                    // wait when there is no message
+                    _bufferPauseEvent.WaitOne();
+
+                    StreamDataSynchronized();
                 }
-
-                // wait when there is no message
-                _bufferPauseEvent.WaitOne();
-
-                StreamDataSynchronized();
-            }
+				catch (Exception e)
+                {
+                    _logger.LogDebug("[{exchangeName}] Failed while buffering orderbook changes." +
+									 "Error: {error}", ExchangeName, e.Message);
+				}
+			}
         }
 
         private void StreamDataSynchronized()
