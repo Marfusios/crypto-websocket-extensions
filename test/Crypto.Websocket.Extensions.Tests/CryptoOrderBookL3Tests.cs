@@ -15,6 +15,99 @@ namespace Crypto.Websocket.Extensions.Tests
     public class CryptoOrderBookL3Tests
     {
         [Fact]
+        public void TopNLevelsUpdated_ShouldFilterCorrectly()
+        {
+            var pair = "BTC/USD";
+            var data = GetOrderBookSnapshotMockDataL3(pair, 500);
+            var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L3);
+            var source = new OrderBookSourceMock(snapshot);
+            source.BufferEnabled = false;
+
+            var orderBook = new CryptoOrderBook(pair, source, CryptoOrderBookType.L3)
+            {
+                 NotifyForLevelAndAbove = 5
+            };
+
+            var orderBookUpdatedCount = 0;
+            var topNLevelsUpdatedCount = 0;
+            ITopNLevelsChangeInfo topNLevelsChangeInfo = null;
+
+            orderBook.OrderBookUpdatedStream.Subscribe(_ =>
+            {
+                orderBookUpdatedCount++;
+            });
+            orderBook.TopNLevelsUpdatedStream.Subscribe(x =>
+            {
+                topNLevelsUpdatedCount++;
+                topNLevelsChangeInfo = x;
+            });
+
+            source.StreamSnapshot();
+
+            source.StreamBulk(GetInsertBulk(CryptoOrderBookType.L3,
+                CreateLevel(pair, 49.4, 50, CryptoOrderSide.Bid, null, "bid1"),
+                CreateLevel(pair, 49.4, 25, CryptoOrderSide.Bid, null, "bid2"),
+                CreateLevel(pair, 48.3, 600, CryptoOrderSide.Bid, null, "bid3"),
+                CreateLevel(pair, 30.33, 3350, CryptoOrderSide.Bid, null, "bid4"),
+                CreateLevel(pair, 49.9, 400, CryptoOrderSide.Ask, null, "ask1"),
+                CreateLevel(pair, 49.9, 200, CryptoOrderSide.Ask, null, "ask2"),
+                CreateLevel(pair, 51.1, 3000, CryptoOrderSide.Ask, null, "ask3"),
+                CreateLevel(pair, 80.123, 1234, CryptoOrderSide.Ask, null, "ask4")
+            ));
+
+            Assert.Equal(2, orderBookUpdatedCount);
+            Assert.Equal(2, topNLevelsUpdatedCount);
+            Assert.Equal(49.4, topNLevelsChangeInfo.Snapshot.Bids[0].Price);
+            Assert.Equal(75, topNLevelsChangeInfo.Snapshot.Bids[0].Amount);
+            Assert.Equal(49, topNLevelsChangeInfo.Snapshot.Bids[1].Price);
+            Assert.Equal(49.9, topNLevelsChangeInfo.Snapshot.Asks[0].Price);
+            Assert.Equal(600, topNLevelsChangeInfo.Snapshot.Asks[0].Amount);
+            Assert.Equal(50, topNLevelsChangeInfo.Snapshot.Asks[1].Price);
+
+            source.StreamBulk(GetInsertBulk(CryptoOrderBookType.L3,
+                CreateLevel(pair, 46.5, 50, CryptoOrderSide.Bid, null, "bid5"),
+                CreateLevel(pair, 52.5, 50, CryptoOrderSide.Ask, null, "ask5")
+            ));
+
+            Assert.Equal(3, orderBookUpdatedCount);
+            Assert.Equal(2, topNLevelsUpdatedCount);
+
+            source.StreamBulk(GetUpdateBulk(CryptoOrderBookType.L3,
+                CreateLevel(pair, 47, 125, CryptoOrderSide.Bid, null, orderBook.BidLevelsPerPrice[47].First().Id)
+            ));
+
+            Assert.Equal(4, orderBookUpdatedCount);
+            Assert.Equal(3, topNLevelsUpdatedCount);
+
+            source.StreamBulk(GetUpdateBulk(CryptoOrderBookType.L3,
+                CreateLevel(pair, 52, 125, CryptoOrderSide.Ask, null, orderBook.AskLevelsPerPrice[52].First().Id)
+            ));
+
+            Assert.Equal(5, orderBookUpdatedCount);
+            Assert.Equal(4, topNLevelsUpdatedCount);
+
+            source.StreamBulk(GetUpdateBulk(CryptoOrderBookType.L3,
+                CreateLevel(pair, 46.5, 175, CryptoOrderSide.Bid, null, "bid5"),
+                CreateLevel(pair, 52.5, 175, CryptoOrderSide.Ask, null, "ask5")
+            ));
+
+            Assert.Equal(6, orderBookUpdatedCount);
+            Assert.Equal(4, topNLevelsUpdatedCount);
+            Assert.Equal(49.4, topNLevelsChangeInfo.Snapshot.Bids[0].Price);
+            Assert.Equal(75, topNLevelsChangeInfo.Snapshot.Bids[0].Amount);
+            Assert.Equal(49, topNLevelsChangeInfo.Snapshot.Bids[1].Price);
+            Assert.Equal(48.3, topNLevelsChangeInfo.Snapshot.Bids[2].Price);
+            Assert.Equal(48, topNLevelsChangeInfo.Snapshot.Bids[3].Price);
+            Assert.Equal(47, topNLevelsChangeInfo.Snapshot.Bids[4].Price);
+            Assert.Equal(49.9, topNLevelsChangeInfo.Snapshot.Asks[0].Price);
+            Assert.Equal(600, topNLevelsChangeInfo.Snapshot.Asks[0].Amount);
+            Assert.Equal(50, topNLevelsChangeInfo.Snapshot.Asks[1].Price);
+            Assert.Equal(51, topNLevelsChangeInfo.Snapshot.Asks[2].Price);
+            Assert.Equal(51, 1, topNLevelsChangeInfo.Snapshot.Asks[3].Price);
+            Assert.Equal(52, 1, topNLevelsChangeInfo.Snapshot.Asks[3].Price);
+        }
+
+        [Fact]
         public void StreamingSnapshot_ShouldHandleCorrectly()
         {
             var pair = "BTC/USD";
