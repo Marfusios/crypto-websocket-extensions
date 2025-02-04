@@ -15,8 +15,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
     public abstract class OrderBookSourceBase : IOrderBookSource
     {
         private readonly ILogger _logger;
-        private readonly object _bufferLocker = new object();
-        private readonly CryptoAsyncLock _snapshotLocker = new CryptoAsyncLock();
+#if NET9
+        private readonly Lock _bufferLocker = new Lock();
+#else
+		private readonly object _bufferLocker = new object();
+#endif
+		private readonly CryptoAsyncLock _snapshotLocker = new CryptoAsyncLock();
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
 
         private readonly Queue<object> _dataBuffer = new Queue<object>();

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.1;net6;net7;net8</TargetFrameworks>
+		<TargetFrameworks>netstandard2.1;net6;net7;net8;net9</TargetFrameworks>
 		<PackageId>Crypto.Websocket.Extensions.Core</PackageId>
 		<Authors>Mariusz Kotas</Authors>
 		<Description>Extensions to cryptocurrency websocket clients (core library, only interfaces and feature classes)</Description>
@@ -22,6 +22,10 @@
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<Nullable>enable</Nullable>
+	</PropertyGroup>
+	
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net9'">
+		<DefineConstants>NET9</DefineConstants>
 	</PropertyGroup>
 
 	<ItemGroup>
