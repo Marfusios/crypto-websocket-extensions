@@ -89,7 +89,7 @@ namespace Crypto.Websocket.Extensions.Sample
                 ConfigureOptimized(source, orderBook);
             }
 
-            _ = communicator.Start();
+            await communicator.Start();
 
             // Send configuration request to enable server timestamps
             client.Send(new ConfigurationRequest(ConfigurationFlag.Sequencing | ConfigurationFlag.Timestamp));
