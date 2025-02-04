@@ -50,7 +50,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// <summary>
         /// Dispose background processing
         /// </summary>
-        public void Dispose()
+        public virtual void Dispose()
         {
             _cancellation.Cancel();
         }
