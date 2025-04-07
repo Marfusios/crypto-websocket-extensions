@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.1;net6;net7;net8</TargetFrameworks>
+		<TargetFrameworks>netstandard2.1;net6;net7;net8;net9</TargetFrameworks>
 		<PackageId>Crypto.Websocket.Extensions</PackageId>
 		<Authors>Mariusz Kotas</Authors>
 		<Description>Extensions to cryptocurrency websocket clients</Description>
@@ -30,6 +30,8 @@
 		<PackageReference Include="Bitmex.Client.Websocket" Version="3.2.1" />
 		<PackageReference Include="Bitstamp.Client.Websocket" Version="1.1.1" />
 		<PackageReference Include="Coinbase.Client.Websocket" Version="2.2.1" />
+		<PackageReference Include="Luno.Client.Websocket" Version="8.0.1" />
+		<PackageReference Include="Valr.Client.Websocket" Version="5.3.0" />
 	</ItemGroup>
 
 	<ItemGroup>

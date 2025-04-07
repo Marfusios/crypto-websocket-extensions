@@ -20,15 +20,19 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
     /// </summary>
     public abstract class CryptoOrderBookBase<T> : ICryptoOrderBook
     {
-        /// <summary>
-        /// Object to use for synchronization.
-        /// </summary>
-        protected readonly object Locker = new();
+		/// <summary>
+		/// Object to use for synchronization.
+		/// </summary>
+#if NET9
+        protected readonly Lock Locker = new();
+#else
+		protected readonly object Locker = new();
+#endif
 
-        /// <summary>
-        /// The source.
-        /// </summary>
-        protected readonly IOrderBookSource Source;
+		/// <summary>
+		/// The source.
+		/// </summary>
+		protected readonly IOrderBookSource Source;
 
         /// <summary>
         /// The internal collection of bid levels.

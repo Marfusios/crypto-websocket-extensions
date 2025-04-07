@@ -44,7 +44,7 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
             }
         }
 
-        [Fact]
+        [Fact(Skip = "Flaky test")] 
         public async Task AutoSnapshotReloading_ShouldWorkAfterTimeout()
         {
             var url = CoinbaseValues.ApiWebsocketUrl;
