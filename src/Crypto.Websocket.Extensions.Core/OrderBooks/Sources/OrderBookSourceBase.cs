@@ -15,7 +15,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
     public abstract class OrderBookSourceBase : IOrderBookSource
     {
         private readonly ILogger _logger;
-#if NET9
+#if NET9_0_OR_GREATER
         private readonly Lock _bufferLocker = new Lock();
 #else
 		private readonly object _bufferLocker = new object();
