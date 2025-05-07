@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
@@ -24,8 +25,10 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
 		private IDisposable? _diffSubscription;
 		private long _messageSequence;
 
-		private readonly IDictionary<string, Order> _asks = new Dictionary<string, Order>();
-		private readonly IDictionary<string, Order> _bids = new Dictionary<string, Order>();
+		private readonly Dictionary<string, Order> _asks = new();
+		private readonly Dictionary<string, Order> _bids = new();
+
+		private readonly Subject<Trade> _tradesSubject = new();
 
 		/// <inheritdoc />
 		public LunoOrderBookL3Source(ILunoMarketWebsocketClient client, ILogger logger) : base(logger)
@@ -35,6 +38,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
 
 		/// <inheritdoc />
 		public override string ExchangeName => "luno";
+
+		/// <summary>
+		/// Streams trades with side calculated
+		/// </summary>
+		public IObservable<Trade> TradesStream => _tradesSubject.AsObservable();
 
 		/// <summary>
 		/// Change client and resubscribe to the new streams
@@ -150,104 +158,110 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
 			return result.ToArray();
 		}
 
-        void HandleTrades(OrderBookDiff diff, List<OrderBookLevelBulk> result)
+		void HandleTrades(OrderBookDiff diff, List<OrderBookLevelBulk> result)
 		{
 			var toUpdate = new List<OrderBookLevel>();
-            var toDelete = new List<OrderBookLevel>();
+			var toDelete = new List<OrderBookLevel>();
 
 			foreach (var tradeUpdate in diff.TradeUpdates)
-            {
-                if (_asks.ContainsKey(tradeUpdate.MakerOrderId))
-                {
-                    var order = _asks[tradeUpdate.MakerOrderId];
-                    order.Volume -= tradeUpdate.Base;
-                    if (order.Volume <= 0 || CryptoMathUtils.IsSame(order.Volume, 0))
-                    {
-                        _asks.Remove(tradeUpdate.MakerOrderId);
-                        toDelete.Add(ConvertLevel(order, _client.Pair, CryptoOrderSide.Ask));
-                    }
-                    else
-                        toUpdate.Add(ConvertLevel(order, _client.Pair, CryptoOrderSide.Ask));
-                }
-                else if (_bids.ContainsKey(tradeUpdate.MakerOrderId))
-                {
-                    var order = _bids[tradeUpdate.MakerOrderId];
-                    order.Volume -= tradeUpdate.Base;
-                    if (order.Volume <= 0 || CryptoMathUtils.IsSame(order.Volume, 0))
-                    {
-                        _bids.Remove(tradeUpdate.MakerOrderId);
-                        toDelete.Add(ConvertLevel(order, _client.Pair, CryptoOrderSide.Bid));
-                    }
-                    else
-                        toUpdate.Add(ConvertLevel(order, _client.Pair, CryptoOrderSide.Bid));
-                }
-            }
+			{
+				var tradeSide = CryptoTradeSide.Undefined;
+				var orderSide = CryptoOrderSide.Undefined;
+				Dictionary<string, Order> orders = [];
 
-            if (toDelete.Count > 0)
-            {
-                var bulk = new OrderBookLevelBulk(OrderBookAction.Delete, [.. toDelete], CryptoOrderBookType.L3)
-                {
-                    ExchangeName = ExchangeName,
-                    ServerTimestamp = diff.Timestamp,
-                    ServerSequence = diff.Sequence
-                };
-                result.Add(bulk);
-            }
+				if (_asks.TryGetValue(tradeUpdate.MakerOrderId, out var order))
+				{
+					tradeSide = CryptoTradeSide.Buy;
+					orderSide = CryptoOrderSide.Ask;
+					orders = _asks;
+				}
+				else if (_bids.TryGetValue(tradeUpdate.MakerOrderId, out order))
+				{
+					tradeSide = CryptoTradeSide.Sell;
+					orderSide = CryptoOrderSide.Bid;
+					orders = _bids;
+				}
 
-            if (toUpdate.Count > 0)
-            {
-                var bulk = new OrderBookLevelBulk(OrderBookAction.Update, [.. toUpdate], CryptoOrderBookType.L3)
-                {
-                    ExchangeName = ExchangeName,
-                    ServerTimestamp = diff.Timestamp,
-                    ServerSequence = diff.Sequence
-                };
-                result.Add(bulk);
-            }
+				if (order != null)
+				{
+					order.Volume -= tradeUpdate.Base;
+					if (order.Volume <= 0 || CryptoMathUtils.IsSame(order.Volume, 0))
+					{
+						orders.Remove(tradeUpdate.MakerOrderId);
+						toDelete.Add(ConvertLevel(order, _client.Pair, orderSide));
+					}
+					else
+						toUpdate.Add(ConvertLevel(order, _client.Pair, orderSide));
+				}
+
+				_tradesSubject.OnNext(new(tradeSide, tradeUpdate.Base, tradeUpdate.Counter));
+			}
+
+			if (toDelete.Count > 0)
+			{
+				var bulk = new OrderBookLevelBulk(OrderBookAction.Delete, [.. toDelete], CryptoOrderBookType.L3)
+				{
+					ExchangeName = ExchangeName,
+					ServerTimestamp = diff.Timestamp,
+					ServerSequence = diff.Sequence
+				};
+				result.Add(bulk);
+			}
+
+			if (toUpdate.Count > 0)
+			{
+				var bulk = new OrderBookLevelBulk(OrderBookAction.Update, [.. toUpdate], CryptoOrderBookType.L3)
+				{
+					ExchangeName = ExchangeName,
+					ServerTimestamp = diff.Timestamp,
+					ServerSequence = diff.Sequence
+				};
+				result.Add(bulk);
+			}
 		}
 
-        void HandleCreate(OrderBookDiff diff, List<OrderBookLevelBulk> result)
-        {
-            if (diff.CreateUpdate != null)
-            {
-                var level = new OrderBookLevel
-                (
-                    diff.CreateUpdate.OrderId,
-                    diff.CreateUpdate.Type == "BID" ? CryptoOrderSide.Bid : CryptoOrderSide.Ask,
-                    diff.CreateUpdate.Price,
-                    diff.CreateUpdate.Volume,
-                    null,
-                    _client.Pair
-                );
+		void HandleCreate(OrderBookDiff diff, List<OrderBookLevelBulk> result)
+		{
+			if (diff.CreateUpdate != null)
+			{
+				var level = new OrderBookLevel
+				(
+					diff.CreateUpdate.OrderId,
+					diff.CreateUpdate.Type == "BID" ? CryptoOrderSide.Bid : CryptoOrderSide.Ask,
+					diff.CreateUpdate.Price,
+					diff.CreateUpdate.Volume,
+					null,
+					_client.Pair
+				);
 
-                var order = new Order
-                {
-                    Id = diff.CreateUpdate.OrderId,
-                    Price = diff.CreateUpdate.Price,
-                    Volume = diff.CreateUpdate.Volume
-                };
+				var order = new Order
+				{
+					Id = diff.CreateUpdate.OrderId,
+					Price = diff.CreateUpdate.Price,
+					Volume = diff.CreateUpdate.Volume
+				};
 
-                switch (diff.CreateUpdate.Type)
-                {
-                    case "ASK":
-                        _asks.Add(order.Id, order);
-                        break;
-                    case "BID":
-                        _bids.Add(order.Id, order);
-                        break;
-                }
+				switch (diff.CreateUpdate.Type)
+				{
+					case "ASK":
+						_asks.Add(order.Id, order);
+						break;
+					case "BID":
+						_bids.Add(order.Id, order);
+						break;
+				}
 
-                var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, [level], CryptoOrderBookType.L3)
-                {
-                    ExchangeName = ExchangeName,
-                    ServerTimestamp = diff.Timestamp,
-                    ServerSequence = diff.Sequence
-                };
-                result.Add(bulk);
-            }
-        }
+				var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, [level], CryptoOrderBookType.L3)
+				{
+					ExchangeName = ExchangeName,
+					ServerTimestamp = diff.Timestamp,
+					ServerSequence = diff.Sequence
+				};
+				result.Add(bulk);
+			}
+		}
 
-        void HandleDelete(OrderBookDiff diff, List<OrderBookLevelBulk> result)
+		void HandleDelete(OrderBookDiff diff, List<OrderBookLevelBulk> result)
 		{
 			OrderBookLevel? delete = null;
 			if (diff.DeleteUpdate != null)
@@ -294,5 +308,20 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
 
 			return [.. result];
 		}
+	}
+
+	public class Trade(CryptoTradeSide side, double @base, double counter)
+	{
+		public CryptoTradeSide Side { get; } = side;
+
+		/// <summary>
+		/// The base delta.
+		/// </summary>
+		public double Base { get; } = @base;
+
+		/// <summary>
+		/// The quote delta.
+		/// </summary>
+		public double Counter { get; } = counter;
 	}
 }
