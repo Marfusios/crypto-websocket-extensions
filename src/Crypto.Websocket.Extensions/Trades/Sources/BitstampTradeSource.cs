@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reactive.Linq;
 using Bitstamp.Client.Websocket.Client;
 using Bitstamp.Client.Websocket.Responses;
+using Bitstamp.Client.Websocket.Responses.Trades;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
@@ -47,7 +48,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
                 .Subscribe(HandleTradeSafe);
         }
 
-        private void HandleTradeSafe(Ticker response)
+        private void HandleTradeSafe(TradeResponse response)
         {
             try
             {
@@ -59,12 +60,12 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
             }
         }
 
-        private void HandleTrade(Ticker response)
+        private void HandleTrade(TradeResponse response)
         {
             TradesSubject.OnNext(new[] { ConvertTrade(response) });
         }
 
-        private CryptoTrade ConvertTrade(Ticker trade)
+        private CryptoTrade ConvertTrade(TradeResponse trade)
         {
             var data = trade.Data;
 

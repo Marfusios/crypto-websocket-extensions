@@ -92,7 +92,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
             var amountQuote =
                 FirstNonZero(order.QuoteQuantity, order.Quantity * order.Price, existing?.AmountOrigQuote);
-            
+
             var currentStatus = ConvertOrderStatus(order);
 
             var newOrder = new CryptoOrder
@@ -106,7 +106,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 Side = order.Side == OrderSide.Sell ? CryptoOrderSide.Ask : CryptoOrderSide.Bid,
                 AmountFilled = order.LastQuantityFilled,
                 AmountFilledCumulative = order.QuantityFilled,
-                AmountOrig = order.Quantity,
+                AmountOrig = FirstNonZero(order.Quantity, existing?.AmountOrig),
                 AmountFilledQuote = order.LastQuoteQuantity,
                 AmountFilledCumulativeQuote = order.QuoteQuantityFilled,
                 AmountOrigQuote = amountQuote,

@@ -1,5 +1,10 @@
 ![Logo](cwe_logo.png)
-# Cryptocurrency websocket extensions [![Build Status](https://travis-ci.com/Marfusios/crypto-websocket-extensions.svg?branch=master)](https://travis-ci.com/Marfusios/crypto-websocket-extensions) [![NuGet version](https://badge.fury.io/nu/Crypto.Websocket.Extensions.svg)](https://badge.fury.io/nu/Crypto.Websocket.Extensions)
+# Cryptocurrency websocket extensions 
+
+[![NuGet version](https://img.shields.io/nuget/v/Crypto.Websocket.Extensions?style=flat-square)](https://www.nuget.org/packages/Crypto.Websocket.Extensions)
+[![Nuget downloads](https://img.shields.io/nuget/dt/Crypto.Websocket.Extensions?style=flat-square)](https://www.nuget.org/packages/Crypto.Websocket.Extensions)
+[![CI build](https://img.shields.io/github/check-runs/marfusios/crypto-websocket-extensions/master?style=flat-square&label=build)](https://github.com/Marfusios/crypto-websocket-extensions/actions/workflows/dotnet-core.yml)
+
 
 This is a library that provides extensions to cryptocurrency websocket exchange clients. 
 

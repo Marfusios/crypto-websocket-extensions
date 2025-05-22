@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.IO;
 using System.Net.WebSockets;
 using System.Reactive.Linq;
@@ -47,7 +48,7 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
             Assert.NotEmpty(orderBook.BidLevels);
             Assert.NotEmpty(orderBook.AskLevels);
 
-			Assert.True(orderBookIsConsistent);
+            Assert.True(orderBookIsConsistent);
         }
     }
 
@@ -67,6 +68,7 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
         public bool IsRunning { get; private set; }
         public bool IsReconnectionEnabled { get; set; }
         public ClientWebSocket NativeClient { get; }
+        public bool IsStreamDisposedAutomatically { get; set; }
         public Encoding MessageEncoding { get; set; }
 
         public bool IsTextMessageConversionEnabled { get; set; }
@@ -80,9 +82,13 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
 
         readonly Random _random = new();
 
+        public bool SendAsText(ReadOnlySequence<byte> message)
+        {
+            return true;
+        }
+
         public void StreamFakeMessage(ResponseMessage message)
         {
-            throw new NotImplementedException();
         }
 
         public Uri Url { get; set; }
@@ -119,12 +125,17 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
         public bool Send(byte[] message)
         {
             return true;
-		}
+        }
 
         public bool Send(ArraySegment<byte> message)
         {
             return true;
-		}
+        }
+
+        public bool Send(ReadOnlySequence<byte> message)
+        {
+            return true;
+        }
 
         public virtual Task SendInstant(string message)
         {
@@ -138,12 +149,12 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
 
         public bool SendAsText(byte[] message)
         {
-			return true;
-		}
+            return true;
+        }
         public bool SendAsText(ArraySegment<byte> message)
         {
-			return true;
-		}
+            return true;
+        }
 
         public Task Reconnect()
         {
@@ -152,7 +163,7 @@ namespace Crypto.Websocket.Extensions.Tests.Integration
 
         public Task ReconnectOrFail()
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
 
         private void StartStreaming()

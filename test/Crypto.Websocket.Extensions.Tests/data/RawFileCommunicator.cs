@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.IO;
 using System.IO.Compression;
 using System.Net.WebSockets;
@@ -31,6 +32,7 @@ namespace Crypto.Websocket.Extensions.Tests.data
         public bool IsRunning { get; private set; }
         public bool IsReconnectionEnabled { get; set; }
         public bool IsTextMessageConversionEnabled { get; set; }
+        public bool IsStreamDisposedAutomatically { get; set; }
         public ClientWebSocket NativeClient { get; }
         public Encoding MessageEncoding { get; set; }
 
@@ -80,6 +82,11 @@ namespace Crypto.Websocket.Extensions.Tests.data
             return true;
         }
 
+        public bool Send(ReadOnlySequence<byte> message)
+        {
+            return true;
+        }
+
         public virtual Task SendInstant(string message)
         {
             return Task.CompletedTask;
@@ -100,6 +107,11 @@ namespace Crypto.Websocket.Extensions.Tests.data
             return true;
         }
 
+        public bool SendAsText(ReadOnlySequence<byte> message)
+        {
+            return true;
+        }
+
         public Task Reconnect()
         {
             return Task.CompletedTask;
@@ -107,12 +119,11 @@ namespace Crypto.Websocket.Extensions.Tests.data
 
         public Task ReconnectOrFail()
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
 
         public void StreamFakeMessage(ResponseMessage message)
         {
-            throw new NotImplementedException();
         }
 
         public Uri Url { get; set; }
