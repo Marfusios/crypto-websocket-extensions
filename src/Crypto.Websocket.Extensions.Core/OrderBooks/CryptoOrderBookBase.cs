@@ -23,7 +23,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 		/// <summary>
 		/// Object to use for synchronization.
 		/// </summary>
-#if NET9
+#if NET9_0_OR_GREATER
         protected readonly Lock Locker = new();
 #else
 		protected readonly object Locker = new();
