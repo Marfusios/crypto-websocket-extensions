@@ -11,10 +11,10 @@ using Serilog.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Sample
 {
-    class Program
+    internal static class Program
     {
         public static SerilogLoggerFactory Logger;
-        private static readonly ManualResetEvent ExitEvent = new ManualResetEvent(false);
+        private static readonly ManualResetEvent _exitEvent = new(false);
 
         static void Main(string[] args)
         {
@@ -49,16 +49,13 @@ namespace Crypto.Websocket.Extensions.Sample
             //OrdersExample.RunEverything().Wait();
 
 
-            ExitEvent.WaitOne();
+            _exitEvent.WaitOne();
 
             Log.Debug("====================================");
             Log.Debug("              STOPPING              ");
             Log.Debug("====================================");
             Log.CloseAndFlush();
         }
-
-
-
 
         private static SerilogLoggerFactory InitLogging()
         {
@@ -77,20 +74,20 @@ namespace Crypto.Websocket.Extensions.Sample
         private static void CurrentDomainOnProcessExit(object sender, EventArgs eventArgs)
         {
             Log.Warning("Exiting process");
-            ExitEvent.Set();
+            _exitEvent.Set();
         }
 
         private static void DefaultOnUnloading(AssemblyLoadContext assemblyLoadContext)
         {
             Log.Warning("Unloading process");
-            ExitEvent.Set();
+            _exitEvent.Set();
         }
 
         private static void ConsoleOnCancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             Log.Warning("Canceling process");
             e.Cancel = true;
-            ExitEvent.Set();
+            _exitEvent.Set();
         }
     }
 }

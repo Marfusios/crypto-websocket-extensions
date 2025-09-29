@@ -73,7 +73,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
                 Id = trade.TradeId.ToString(),
                 Price = trade.Price,
                 Timestamp = trade.TradeTime,
-                Pair = trade.Symbol,
+                Pair = trade.Symbol ?? string.Empty,
                 MakerOrderId = trade.IsBuyerMaker ? trade.BuyerOrderId.ToString() : trade.SellerOrderId.ToString(),
                 TakerOrderId = trade.IsBuyerMaker ? trade.SellerOrderId.ToString() : trade.BuyerOrderId.ToString(),
 

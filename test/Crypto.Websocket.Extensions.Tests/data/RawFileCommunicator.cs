@@ -23,6 +23,7 @@ namespace Crypto.Websocket.Extensions.Tests.data
         public IObservable<ResponseMessage> MessageReceived => _messageReceivedSubject.AsObservable();
         public IObservable<ReconnectionInfo> ReconnectionHappened => Observable.Empty<ReconnectionInfo>();
         public IObservable<DisconnectionInfo> DisconnectionHappened => Observable.Empty<DisconnectionInfo>();
+        public TimeSpan ConnectTimeout { get; set; }
 
         public TimeSpan? ReconnectTimeout { get; set; } = TimeSpan.FromSeconds(60);
         public TimeSpan? ErrorReconnectTimeout { get; set; } = TimeSpan.FromSeconds(60);
@@ -30,6 +31,9 @@ namespace Crypto.Websocket.Extensions.Tests.data
         public string Name { get; set; }
         public bool IsStarted { get; private set; }
         public bool IsRunning { get; private set; }
+        public bool TextSenderRunning { get; }
+        public bool BinarySenderRunning { get; }
+        public bool IsInsideLock { get; }
         public bool IsReconnectionEnabled { get; set; }
         public bool IsTextMessageConversionEnabled { get; set; }
         public bool IsStreamDisposedAutomatically { get; set; }

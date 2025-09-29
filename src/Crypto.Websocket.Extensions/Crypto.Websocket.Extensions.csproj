@@ -25,12 +25,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Binance.Client.Websocket" Version="2.4.0" />
-		<PackageReference Include="Bitfinex.Client.Websocket" Version="4.3.0" />
-		<PackageReference Include="Bitmex.Client.Websocket" Version="3.3.0" />
-		<PackageReference Include="Bitstamp.Client.Websocket" Version="1.2.0" />
+		<PackageReference Include="Binance.Client.Websocket" Version="2.4.1" />
+		<PackageReference Include="Bitfinex.Client.Websocket" Version="4.3.1" />
+		<PackageReference Include="Bitmex.Client.Websocket" Version="3.3.1" />
+		<PackageReference Include="Bitstamp.Client.Websocket" Version="1.2.1" />
 		<PackageReference Include="Bybit.Client.Websocket" Version="1.0.1" />
-		<PackageReference Include="Coinbase.Client.Websocket" Version="2.3.0" />
+		<PackageReference Include="Coinbase.Client.Websocket" Version="2.3.1" />
+		<PackageReference Include="Hyperliquid.Client.Websocket" Version="1.0.1" />
 		<PackageReference Include="Luno.Client.Websocket" Version="8.0.1" />
 		<PackageReference Include="Valr.Client.Websocket" Version="5.3.0" />
 	</ItemGroup>

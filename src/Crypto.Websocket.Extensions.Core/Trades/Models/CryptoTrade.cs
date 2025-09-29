@@ -23,12 +23,12 @@ namespace Crypto.Websocket.Extensions.Core.Trades.Models
         /// <summary>
         /// Unique related order id from maker side - liquidity provider (provided only by few exchanges)
         /// </summary>
-        public string MakerOrderId { get; set; }
+        public string? MakerOrderId { get; set; }
 
         /// <summary>
         /// Unique related order id from taker side - liquidity taker (provided only by few exchanges)
         /// </summary>
-        public string TakerOrderId { get; set; }
+        public string? TakerOrderId { get; set; }
 
         /// <summary>
         /// Pair to which this trade belongs

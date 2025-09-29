@@ -21,6 +21,10 @@ using Coinbase.Client.Websocket.Communicator;
 using Coinbase.Client.Websocket.Requests;
 using Crypto.Websocket.Extensions.Core.Trades.Sources;
 using Crypto.Websocket.Extensions.Trades.Sources;
+using Hyperliquid.Client.Websocket;
+using Hyperliquid.Client.Websocket.Client;
+using Hyperliquid.Client.Websocket.Requests.Subscriptions;
+using Hyperliquid.Client.Websocket.Websockets;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Websocket.Client;
@@ -37,6 +41,7 @@ namespace Crypto.Websocket.Extensions.Sample
             var binance = GetBinance("BTCFDUSD");
             var coinbase = GetCoinbase("BTC-USD");
             var bitstamp = GetBitstamp("BTCUSD");
+            var hyperliquid = GetHyperliquid("BTC");
             //var huobi = GetHuobi("btcusdt");
 
             LogTrades(bitmex.Item1);
@@ -44,15 +49,17 @@ namespace Crypto.Websocket.Extensions.Sample
             LogTrades(binance.Item1);
             LogTrades(coinbase.Item1);
             LogTrades(bitstamp.Item1);
+            LogTrades(hyperliquid.Item1);
             //LogTrades(huobi.Item1);
 
             Log.Information("Waiting for trades...");
 
             //_ = bitmex.Item2.Start();
             //_ = bitfinex.Item2.Start();
-            _ = binance.Item2.Start();
+            //_ = binance.Item2.Start();
             //_ = coinbase.Item2.Start();
             //_ = bitstamp.Item2.Start();
+            _ = hyperliquid.Item2.Start();
             //_ = huobi.Item2.Start();
         }
 
@@ -155,6 +162,24 @@ namespace Crypto.Websocket.Extensions.Sample
                 client.Send(new Bitstamp.Client.Websocket.Requests.SubscribeRequest(
                     pair,
                     Channel.Ticker
+                ));
+            });
+
+            return (source, communicator);
+        }
+        
+        private static (ITradeSource, IWebsocketClient) GetHyperliquid(string coin)
+        {
+            var url = HyperliquidValues.MainnetWebsocketApiUrl;
+            var communicator = new HyperliquidWebsocketCommunicator(url) { Name = "Hyperliquid" };
+            var client = new HyperliquidWebsocketClient(communicator);
+
+            var source = new HyperliquidTradeSource(client);
+
+            communicator.ReconnectionHappened.Subscribe(x =>
+            {
+                client.Send(new TradesSubscribeRequest(
+                    coin
                 ));
             });
 

@@ -130,7 +130,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// </summary>
         protected void StreamSnapshot(OrderBookLevelBulk? data)
         {
-            if (data?.Levels != null && data.Levels.Any())
+            if (data?.Levels is {Length: > 0})
             {
                 _orderBookSnapshotSubject.OnNext(data);
             }
