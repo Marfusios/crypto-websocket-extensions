@@ -22,6 +22,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         bool LoadSnapshotEnabled { get; set; }
 
         /// <summary>
+        /// If source provides only snapshots with no diffs, this will return false
+        /// </summary>
+        bool DiffsSupported { get; }
+
+        /// <summary>
         /// Whenever messages should be buffered before processing.
         /// Use property `BufferInterval` to configure buffering interval.
         /// Enabled by default. 

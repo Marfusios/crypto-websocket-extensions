@@ -21,7 +21,7 @@ namespace Crypto.Websocket.Extensions.Sample
             var defaultCulture = CultureInfo.InvariantCulture;
             CultureInfo.DefaultThreadCurrentCulture = defaultCulture;
             CultureInfo.DefaultThreadCurrentUICulture = defaultCulture;
-            
+
             GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
 
             Logger = InitLogging();

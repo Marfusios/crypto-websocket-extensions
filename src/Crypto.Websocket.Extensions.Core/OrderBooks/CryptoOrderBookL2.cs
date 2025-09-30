@@ -127,13 +127,13 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 {
                     level.AmountDifference = level.Amount ?? 0;
                     level.CountDifference = level.Count ?? 0;
-                    level.AmountUpdatedCount = -1;
+                    level.AmountUpdatedCount = 0;
 
                     InsertToCollection(collection, level);
                     continue;
                 }
 
-                ComputeUpdate(existing, level);
+                CalculateMetricsForUpdatedLevel(existing, level);
 
                 InsertToCollection(collection, existing);
             }
@@ -152,7 +152,6 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             // ReSharper disable once PossibleInvalidOperationException
             collection[level.Price!.Value] = level;
             GetAllCollection(level.Side)[level.Id] = level;
-            level.AmountUpdatedCount++;
         }
 
         /// <inheritdoc />
@@ -185,7 +184,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 allLevels.Remove(level.Id);
 
                 if (existing != null)
-                    ComputeDelete(existing, level);
+                    CalculateMetricsForDeletedLevel(existing, level);
             }
         }
 

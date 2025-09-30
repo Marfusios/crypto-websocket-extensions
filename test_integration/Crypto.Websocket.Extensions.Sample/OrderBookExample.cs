@@ -139,18 +139,18 @@ namespace Crypto.Websocket.Extensions.Sample
                 var ask = asks.Length > i ? asks[i] : null;
 
                 var bidMsg =
-                    bid != null ? $"#{i + 1} " +
-                                  $"{"p: " + (bid?.Price ?? 0).ToString("#.00##") + " a: " + (bid?.Amount ?? 0).ToString("0.00#")} " +
-                                  $"[{bid.AmountUpdatedCount}, {bid.Count}]"
+                    bid != null ? $"#{i + 1,2} " +
+                                  $"p: {bid.Price:#.00} [{bid.Count,2} {bid.CountDifference,3}] " +
+                                  $"a: {bid.Amount:0.0000} [{bid.AmountUpdatedCount,3} {bid.AmountDifference:0.0000}]"
                         : " ";
                 var askMsg =
-                    ask != null ? $"#{i + 1} " +
-                                  $"{"p: " + (ask?.Price ?? 0).ToString("#.00##") + " a: " + (ask?.Amount ?? 0).ToString("0.00#")} " +
-                                  $"[{ask.AmountUpdatedCount}, {ask.Count}]"
+                    ask != null ? $"#{i + 1,4} " +
+                                  $"p: {ask.Price:#.00} [{ask.Count,2} {ask.CountDifference,3}] " +
+                                  $"a: {ask.Amount:0.0000} [{ask.AmountUpdatedCount,3} {ask.AmountDifference:0.0000}]"
                         : " ";
 
-                bidMsg = $"{bidMsg,50}";
-                askMsg = $"{askMsg,50}";
+                bidMsg = $"{bidMsg,80}";
+                askMsg = $"{askMsg,80}";
 
                 msg += $"{Environment.NewLine}{bidMsg}  {askMsg}";
 
@@ -321,7 +321,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
             return orderBook;
         }
-        
+
         //private static async Task<ICryptoOrderBook> StartHuobi(string pair, bool optimized, bool l2Optimized)
         //{
         //    var config = new HuobiMarketByPriceWebsocketClientConfig

@@ -1,17 +1,18 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Threading;
-using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Crypto.Websocket.Extensions.Core.Utils;
 using Crypto.Websocket.Extensions.Core.Validations;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Crypto.Websocket.Extensions.Core.OrderBooks
 {
@@ -20,19 +21,19 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
     /// </summary>
     public abstract class CryptoOrderBookBase<T> : ICryptoOrderBook
     {
-		/// <summary>
-		/// Object to use for synchronization.
-		/// </summary>
+        /// <summary>
+        /// Object to use for synchronization.
+        /// </summary>
 #if NET9_0_OR_GREATER
         protected readonly Lock Locker = new();
 #else
-		protected readonly object Locker = new();
+        protected readonly object Locker = new();
 #endif
 
-		/// <summary>
-		/// The source.
-		/// </summary>
-		protected readonly IOrderBookSource Source;
+        /// <summary>
+        /// The source.
+        /// </summary>
+        protected readonly IOrderBookSource Source;
 
         /// <summary>
         /// The internal collection of bid levels.
@@ -108,6 +109,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             TargetPairOriginal = targetPair;
             TargetPair = CryptoPairsHelper.Clean(targetPair);
             Source = source;
+
+            // diffs are not supported by the source, we need to calculate metrics from snapshots
+            CalculateMetricsFromSnapshots = !Source.DiffsSupported;
         }
 
         /// <summary>
@@ -207,6 +211,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         /// <inheritdoc />
         public bool IsIndexComputationEnabled { get; set; }
+
+        /// <summary>
+        /// If exchange provides only snapshots with no diffs, enable this to calculate metrics
+        /// </summary>
+        public bool CalculateMetricsFromSnapshots { get; set; }
 
         /// <inheritdoc />
         public IObservable<IOrderBookChangeInfo> BidAskUpdatedStream => BidAskUpdated.AsObservable();
@@ -382,32 +391,15 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         private void HandleSnapshot(OrderBookLevel[] levels)
         {
-            ClearLevels();
-
             LogDebug($"Handling snapshot: {levels.Length} levels");
-            foreach (var level in levels)
+
+            if (CalculateMetricsFromSnapshots)
             {
-                var price = level.Price;
-                if (price is null or < 0)
-                {
-                    LogAlways($"Received snapshot level with weird price, ignoring. [{level.Side}] Id: {level.Id}, price: {level.Price}, amount: {level.Amount}");
-                    continue;
-                }
-
-                level.AmountDifference = level.Amount ?? 0;
-                level.CountDifference = level.Count ?? 0;
-
-                switch (level.Side)
-                {
-                    case CryptoOrderSide.Bid:
-                        HandleSnapshotBidLevel(level);
-                        AllBidLevels[level.Id] = level;
-                        break;
-                    case CryptoOrderSide.Ask:
-                        HandleSnapshotAskLevel(level);
-                        AllAskLevels[level.Id] = level;
-                        break;
-                }
+                HandleSnapshotWithMetrics(levels);
+            }
+            else
+            {
+                HandleSnapshotWithNoMetrics(levels);
             }
 
             RecomputeAfterChangeAndSetIndexes(levels);
@@ -471,11 +463,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         protected abstract void UpdateLevels(IEnumerable<OrderBookLevel> levels);
 
         /// <summary>
-        /// Computes differences and copies state between existing and new level.
+        /// Calculates differences and copies state between existing and new level.
         /// </summary>
         /// <param name="existing">The existing level.</param>
         /// <param name="level">The new level.</param>
-        protected static void ComputeUpdate(OrderBookLevel existing, OrderBookLevel level)
+        protected static void CalculateMetricsForUpdatedLevel(OrderBookLevel existing, OrderBookLevel level)
         {
             var amountDiff = (level.Amount ?? existing.Amount ?? 0) - (existing.Amount ?? 0);
             var countDiff = (level.Count ?? existing.Count ?? 0) - (existing.Count ?? 0);
@@ -496,6 +488,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
             level.CountDifferenceAggregated += countDiff;
             existing.CountDifferenceAggregated += countDiff;
+
+            existing.AmountUpdatedCount += amountDiff != 0 ? 1 : 0;
+            level.AmountUpdatedCount = existing.AmountUpdatedCount;
 
             level.Amount ??= existing.Amount;
             level.Count ??= existing.Count;
@@ -523,7 +518,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// </summary>
         /// <param name="existing">The existing level.</param>
         /// <param name="level">The new level.</param>
-        protected static void ComputeDelete(OrderBookLevel existing, OrderBookLevel level)
+        protected static void CalculateMetricsForDeletedLevel(OrderBookLevel existing, OrderBookLevel level)
         {
             var amountDiff = -(existing.Amount ?? 0);
             var countDiff = -(existing.Count ?? 0);
@@ -543,6 +538,81 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
             level.CountDifferenceAggregated += countDiff;
             existing.CountDifferenceAggregated += countDiff;
+        }
+
+        private void HandleSnapshotWithNoMetrics(OrderBookLevel[] levels)
+        {
+            ClearLevels();
+            foreach (var level in levels)
+            {
+                var price = level.Price;
+                if (price is null or < 0)
+                {
+                    LogAlways($"Received snapshot level with weird price, ignoring. [{level.Side}] Id: {level.Id}, price: {level.Price}, amount: {level.Amount}");
+                    continue;
+                }
+
+                level.AmountDifference = level.Amount ?? 0;
+                level.CountDifference = level.Count ?? 0;
+
+                switch (level.Side)
+                {
+                    case CryptoOrderSide.Bid:
+                        HandleSnapshotBidLevel(level);
+                        AllBidLevels[level.Id] = level;
+                        break;
+                    case CryptoOrderSide.Ask:
+                        HandleSnapshotAskLevel(level);
+                        AllAskLevels[level.Id] = level;
+                        break;
+                }
+            }
+        }
+
+        private void HandleSnapshotWithMetrics(OrderBookLevel[] levels)
+        {
+            foreach (var level in levels)
+            {
+                var price = level.Price;
+                if (price is null or < 0)
+                {
+                    LogAlways($"Received snapshot level with weird price, ignoring. [{level.Side}] Id: {level.Id}, price: {level.Price}, amount: {level.Amount}");
+                    continue;
+                }
+
+                var existing = FindLevelById(level.Id, level.Side);
+                if (existing == null)
+                {
+                    level.AmountDifference = level.Amount ?? 0;
+                    level.CountDifference = level.Count ?? 0;
+                    level.AmountUpdatedCount = 0;
+                    continue;
+                }
+
+                CalculateMetricsForUpdatedLevel(existing, level);
+            }
+
+            ClearLevels();
+            foreach (var level in levels)
+            {
+                var price = level.Price;
+                if (price is null or < 0)
+                {
+                    continue;
+                }
+
+                switch (level.Side)
+                {
+                    case CryptoOrderSide.Bid:
+                        HandleSnapshotBidLevel(level);
+                        AllBidLevels[level.Id] = level;
+                        break;
+                    case CryptoOrderSide.Ask:
+                        HandleSnapshotAskLevel(level);
+                        AllAskLevels[level.Id] = level;
+                        break;
+                }
+            }
         }
 
         private void RecomputeAfterChange()

@@ -18,9 +18,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 #if NET9_0_OR_GREATER
         private readonly Lock _bufferLocker = new Lock();
 #else
-		private readonly object _bufferLocker = new object();
+        private readonly object _bufferLocker = new object();
 #endif
-		private readonly CryptoAsyncLock _snapshotLocker = new CryptoAsyncLock();
+        private readonly CryptoAsyncLock _snapshotLocker = new CryptoAsyncLock();
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
 
         private readonly Queue<object> _dataBuffer = new Queue<object>();
@@ -64,6 +64,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 
         /// <inheritdoc />
         public bool LoadSnapshotEnabled { get; set; } = false;
+
+        /// <summary>
+        /// If source provides only snapshots with no diffs, this will return false
+        /// </summary>
+        public virtual bool DiffsSupported { get; } = true;
 
         /// <inheritdoc />
         public bool BufferEnabled
@@ -130,7 +135,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// </summary>
         protected void StreamSnapshot(OrderBookLevelBulk? data)
         {
-            if (data?.Levels is {Length: > 0})
+            if (data?.Levels is { Length: > 0 })
             {
                 _orderBookSnapshotSubject.OnNext(data);
             }
@@ -188,12 +193,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 
                     StreamDataSynchronized();
                 }
-				catch (Exception e)
+                catch (Exception e)
                 {
                     _logger.LogDebug("[{exchangeName}] Failed while buffering orderbook changes." +
-									 "Error: {error}", ExchangeName, e.Message);
-				}
-			}
+                                     "Error: {error}", ExchangeName, e.Message);
+                }
+            }
         }
 
         private void StreamDataSynchronized()

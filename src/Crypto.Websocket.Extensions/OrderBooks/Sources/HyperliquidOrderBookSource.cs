@@ -28,6 +28,9 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         /// <inheritdoc />
         public override string ExchangeName => "hyperliquid";
 
+        /// <inheritdoc />
+        public override bool DiffsSupported => false;
+
         /// <summary>
         /// Change client and resubscribe to the new streams
         /// </summary>
@@ -51,7 +54,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         {
             throw new NotImplementedException();
         }
-        
+
         private void Subscribe()
         {
             _subscriptionSnapshot = _client.Streams.L2BookStream.Subscribe(HandleSnapshot);
@@ -62,9 +65,9 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             // received snapshot, convert and stream
             var levels = ConvertLevels(books);
             var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2)
-                {
-                    ExchangeName = ExchangeName
-                };
+            {
+                ExchangeName = ExchangeName
+            };
             StreamSnapshot(bulk);
         }
 

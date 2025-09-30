@@ -90,6 +90,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         bool IsIndexComputationEnabled { get; set; }
 
         /// <summary>
+        /// If exchange provides only snapshots with no diffs, enable this to calculate metrics
+        /// </summary>
+        bool CalculateMetricsFromSnapshots { get; set; }
+
+        /// <summary>
         /// Streams data when top level bid or ask price was updated
         /// </summary>
         IObservable<IOrderBookChangeInfo> BidAskUpdatedStream { get; }

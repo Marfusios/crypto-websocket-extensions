@@ -186,16 +186,15 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 }
 
                 var previousPrice = existing.Price;
-                var previousAmount = existing.Amount;
 
-                ComputeUpdate(existing, level);
+                CalculateMetricsForUpdatedLevel(existing, level);
 
-                InsertToCollection(collection, ordering, existing, previousPrice, previousAmount);
+                InsertToCollection(collection, ordering, existing, previousPrice);
             }
         }
 
         private void InsertToCollection(IDictionary<double, OrderedDictionary>? collection, OrderBookLevelsOrderPerPrice? ordering,
-            OrderBookLevel level, double? previousPrice = null, double? previousAmount = null)
+            OrderBookLevel level, double? previousPrice = null)
         {
             if (collection == null)
                 return;
@@ -207,11 +206,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
 
             GetAllCollection(level.Side)[level.Id] = level;
-            InsertLevelIntoPriceGroup(level, collection, ordering, previousPrice, previousAmount);
+            InsertLevelIntoPriceGroup(level, collection, ordering, previousPrice);
         }
 
         private void InsertLevelIntoPriceGroup(OrderBookLevel level, IDictionary<double, OrderedDictionary> collection,
-            OrderBookLevelsOrderPerPrice? orderingGroup, double? previousPrice = null, double? previousAmount = null)
+            OrderBookLevelsOrderPerPrice? orderingGroup, double? previousPrice = null)
         {
             if (orderingGroup == null || level.Price == null)
                 return;
@@ -252,12 +251,6 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 currentGroup.Remove(level.Id);
             }
 
-            // amount changed, increase counter
-            if (previousAmount.HasValue && !CryptoMathUtils.IsSame(previousAmount, level.Amount))
-            {
-                level.AmountUpdatedCount++;
-            }
-
             currentGroup[level.Id] = level;
             level.Ordering = ordering;
         }
@@ -282,7 +275,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 {
                     var existing = allLevels[level.Id];
 
-                    ComputeDelete(existing, level);
+                    CalculateMetricsForDeletedLevel(existing, level);
 
                     price = existing.Price ?? -1;
                     allLevels.Remove(level.Id);

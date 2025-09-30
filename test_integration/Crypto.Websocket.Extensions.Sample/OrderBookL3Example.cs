@@ -24,7 +24,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
             //var ob = await StartBitfinex("BTCUSD", optimized);
             var ob = await StartBitfinex("btcf0:ustf0", optimized);
-			ob.NotifyForLevelAndAbove = 30;
+            ob.NotifyForLevelAndAbove = 10;
 
             Log.Information("Waiting for price change...");
 
