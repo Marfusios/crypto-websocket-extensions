@@ -35,7 +35,7 @@ namespace Crypto.Websocket.Extensions.Tests
 
             var orderBook = new CryptoOrderBook(pair, source)
             {
-                 NotifyForLevelAndAbove = 5
+                NotifyForLevelAndAbove = 5
             };
 
             var orderBookUpdatedCount = 0;
@@ -612,6 +612,7 @@ namespace Crypto.Websocket.Extensions.Tests
             source.BufferInterval = TimeSpan.FromMilliseconds(10);
 
             var notificationCount = 0;
+            var waitEvent = new ManualResetEvent(false);
 
             var changes = new List<IOrderBookChangeInfo>();
 
@@ -621,7 +622,8 @@ namespace Crypto.Websocket.Extensions.Tests
             {
                 notificationCount++;
                 changes.Add(x);
-                Thread.Sleep(2000);
+                waitEvent.WaitOne();
+                waitEvent.Reset();
             });
 
             source.StreamBulk(GetInsertBulkL2(
@@ -653,10 +655,12 @@ namespace Crypto.Websocket.Extensions.Tests
             await Task.Delay(50);
 
             Assert.Equal(1, notificationCount);
+            waitEvent.Set();
 
-            await Task.Delay(2100);
+            await Task.Delay(200);
 
             Assert.Equal(2, notificationCount);
+            waitEvent.Set();
 
             var firstChange = changes.First();
             var secondChange = changes[1];
