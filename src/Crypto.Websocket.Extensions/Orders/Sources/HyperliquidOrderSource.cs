@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Crypto.Websocket.Extensions.Core.Orders;
 
 namespace Crypto.Websocket.Extensions.Orders.Sources
 {
@@ -18,6 +19,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
     /// </summary>
     public class HyperliquidOrderSource : OrderSourceBase
     {
+        private readonly CryptoOrderCollection _partiallyFilledOrders = new();
         private HyperliquidWebsocketClient _client = null!;
         private IDisposable? _subscription;
         private IDisposable? _subscriptionFills;
@@ -132,7 +134,9 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             var order = response.Order;
 
             var id = order.OrderId.ToString();
-            var existing = ExistingOrders.GetValueOrDefault(id);
+            var existingCurrent = ExistingOrders.GetValueOrDefault(id);
+            var existingPartial = _partiallyFilledOrders.GetValueOrDefault(id);
+            var existing = existingPartial ?? existingCurrent;
 
             var price = Math.Abs(FirstNonZero(order.LimitPrice, existing?.Price) ?? 0);
 
@@ -166,13 +170,14 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 OnMargin = existing?.OnMargin ?? true
             };
 
-            if (newOrder.OrderStatus == CryptoOrderStatus.Canceled)
+            if (currentStatus == CryptoOrderStatus.PartiallyFilled)
             {
-                ExistingOrders.TryRemove(newOrder.Id, out _);
+                // save partially filled orders
+                _partiallyFilledOrders[newOrder.Id] = newOrder;
             }
             else
             {
-                ExistingOrders[newOrder.Id] = newOrder;
+                _partiallyFilledOrders.TryRemove(newOrder.Id, out _);
             }
 
             return newOrder;
@@ -181,7 +186,14 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         private CryptoOrder ConvertFill(Fill fill)
         {
             var id = fill.OrderId.ToString();
-            var existing = ExistingOrders.GetValueOrDefault(id);
+            var existingCurrent = ExistingOrders.GetValueOrDefault(id);
+            var existingPartial = _partiallyFilledOrders.GetValueOrDefault(id);
+            var existing = existingPartial ?? existingCurrent;
+
+            if (existingCurrent?.OrderStatus == CryptoOrderStatus.Executed)
+                return existingCurrent;
+            if (existingPartial?.OrderStatus == CryptoOrderStatus.Executed)
+                return existingPartial;
 
             var price = Math.Abs(FirstNonZero(fill.Price, existing?.Price) ?? 0);
 
@@ -214,14 +226,14 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 OnMargin = existing?.OnMargin ?? true
             };
 
-            if (currentStatus == CryptoOrderStatus.Executed)
+            if (currentStatus == CryptoOrderStatus.PartiallyFilled)
             {
-                ExistingOrders.TryRemove(newOrder.Id, out _);
+                // save partially filled orders
+                _partiallyFilledOrders[newOrder.Id] = newOrder;
             }
             else
             {
-                // save partially filled orders
-                ExistingOrders[newOrder.Id] = newOrder;
+                _partiallyFilledOrders.TryRemove(newOrder.Id, out _);
             }
 
             return newOrder;
