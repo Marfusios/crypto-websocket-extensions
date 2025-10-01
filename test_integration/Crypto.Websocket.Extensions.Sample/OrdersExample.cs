@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Binance.Client.Websocket;
+﻿using Binance.Client.Websocket;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Signing;
 using Binance.Client.Websocket.Websockets;
@@ -14,20 +12,27 @@ using Crypto.Websocket.Extensions.Core.Wallets.Models;
 using Crypto.Websocket.Extensions.Orders.Sources;
 using Crypto.Websocket.Extensions.Positions.Sources;
 using Crypto.Websocket.Extensions.Wallets.Sources;
+using Hyperliquid.Client.Websocket;
+using Hyperliquid.Client.Websocket.Client;
+using Hyperliquid.Client.Websocket.Websockets;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using System;
+using System.Threading.Tasks;
+using Hyperliquid.Client.Websocket.Requests.Subscriptions;
 
 namespace Crypto.Websocket.Extensions.Sample
 {
     public static class OrdersExample
     {
-        private const string ApiKey = "";
+        private const string ApiKey = "0x0366477c01Ef7362E8bC0C2d33Df5B3a0A6342b9";
         private const string ApiSecret = "";
 
         public static async Task RunEverything()
         {
             //var ordBitmex = await StartBitmex(false, HandleOrderChanged, HandleWalletsChanged, HandlePositionsChanged);
-            var ordBinance = await StartBinance(HandleOrderChanged);
+            //var ordBinance = await StartBinance(HandleOrderChanged);
+            var ordHyperliquid = await StartHyperliquid(HandleOrderChanged);
 
             Log.Information("Waiting for orders...");
         }
@@ -112,7 +117,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
             return orders;
         }
-        
+
         private static async Task<ICryptoOrders> StartBinance(Action<CryptoOrder> handler)
         {
             var url = BinanceValues.ApiWebsocketUrl;
@@ -127,8 +132,31 @@ namespace Crypto.Websocket.Extensions.Sample
             {
                 Log.Information("[Binance] Reconnected, type: {type}", x.Type);
             });
-            
+
             await communicator.Authenticate(ApiKey, new BinanceHmac(ApiSecret));
+            await communicator.Start();
+
+            return orders;
+        }
+
+        private static async Task<ICryptoOrders> StartHyperliquid(Action<CryptoOrder> handler)
+        {
+            var url = HyperliquidValues.MainnetWebsocketApiUrl;
+            var communicator = new HyperliquidWebsocketCommunicator(url, Program.Logger.CreateLogger<HyperliquidWebsocketCommunicator>()) { Name = "Hyperliquid" };
+            var client = new HyperliquidWebsocketClient(communicator, Program.Logger.CreateLogger<BinanceWebsocketClient>());
+
+            var source = new HyperliquidOrderSource(client);
+            var orders = new CryptoOrders(source);
+            orders.OrderChangedStream.Subscribe(handler);
+
+            communicator.ReconnectionHappened.Subscribe(x =>
+            {
+                Log.Information("[Hyperliquid] Reconnected, type: {type}", x.Type);
+
+                client.Send(new UserOrderUpdatesSubscribeRequest(ApiKey));
+                client.Send(new UserFillsSubscribeRequest(ApiKey));
+            });
+
             await communicator.Start();
 
             return orders;

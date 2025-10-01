@@ -1,0 +1,272 @@
+﻿using Crypto.Websocket.Extensions.Core.Models;
+using Crypto.Websocket.Extensions.Core.Orders.Models;
+using Crypto.Websocket.Extensions.Core.Orders.Sources;
+using Crypto.Websocket.Extensions.Core.Validations;
+using Hyperliquid.Client.Websocket.Client;
+using Hyperliquid.Client.Websocket.Enums;
+using Hyperliquid.Client.Websocket.Responses.Fills;
+using Hyperliquid.Client.Websocket.Responses.Orders;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Crypto.Websocket.Extensions.Orders.Sources
+{
+    /// <summary>
+    /// Hyperliquid orders source
+    /// </summary>
+    public class HyperliquidOrderSource : OrderSourceBase
+    {
+        private HyperliquidWebsocketClient _client = null!;
+        private IDisposable? _subscription;
+        private IDisposable? _subscriptionFills;
+
+        /// <inheritdoc />
+        public HyperliquidOrderSource(HyperliquidWebsocketClient client) : base(client.Logger)
+        {
+            ChangeClient(client);
+        }
+
+        /// <inheritdoc />
+        public override string ExchangeName => "hyperliquid";
+
+        /// <summary>
+        /// Change client and resubscribe to the new streams
+        /// </summary>
+        public void ChangeClient(HyperliquidWebsocketClient client)
+        {
+            CryptoValidations.ValidateInput(client, nameof(client));
+
+            _client = client;
+            _subscription?.Dispose();
+            _subscriptionFills?.Dispose();
+            Subscribe();
+        }
+
+        private void Subscribe()
+        {
+            _subscription = _client.Streams.UserOrderUpdatesStream.Subscribe(HandleOrdersSafe);
+            _subscriptionFills = _client.Streams.UserFillsStream.Subscribe(HandleFillsSafe);
+        }
+
+        private void HandleOrdersSafe(UserOrderResponse[] responses)
+        {
+            foreach (var response in responses)
+            {
+                try
+                {
+                    HandleOrder(response);
+                }
+                catch (Exception e)
+                {
+                    _client.Logger.LogError(e, "[Hyperliquid] Failed to handle order info status: {status}, id: {orderId}, error: '{error}'",
+                        response.Status, response.Order.OrderId, e.Message);
+                }
+            }
+        }
+
+        private void HandleFillsSafe(UserFillsResponse response)
+        {
+            if (response.IsSnapshot == true)
+            {
+                try
+                {
+                    HandleFillsSnapshot(response.Fills);
+                }
+                catch (Exception e)
+                {
+                    _client.Logger.LogError(e, "[Hyperliquid] Failed to handle fills snapshot, error: '{error}'", e.Message);
+                }
+
+                return;
+            }
+
+            foreach (var fill in response.Fills)
+            {
+                try
+                {
+                    HandleFill(fill);
+                }
+                catch (Exception e)
+                {
+                    _client.Logger.LogError(e, "[Hyperliquid] Failed to handle fill info id: {orderId}, error: '{error}'",
+                        fill.OrderId, e.Message);
+                }
+            }
+        }
+
+        private void HandleOrder(UserOrderResponse response)
+        {
+            if (response.Status is OrderStatus.Filled or OrderStatus.FilledCapitalized)
+            {
+                // there is another stream for filled orders, do nothing here
+                return;
+            }
+
+            var order = ConvertOrder(response);
+            OrderUpdatedSubject.OnNext(order);
+        }
+
+        private void HandleFill(Fill fill)
+        {
+            var order = ConvertFill(fill);
+            OrderUpdatedSubject.OnNext(order);
+        }
+
+        private void HandleFillsSnapshot(Fill[] fills)
+        {
+            var orders = fills
+                .Select(ConvertFill)
+                .ToArray();
+            OrderSnapshotSubject.OnNext(orders);
+        }
+
+        /// <summary>
+        /// Convert Binance order to crypto order
+        /// </summary>
+        public CryptoOrder ConvertOrder(UserOrderResponse response)
+        {
+            var order = response.Order;
+
+            var id = order.OrderId.ToString();
+            var existing = ExistingOrders.GetValueOrDefault(id);
+
+            var price = Math.Abs(FirstNonZero(order.LimitPrice, existing?.Price) ?? 0);
+
+            var isPartiallyFilled = order.Size < order.OriginalSize && order.Size > 0;
+            var currentStatus = ConvertOrderStatus(response, isPartiallyFilled);
+
+            var newOrder = new CryptoOrder
+            {
+                Id = id,
+                GroupId = existing?.GroupId,
+                ClientId = order.ClientOrderId ?? existing?.ClientId,
+                Pair = order.Coin ?? existing?.Pair ?? string.Empty,
+                Side = order.Side == Side.Ask ? CryptoOrderSide.Ask : CryptoOrderSide.Bid,
+                AmountFilled = isPartiallyFilled ? order.Size : 0,
+                AmountFilledCumulative = isPartiallyFilled ? order.Size + (existing?.AmountFilledCumulative ?? 0) : 0,
+                AmountOrig = FirstNonZero(order.OriginalSize, existing?.AmountOrig),
+                AmountFilledQuote = isPartiallyFilled ? order.Size * order.LimitPrice : 0,
+                AmountFilledCumulativeQuote = isPartiallyFilled ? order.Size * order.LimitPrice + (existing?.AmountFilledCumulativeQuote ?? 0) : 0,
+                AmountOrigQuote = order.OriginalSize * order.LimitPrice,
+                Created = order.Timestamp,
+                Updated = response.StatusTimestamp,
+                Price = price,
+                PriceAverage = existing?.PriceAverage != null ? (existing.PriceGrouped + order.LimitPrice) * 0.5 : price,
+                Fee = 0,
+                FeeCurrency = null,
+                OrderStatus = currentStatus,
+                OrderStatusRaw = response.Status.ToString(),
+                CanceledReason = null,
+                Type = CryptoOrderType.Limit,
+                TypePrev = existing?.TypePrev ?? existing?.Type ?? CryptoOrderType.Limit,
+                OnMargin = existing?.OnMargin ?? true
+            };
+
+            if (newOrder.OrderStatus == CryptoOrderStatus.Canceled)
+            {
+                ExistingOrders.TryRemove(newOrder.Id, out _);
+            }
+            else
+            {
+                ExistingOrders[newOrder.Id] = newOrder;
+            }
+
+            return newOrder;
+        }
+
+        private CryptoOrder ConvertFill(Fill fill)
+        {
+            var id = fill.OrderId.ToString();
+            var existing = ExistingOrders.GetValueOrDefault(id);
+
+            var price = Math.Abs(FirstNonZero(fill.Price, existing?.Price) ?? 0);
+
+            var currentStatus = (existing?.AmountFilledCumulativeQuote ?? 0) > (existing?.AmountOrig ?? 0) + fill.Size ? CryptoOrderStatus.PartiallyFilled : CryptoOrderStatus.Executed;
+
+            var newOrder = new CryptoOrder
+            {
+                Id = id,
+                GroupId = existing?.GroupId,
+                ClientId = existing?.ClientId,
+                Pair = fill.Coin ?? existing?.Pair ?? string.Empty,
+                Side = fill.Side == Side.Ask ? CryptoOrderSide.Ask : CryptoOrderSide.Bid,
+                AmountFilled = fill.Size,
+                AmountFilledCumulative = fill.Size + (existing?.AmountFilledCumulative ?? 0),
+                AmountOrig = existing?.AmountOrig ?? fill.Size,
+                AmountFilledQuote = fill.Size * price,
+                AmountFilledCumulativeQuote = fill.Size * fill.Price + (existing?.AmountFilledCumulativeQuote ?? 0),
+                AmountOrigQuote = (existing?.AmountOrig ?? fill.Size) * price,
+                Created = existing?.Created ?? fill.Time,
+                Updated = fill.Time,
+                Price = price,
+                PriceAverage = existing?.PriceAverage != null ? (existing.PriceGrouped + fill.Price) * 0.5 : price,
+                Fee = fill.Fee,
+                FeeCurrency = fill.FeeToken,
+                OrderStatus = currentStatus,
+                OrderStatusRaw = fill.Direction,
+                CanceledReason = null,
+                Type = CryptoOrderType.Limit,
+                TypePrev = existing?.TypePrev ?? existing?.Type ?? CryptoOrderType.Limit,
+                OnMargin = existing?.OnMargin ?? true
+            };
+
+            if (currentStatus == CryptoOrderStatus.Executed)
+            {
+                ExistingOrders.TryRemove(newOrder.Id, out _);
+            }
+            else
+            {
+                // save partially filled orders
+                ExistingOrders[newOrder.Id] = newOrder;
+            }
+
+            return newOrder;
+        }
+
+        /// <summary>
+        /// Convert order status
+        /// </summary>
+        public static CryptoOrderStatus ConvertOrderStatus(UserOrderResponse response, bool isPartiallyFilled)
+        {
+            if (isPartiallyFilled)
+            {
+                return CryptoOrderStatus.PartiallyFilled;
+            }
+
+            var status = response.Status;
+            switch (status)
+            {
+                case OrderStatus.Open:
+                case OrderStatus.PlacedSuccessfully:
+                    return CryptoOrderStatus.Active;
+                case OrderStatus.FilledCapitalized:
+                    return CryptoOrderStatus.Executed;
+                case OrderStatus.Filled:
+                    return CryptoOrderStatus.Executed;
+                default:
+                    return CryptoOrderStatus.Canceled;
+            }
+        }
+
+
+        private static double? FirstNonZero(params double?[] numbers)
+        {
+            foreach (var number in numbers)
+            {
+                if (number.HasValue && Math.Abs(number.Value) > 0)
+                    return number.Value;
+            }
+
+            return null;
+        }
+
+        private static double? Abs(double? value)
+        {
+            if (!value.HasValue)
+                return null;
+            return Math.Abs(value.Value);
+        }
+    }
+}
