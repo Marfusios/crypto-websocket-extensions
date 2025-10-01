@@ -119,8 +119,11 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         private void HandleFillsSnapshot(Fill[] fills)
         {
             var orders = fills
+                .Where(x => !ExistingOrders.ContainsKey(x.OrderId.ToString()))
                 .Select(ConvertFill)
                 .ToArray();
+            if (orders.Length == 0)
+                return;
             foreach (var order in orders)
                 order.IsSnapshot = true;
             OrderSnapshotSubject.OnNext(orders);
@@ -189,11 +192,6 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             var existingCurrent = ExistingOrders.GetValueOrDefault(id);
             var existingPartial = _partiallyFilledOrders.GetValueOrDefault(id);
             var existing = existingPartial ?? existingCurrent;
-
-            if (existingCurrent?.OrderStatus == CryptoOrderStatus.Executed)
-                return existingCurrent;
-            if (existingPartial?.OrderStatus == CryptoOrderStatus.Executed)
-                return existingPartial;
 
             var price = Math.Abs(FirstNonZero(fill.Price, existing?.Price) ?? 0);
 
