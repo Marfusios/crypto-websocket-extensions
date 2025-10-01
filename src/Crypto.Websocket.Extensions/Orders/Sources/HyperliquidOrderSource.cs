@@ -143,8 +143,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
             var price = Math.Abs(FirstNonZero(order.LimitPrice, existing?.Price) ?? 0);
 
-            var isPartiallyFilled = order.Size < order.OriginalSize && order.Size > 0;
-            var currentStatus = ConvertOrderStatus(response, isPartiallyFilled);
+            var currentStatus = ConvertOrderStatus(response);
 
             var newOrder = new CryptoOrder
             {
@@ -153,11 +152,11 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 ClientId = order.ClientOrderId ?? existing?.ClientId,
                 Pair = order.Coin ?? existing?.Pair ?? string.Empty,
                 Side = order.Side == Side.Ask ? CryptoOrderSide.Ask : CryptoOrderSide.Bid,
-                AmountFilled = isPartiallyFilled ? order.Size : 0,
-                AmountFilledCumulative = isPartiallyFilled ? order.Size + (existing?.AmountFilledCumulative ?? 0) : 0,
+                AmountFilled = 0,
+                AmountFilledCumulative = existing?.AmountFilledCumulative,
                 AmountOrig = FirstNonZero(order.OriginalSize, existing?.AmountOrig),
-                AmountFilledQuote = isPartiallyFilled ? order.Size * order.LimitPrice : 0,
-                AmountFilledCumulativeQuote = isPartiallyFilled ? order.Size * order.LimitPrice + (existing?.AmountFilledCumulativeQuote ?? 0) : 0,
+                AmountFilledQuote = 0,
+                AmountFilledCumulativeQuote = existing?.AmountFilledCumulativeQuote,
                 AmountOrigQuote = order.OriginalSize * order.LimitPrice,
                 Created = order.Timestamp,
                 Updated = response.StatusTimestamp,
@@ -240,13 +239,8 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         /// <summary>
         /// Convert order status
         /// </summary>
-        public static CryptoOrderStatus ConvertOrderStatus(UserOrderResponse response, bool isPartiallyFilled)
+        public static CryptoOrderStatus ConvertOrderStatus(UserOrderResponse response)
         {
-            if (isPartiallyFilled)
-            {
-                return CryptoOrderStatus.PartiallyFilled;
-            }
-
             var status = response.Status;
             switch (status)
             {
