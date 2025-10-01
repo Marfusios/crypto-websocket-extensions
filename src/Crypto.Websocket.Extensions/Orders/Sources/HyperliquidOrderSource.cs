@@ -119,6 +119,8 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             var orders = fills
                 .Select(ConvertFill)
                 .ToArray();
+            foreach (var order in orders)
+                order.IsSnapshot = true;
             OrderSnapshotSubject.OnNext(orders);
         }
 

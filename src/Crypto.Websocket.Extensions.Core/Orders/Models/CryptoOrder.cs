@@ -177,7 +177,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         /// Whenever order was executed on margin
         /// </summary>
         public bool OnMargin { get; set; }
-        
+
         /// <summary>
         /// Reason why order was canceled/rejected
         /// </summary>
@@ -187,11 +187,16 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Models
         /// Paid fee
         /// </summary>
         public double Fee { get; set; }
-        
+
         /// <summary>
         /// Currency of the paid fee
         /// </summary>
         public string? FeeCurrency { get; set; }
+
+        /// <summary>
+        /// Whether this is the initial order snapshot (not an update)
+        /// </summary>
+        public bool IsSnapshot { get; set; }
 
 
         private double? WithCorrectSign(double? value)
