@@ -185,7 +185,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
             var price = Math.Abs(FirstNonZero(fill.Price, existing?.Price) ?? 0);
 
-            var currentStatus = (existing?.AmountFilledCumulativeQuote ?? 0) > (existing?.AmountOrig ?? 0) + fill.Size ? CryptoOrderStatus.PartiallyFilled : CryptoOrderStatus.Executed;
+            var currentStatus = (existing?.AmountFilledCumulative ?? 0) > (existing?.AmountOrig ?? 0) + fill.Size ? CryptoOrderStatus.PartiallyFilled : CryptoOrderStatus.Executed;
 
             var newOrder = new CryptoOrder
             {
