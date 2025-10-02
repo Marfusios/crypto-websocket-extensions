@@ -172,16 +172,6 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 OnMargin = existing?.OnMargin ?? true
             };
 
-            if (currentStatus == CryptoOrderStatus.PartiallyFilled)
-            {
-                // save partially filled orders
-                _partiallyFilledOrders[newOrder.Id] = newOrder;
-            }
-            else
-            {
-                _partiallyFilledOrders.TryRemove(newOrder.Id, out _);
-            }
-
             return newOrder;
         }
 
@@ -194,7 +184,9 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
             var price = Math.Abs(FirstNonZero(fill.Price, existing?.Price) ?? 0);
 
-            var currentStatus = (existing?.AmountFilledCumulative ?? 0) + fill.Size < (existing?.AmountOrig ?? 0) ? CryptoOrderStatus.PartiallyFilled : CryptoOrderStatus.Executed;
+            var currentStatus = (Math.Abs(existing?.AmountFilledCumulative ?? 0) + Math.Abs(fill.Size)) < Math.Abs(existing?.AmountOrig ?? 0) ? 
+                CryptoOrderStatus.PartiallyFilled : 
+                CryptoOrderStatus.Executed;
 
             var newOrder = new CryptoOrder
             {
@@ -204,11 +196,11 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 Pair = fill.Coin ?? existing?.Pair ?? string.Empty,
                 Side = fill.Side == Side.Ask ? CryptoOrderSide.Ask : CryptoOrderSide.Bid,
                 AmountFilled = fill.Size,
-                AmountFilledCumulative = fill.Size + (existing?.AmountFilledCumulative ?? 0),
+                AmountFilledCumulative = Math.Abs(fill.Size) + Math.Abs(existing?.AmountFilledCumulative ?? 0),
                 AmountOrig = existing?.AmountOrig ?? fill.Size,
                 AmountFilledQuote = fill.Size * price,
-                AmountFilledCumulativeQuote = fill.Size * fill.Price + (existing?.AmountFilledCumulativeQuote ?? 0),
-                AmountOrigQuote = (existing?.AmountOrig ?? fill.Size) * price,
+                AmountFilledCumulativeQuote = Math.Abs(fill.Size) * fill.Price + Math.Abs(existing?.AmountFilledCumulativeQuote ?? 0),
+                AmountOrigQuote = Math.Abs(existing?.AmountOrig ?? fill.Size) * price,
                 Created = existing?.Created ?? fill.Time,
                 Updated = fill.Time,
                 Price = price,
