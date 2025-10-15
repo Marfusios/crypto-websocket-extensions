@@ -7,7 +7,7 @@
 		<Description>Extensions to cryptocurrency websocket clients (core library, only interfaces and feature classes)</Description>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageReleaseNotes>Enhancements</PackageReleaseNotes>
-		<Copyright>Copyright 2024 Mariusz Kotas. All rights reserved.</Copyright>
+		<Copyright>Copyright 2025 Mariusz Kotas. All rights reserved.</Copyright>
 		<PackageTags>Crypto websockets websocket client cryptocurrency exchange bitcoin extensions</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/Marfusios/crypto-websocket-extensions</PackageProjectUrl>

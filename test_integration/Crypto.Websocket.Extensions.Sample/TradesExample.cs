@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using Aster.Client.Websocket;
+using Aster.Client.Websocket.Client;
+using Aster.Client.Websocket.Websockets;
 using Binance.Client.Websocket;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Subscriptions;
@@ -42,6 +45,7 @@ namespace Crypto.Websocket.Extensions.Sample
             var coinbase = GetCoinbase("BTC-USD");
             var bitstamp = GetBitstamp("BTCUSD");
             var hyperliquid = GetHyperliquid("BTC");
+            var aster = GetAster("BTCUSDT");
             //var huobi = GetHuobi("btcusdt");
 
             LogTrades(bitmex.Item1);
@@ -50,6 +54,7 @@ namespace Crypto.Websocket.Extensions.Sample
             LogTrades(coinbase.Item1);
             LogTrades(bitstamp.Item1);
             LogTrades(hyperliquid.Item1);
+            LogTrades(aster.Item1);
             //LogTrades(huobi.Item1);
 
             Log.Information("Waiting for trades...");
@@ -59,7 +64,8 @@ namespace Crypto.Websocket.Extensions.Sample
             //_ = binance.Item2.Start();
             //_ = coinbase.Item2.Start();
             //_ = bitstamp.Item2.Start();
-            _ = hyperliquid.Item2.Start();
+            //_ = hyperliquid.Item2.Start();
+            _ = aster.Item2.Start();
             //_ = huobi.Item2.Start();
         }
 
@@ -130,6 +136,21 @@ namespace Crypto.Websocket.Extensions.Sample
             return (source, communicator);
         }
 
+        private static (ITradeSource, IWebsocketClient) GetAster(string pair)
+        {
+            var url = AsterValues.FuturesApiWebsocketUrl;
+            var communicator = new AsterWebsocketCommunicator(url, Program.Logger.CreateLogger<AsterWebsocketCommunicator>()) { Name = "Aster" };
+            var client = new AsterWebsocketClient(communicator, Program.Logger.CreateLogger<AsterWebsocketClient>());
+
+            var source = new AsterTradeSource(client);
+
+            client.SetSubscriptions(
+                new Aster.Client.Websocket.Subscriptions.TradeSubscription(pair)
+            );
+
+            return (source, communicator);
+        }
+
         private static (ITradeSource, IWebsocketClient) GetCoinbase(string pair)
         {
             var url = CoinbaseValues.ApiWebsocketUrl;
@@ -167,7 +188,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
             return (source, communicator);
         }
-        
+
         private static (ITradeSource, IWebsocketClient) GetHyperliquid(string coin)
         {
             var url = HyperliquidValues.MainnetWebsocketApiUrl;

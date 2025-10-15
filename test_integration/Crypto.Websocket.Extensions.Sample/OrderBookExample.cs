@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using Aster.Client.Websocket;
+using Aster.Client.Websocket.Client;
+using Aster.Client.Websocket.Websockets;
 using Binance.Client.Websocket;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Subscriptions;
@@ -51,6 +54,7 @@ namespace Crypto.Websocket.Extensions.Sample
             var bitstampOb = await StartBitstamp("BTCUSD", optimized, l2OrderBook);
             //var huobiOb = await StartHuobi("btcusdt", optimized, l2OrderBook);
             var hyperliquidOb = await StartHyperliquid("BTC", optimized, l2OrderBook);
+            //var asterOb = await StartAster("BTCUSDT", optimized, l2OrderBook);
 
             Log.Information("Waiting for price change...");
 
@@ -61,7 +65,8 @@ namespace Crypto.Websocket.Extensions.Sample
                     binanceOb.BidAskUpdatedStream,
                     //coinbaseOb.BidAskUpdatedStream,
                     bitstampOb.BidAskUpdatedStream,
-                    hyperliquidOb.BidAskUpdatedStream
+                    hyperliquidOb.BidAskUpdatedStream,
+                    //asterOb.BidAskUpdatedStream,
                     //huobiOb.BidAskUpdatedStream
                 })
                 .Subscribe(x => HandleQuoteChanged(x, true));
@@ -79,7 +84,8 @@ namespace Crypto.Websocket.Extensions.Sample
             //var ob = await StartBitstamp("BTCUSD", optimized, l2OrderBook);
             //var ob = await StartHuobi("btcusdt", optimized, l2OrderBook);}}
             //var ob = await StartHuobi("btcusdt", optimized, l2OrderBook);}}
-            var ob = await StartHyperliquid("BTC", optimized, l2OrderBook);
+            //var ob = await StartHyperliquid("BTC", optimized, l2OrderBook);
+            var ob = await StartAster("BTCUSDT", optimized, l2OrderBook);
 
             Log.Information("Waiting for price change...");
 
@@ -224,9 +230,9 @@ namespace Crypto.Websocket.Extensions.Sample
             );
 
             var source = new BinanceOrderBookSource(client);
-            var orderBook = l2Optimized ?
+            ICryptoOrderBook orderBook = l2Optimized ?
                 new CryptoOrderBookL2(pair, source) :
-                (ICryptoOrderBook)new CryptoOrderBook(pair, source);
+                new CryptoOrderBook(pair, source);
 
             if (optimized)
             {
@@ -236,6 +242,35 @@ namespace Crypto.Websocket.Extensions.Sample
             _ = communicator.Start();
 
             // Binance is special
+            // We need to load snapshot in advance manually via REST call
+            _ = source.LoadSnapshot(communicator, pair);
+
+            return orderBook;
+        }
+
+        private static async Task<ICryptoOrderBook> StartAster(string pair, bool optimized, bool l2Optimized)
+        {
+            var url = AsterValues.FuturesApiWebsocketUrl;
+            var communicator = new AsterWebsocketCommunicator(url, Program.Logger.CreateLogger<AsterWebsocketCommunicator>()) { Name = "Aster" };
+            var client = new AsterWebsocketClient(communicator, Program.Logger.CreateLogger<AsterWebsocketClient>());
+
+            client.SetSubscriptions(
+                new Aster.Client.Websocket.Subscriptions.OrderBookDiffSubscription(pair)
+            );
+
+            var source = new AsterOrderBookSource(client);
+            ICryptoOrderBook orderBook = l2Optimized ?
+                new CryptoOrderBookL2(pair, source) :
+                new CryptoOrderBook(pair, source);
+
+            if (optimized)
+            {
+                ConfigureOptimized(source, orderBook);
+            }
+
+            _ = communicator.Start();
+
+            // Aster is special
             // We need to load snapshot in advance manually via REST call
             _ = source.LoadSnapshot(communicator, pair);
 

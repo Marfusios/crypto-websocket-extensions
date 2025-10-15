@@ -19,20 +19,25 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using System;
 using System.Threading.Tasks;
+using Aster.Client.Websocket;
+using Aster.Client.Websocket.Client;
+using Aster.Client.Websocket.Signing;
+using Aster.Client.Websocket.Websockets;
 using Hyperliquid.Client.Websocket.Requests.Subscriptions;
 
 namespace Crypto.Websocket.Extensions.Sample
 {
     public static class OrdersExample
     {
-        private const string ApiKey = "0x0366477c01Ef7362E8bC0C2d33Df5B3a0A6342b9";
+        private const string ApiKey = "";
         private const string ApiSecret = "";
 
         public static async Task RunEverything()
         {
             //var ordBitmex = await StartBitmex(false, HandleOrderChanged, HandleWalletsChanged, HandlePositionsChanged);
             //var ordBinance = await StartBinance(HandleOrderChanged);
-            var ordHyperliquid = await StartHyperliquid(HandleOrderChanged);
+            //var ordHyperliquid = await StartHyperliquid(HandleOrderChanged);
+            var ordAster = await StartAster(HandleOrderChanged);
 
             Log.Information("Waiting for orders...");
         }
@@ -134,6 +139,27 @@ namespace Crypto.Websocket.Extensions.Sample
             });
 
             await communicator.Authenticate(ApiKey, new BinanceHmac(ApiSecret));
+            await communicator.Start();
+
+            return orders;
+        }
+
+        private static async Task<ICryptoOrders> StartAster(Action<CryptoOrder> handler)
+        {
+            var url = AsterValues.FuturesApiWebsocketUrl;
+            var communicator = new AsterWebsocketCommunicator(url, Program.Logger.CreateLogger<AsterWebsocketCommunicator>()) { Name = "Aster" };
+            var client = new AsterWebsocketClient(communicator, Program.Logger.CreateLogger<AsterWebsocketClient>());
+
+            var source = new AsterOrderSource(client);
+            var orders = new CryptoOrders(source);
+            orders.OrderChangedStream.Subscribe(handler);
+
+            communicator.ReconnectionHappened.Subscribe(x =>
+            {
+                Log.Information("[Aster] Reconnected, type: {type}", x.Type);
+            });
+
+            await communicator.Authenticate(ApiKey, new AsterHmac(ApiSecret));
             await communicator.Start();
 
             return orders;
