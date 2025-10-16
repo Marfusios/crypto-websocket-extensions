@@ -49,7 +49,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
             var bitmexOb = await StartBitmex("XBTUSD", optimized, l2OrderBook);
             var bitfinexOb = await StartBitfinex("BTCUSD", optimized, l2OrderBook);
-            var binanceOb = await StartBinance("BTCUSDT", optimized, l2OrderBook);
+            var binanceOb = await StartBinance("BTCUSDT", optimized, l2OrderBook, BinanceUserStreamType.Spot);
             //var coinbaseOb = await StartCoinbase("BTC-USD", optimized, l2OrderBook);
             var bitstampOb = await StartBitstamp("BTCUSD", optimized, l2OrderBook);
             //var huobiOb = await StartHuobi("btcusdt", optimized, l2OrderBook);
@@ -78,14 +78,14 @@ namespace Crypto.Websocket.Extensions.Sample
             var l2OrderBook = false;
 
             //var ob = await StartBitmex("XBTUSD", optimized, l2OrderBook);
-            //var ob = await StartBinance("BTCUSDT", optimized, l2OrderBook);
+            var ob = await StartBinance("BTCUSDC", optimized, l2OrderBook, BinanceUserStreamType.Futures);
             //var ob = await StartBitfinex("BTCUSD", optimized, l2OrderBook);
             //var ob = await StartCoinbase("BTC-USD", optimized, l2OrderBook);
             //var ob = await StartBitstamp("BTCUSD", optimized, l2OrderBook);
             //var ob = await StartHuobi("btcusdt", optimized, l2OrderBook);}}
             //var ob = await StartHuobi("btcusdt", optimized, l2OrderBook);}}
             //var ob = await StartHyperliquid("BTC", optimized, l2OrderBook);
-            var ob = await StartAster("BTCUSDT", optimized, l2OrderBook);
+            //var ob = await StartAster("BTCUSDT", optimized, l2OrderBook);
 
             Log.Information("Waiting for price change...");
 
@@ -219,9 +219,11 @@ namespace Crypto.Websocket.Extensions.Sample
             return orderBook;
         }
 
-        private static async Task<ICryptoOrderBook> StartBinance(string pair, bool optimized, bool l2Optimized)
+        private static async Task<ICryptoOrderBook> StartBinance(string pair, bool optimized, bool l2Optimized, BinanceUserStreamType type)
         {
-            var url = BinanceValues.ApiWebsocketUrl;
+            var url = type == BinanceUserStreamType.Spot ? 
+                BinanceValues.ApiWebsocketUrl :
+                BinanceValues.FuturesApiWebsocketUrl;
             var communicator = new BinanceWebsocketCommunicator(url, Program.Logger.CreateLogger<BinanceWebsocketCommunicator>()) { Name = "Binance" };
             var client = new BinanceWebsocketClient(communicator, Program.Logger.CreateLogger<BinanceWebsocketClient>());
 

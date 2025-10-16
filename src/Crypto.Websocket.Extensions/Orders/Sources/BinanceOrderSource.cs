@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Binance.Client.Websocket.Client;
 using Binance.Client.Websocket.Responses.Orders;
@@ -16,9 +17,10 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
     /// </summary>
     public class BinanceOrderSource : OrderSourceBase
     {
-        private readonly CryptoOrderCollection _partiallyFilledOrders = new CryptoOrderCollection();
+        private readonly CryptoOrderCollection _partiallyFilledOrders = new();
         private BinanceWebsocketClient _client = null!;
         private IDisposable? _subscription;
+        private IDisposable? _subscriptionFutures;
 
         /// <inheritdoc />
         public BinanceOrderSource(BinanceWebsocketClient client) : base(client.Logger)
@@ -38,12 +40,14 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
             _client = client;
             _subscription?.Dispose();
+            _subscriptionFutures?.Dispose();
             Subscribe();
         }
 
         private void Subscribe()
         {
             _subscription = _client.Streams.OrderUpdateStream.Subscribe(HandleOrdersSafe);
+            _subscriptionFutures = _client.Streams.FuturesOrderUpdateStream.Subscribe(HandleOrdersSafe);
         }
 
         private void HandleOrdersSafe(OrderUpdate response)
@@ -57,8 +61,26 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 _client.Logger.LogError(e, "[Binance] Failed to handle order info, error: '{error}'", e.Message);
             }
         }
+        
+        private void HandleOrdersSafe(FuturesOrderUpdate response)
+        {
+            try
+            {
+                HandleOrders(response);
+            }
+            catch (Exception e)
+            {
+                _client.Logger.LogError(e, "[Binance] Failed to handle futures order info, error: '{error}'", e.Message);
+            }
+        }
 
         private void HandleOrders(OrderUpdate response)
+        {
+            var order = ConvertOrder(response);
+            OrderUpdatedSubject.OnNext(order);
+        }
+        
+        private void HandleOrders(FuturesOrderUpdate response)
         {
             var order = ConvertOrder(response);
             OrderUpdatedSubject.OnNext(order);
@@ -80,8 +102,8 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         public CryptoOrder ConvertOrder(OrderUpdate order)
         {
             var id = order.Id.ToString();
-            var existingCurrent = ExistingOrders.ContainsKey(id) ? ExistingOrders[id] : null;
-            var existingPartial = _partiallyFilledOrders.ContainsKey(id) ? _partiallyFilledOrders[id] : null;
+            var existingCurrent = ExistingOrders.GetValueOrDefault(id);
+            var existingPartial = _partiallyFilledOrders.GetValueOrDefault(id);
             var existing = existingPartial ?? existingCurrent;
 
             var price = Math.Abs(FirstNonZero(order.LastPriceFilled, order.Price, existing?.Price) ?? 0);
@@ -133,6 +155,65 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
             return newOrder;
         }
+        
+        /// <summary>
+        /// Convert Binance order to crypto order
+        /// </summary>
+        public CryptoOrder ConvertOrder(FuturesOrderUpdate orderUpdate)
+        {
+            var order = orderUpdate.Order;
+
+            var id = order.OrderId.ToString();
+            var existingCurrent = ExistingOrders.GetValueOrDefault(id);
+            var existingPartial = _partiallyFilledOrders.GetValueOrDefault(id);
+            var existing = existingPartial ?? existingCurrent;
+
+            var price = Math.Abs(FirstNonZero(order.LastFilledPrice, order.Price, existing?.Price) ?? 0);
+            var priceAvg = Math.Abs(FirstNonZero(order.AveragePrice, order.LastFilledPrice, order.Price, existing?.PriceAverage) ?? 0);
+
+            var amountQuote = FirstNonZero(order.Quantity * order.Price, existing?.AmountOrigQuote);
+            var amountFilledQuote = FirstNonZero(order.LastFilledQuantity * order.LastFilledPrice);
+            var amountFilledQuoteCumulative = FirstNonZero(order.AccumulatedFilledQuantity * priceAvg, existing?.AmountFilledCumulativeQuote);
+
+            var currentStatus = ConvertOrderStatus(order);
+
+            var newOrder = new CryptoOrder
+            {
+                Id = id,
+                GroupId = existing?.GroupId ?? null,
+                ClientId = !string.IsNullOrWhiteSpace(order.ClientOrderId) ?
+                    order.ClientOrderId : existing?.ClientId,
+                Pair = order.Symbol ?? existing?.Pair ?? string.Empty,
+                Side = order.Side == OrderSide.Sell ? CryptoOrderSide.Ask : CryptoOrderSide.Bid,
+                AmountFilled = order.LastFilledQuantity,
+                AmountFilledCumulative = order.AccumulatedFilledQuantity,
+                AmountOrig = FirstNonZero(order.Quantity, existing?.AmountOrig),
+                AmountFilledQuote = amountFilledQuote,
+                AmountFilledCumulativeQuote = amountFilledQuoteCumulative,
+                AmountOrigQuote = amountQuote,
+                Created = order.TradeTime ?? existing?.Created,
+                Updated = orderUpdate.TransactionTime ?? orderUpdate.EventTime,
+                Price = price,
+                PriceAverage = priceAvg,
+                Fee = order.Commission,
+                FeeCurrency = order.CommissionAsset,
+                OrderStatus = currentStatus,
+                OrderStatusRaw = order.Status.ToString(),
+                CanceledReason = order.ExecutionType.ToString(),
+                Type = ConvertOrderType(order.Type) ?? existing?.Type ?? CryptoOrderType.Undefined,
+                TypePrev = existing?.TypePrev ?? existing?.Type ?? ConvertOrderType(order.Type) ?? CryptoOrderType.Undefined,
+                OnMargin = existing?.OnMargin ?? false
+            };
+
+
+            if (currentStatus == CryptoOrderStatus.PartiallyFilled)
+            {
+                // save partially filled orders
+                _partiallyFilledOrders[newOrder.Id] = newOrder;
+            }
+
+            return newOrder;
+        }
 
 
         /// <summary>
@@ -170,6 +251,25 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             {
                 case OrderStatus.New:
                     return order.IsWorking ? CryptoOrderStatus.Active : CryptoOrderStatus.New;
+                case OrderStatus.PartiallyFilled:
+                    return CryptoOrderStatus.PartiallyFilled;
+                case OrderStatus.Filled:
+                    return CryptoOrderStatus.Executed;
+                default:
+                    return CryptoOrderStatus.Canceled;
+            }
+        }
+        
+        /// <summary>
+        /// Convert order status
+        /// </summary>
+        public static CryptoOrderStatus ConvertOrderStatus(FuturesOrderData order)
+        {
+            var status = order.Status;
+            switch (status)
+            {
+                case OrderStatus.New:
+                    return CryptoOrderStatus.Active;
                 case OrderStatus.PartiallyFilled:
                     return CryptoOrderStatus.PartiallyFilled;
                 case OrderStatus.Filled:

@@ -35,9 +35,9 @@ namespace Crypto.Websocket.Extensions.Sample
         public static async Task RunEverything()
         {
             //var ordBitmex = await StartBitmex(false, HandleOrderChanged, HandleWalletsChanged, HandlePositionsChanged);
-            //var ordBinance = await StartBinance(HandleOrderChanged);
+            var ordBinance = await StartBinance(HandleOrderChanged, BinanceUserStreamType.Futures);
             //var ordHyperliquid = await StartHyperliquid(HandleOrderChanged);
-            var ordAster = await StartAster(HandleOrderChanged);
+            //var ordAster = await StartAster(HandleOrderChanged);
 
             Log.Information("Waiting for orders...");
         }
@@ -123,9 +123,11 @@ namespace Crypto.Websocket.Extensions.Sample
             return orders;
         }
 
-        private static async Task<ICryptoOrders> StartBinance(Action<CryptoOrder> handler)
+        private static async Task<ICryptoOrders> StartBinance(Action<CryptoOrder> handler, BinanceUserStreamType type)
         {
-            var url = BinanceValues.ApiWebsocketUrl;
+            var url = type == BinanceUserStreamType.Spot ? 
+                BinanceValues.ApiWebsocketUrl :
+                BinanceValues.FuturesApiWebsocketUrl;
             var communicator = new BinanceWebsocketCommunicator(url, Program.Logger.CreateLogger<BinanceWebsocketCommunicator>()) { Name = "Binance" };
             var client = new BinanceWebsocketClient(communicator, Program.Logger.CreateLogger<BinanceWebsocketClient>());
 
