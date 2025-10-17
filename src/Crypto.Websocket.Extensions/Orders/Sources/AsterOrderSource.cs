@@ -168,6 +168,9 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             var status = order.Status;
             switch (status)
             {
+                // They for some reason send New status for partially filled orders
+                case OrderStatus.New when Math.Abs(order.LastQuantityFilled) > 0:
+                    return CryptoOrderStatus.PartiallyFilled;
                 case OrderStatus.New:
                     return CryptoOrderStatus.Active;
                 case OrderStatus.PartiallyFilled:

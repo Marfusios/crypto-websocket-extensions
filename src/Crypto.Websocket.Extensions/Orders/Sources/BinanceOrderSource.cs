@@ -61,7 +61,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                 _client.Logger.LogError(e, "[Binance] Failed to handle order info, error: '{error}'", e.Message);
             }
         }
-        
+
         private void HandleOrdersSafe(FuturesOrderUpdate response)
         {
             try
@@ -79,7 +79,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             var order = ConvertOrder(response);
             OrderUpdatedSubject.OnNext(order);
         }
-        
+
         private void HandleOrders(FuturesOrderUpdate response)
         {
             var order = ConvertOrder(response);
@@ -155,7 +155,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
             return newOrder;
         }
-        
+
         /// <summary>
         /// Convert Binance order to crypto order
         /// </summary>
@@ -259,7 +259,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
                     return CryptoOrderStatus.Canceled;
             }
         }
-        
+
         /// <summary>
         /// Convert order status
         /// </summary>
@@ -268,6 +268,9 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             var status = order.Status;
             switch (status)
             {
+                // They for some reason send New status for partially filled orders
+                case OrderStatus.New when Math.Abs(order.LastFilledQuantity) > 0:
+                    return CryptoOrderStatus.PartiallyFilled;
                 case OrderStatus.New:
                     return CryptoOrderStatus.Active;
                 case OrderStatus.PartiallyFilled:
