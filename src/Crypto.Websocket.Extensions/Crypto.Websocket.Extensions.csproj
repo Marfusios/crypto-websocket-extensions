@@ -25,8 +25,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Aster.Client.Websocket" Version="1.0.1" />
-		<PackageReference Include="Binance.Client.Websocket" Version="2.5.0" />
+		<PackageReference Include="Aster.Client.Websocket" Version="1.1.1" />
+		<PackageReference Include="Binance.Client.Websocket" Version="2.6.0" />
 		<PackageReference Include="Bitfinex.Client.Websocket" Version="4.3.1" />
 		<PackageReference Include="Bitmex.Client.Websocket" Version="3.3.1" />
 		<PackageReference Include="Bitstamp.Client.Websocket" Version="1.2.1" />
