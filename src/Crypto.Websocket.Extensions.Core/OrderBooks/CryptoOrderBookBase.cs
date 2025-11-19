@@ -6,7 +6,6 @@ using Crypto.Websocket.Extensions.Core.Validations;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Linq;
@@ -79,6 +78,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         private Timer? _snapshotReloadTimer;
         private TimeSpan _snapshotReloadTimeout = TimeSpan.FromMinutes(1);
         private bool _snapshotReloadEnabled;
+
+        private long _lastServerSequence = -1;
+        private DateTime _lastServerTimestamp = DateTime.MinValue;
 
         private Timer? _validityCheckTimer;
         private TimeSpan _validityCheckTimeout = TimeSpan.FromSeconds(5);
@@ -328,7 +330,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
             lock (Locker)
             {
-                HandleSnapshot(levelsForThis);
+                HandleSnapshot(bulk, levelsForThis);
                 var change = CreateBookChangeNotification(levelsForThis, new[] { bulk }, true);
                 NotifyOrderBookChanges(change);
             }
@@ -345,10 +347,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             var sw = DebugEnabled ? Stopwatch.StartNew() : null;
 
-            OrderBookLevelBulk[] forThis = bulks.Where(x => x != null).Where(IsForThis).ToArray()!;
+            // Discard any levels which are not of the correct CryptoOrderBookType or have a lower timestamp or sequence number than the most recent snapshot/diff.
+            OrderBookLevelBulk[] forThis = bulks.Where(x => x != null).Where(x => IsForThis(x) && IsDiffFresh(x!)).ToArray()!;
             if (forThis.Length <= 0)
             {
-                // diffs for different pair, ignore
+                // diffs stale or not for this order book, ignore
                 return;
             }
 
@@ -378,6 +381,17 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
         }
 
+        private bool IsDiffFresh(OrderBookLevelBulk bulk)
+        {
+            if (!_isSnapshotLoaded)
+                return true;
+            if (bulk.ServerSequence.HasValue)
+                return bulk.ServerSequence.Value > _lastServerSequence;
+            if (bulk.ServerTimestamp.HasValue)
+                return bulk.ServerTimestamp.Value > _lastServerTimestamp;
+            return true;
+        }
+
         private void NotifyOrderBookChanges(TopNLevelsChangeInfo levelsChange)
         {
             OrderBookUpdated.OnNext(levelsChange);
@@ -389,7 +403,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             NotifyIfTopNLevelsChanged(topLevelChanged, levelsChange);
         }
 
-        private void HandleSnapshot(OrderBookLevel[] levels)
+        private void HandleSnapshot(OrderBookLevelBulk bulk, OrderBookLevel[] levels)
         {
             LogDebug($"Handling snapshot: {levels.Length} levels");
 
@@ -403,6 +417,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             }
 
             RecomputeAfterChangeAndSetIndexes(levels);
+
+            // Track the timestamp and sequence number, so that any stale diffs arriving after the snapshot/diff are discarded.
+            _lastServerSequence = bulk.ServerSequence ?? _lastServerSequence;
+            _lastServerTimestamp = bulk.ServerTimestamp ?? _lastServerTimestamp;
 
             _isSnapshotLoaded = true;
         }
@@ -454,6 +472,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 default:
                     return;
             }
+
+            // Track the timestamp and sequence number, so that any stale diffs arriving after the snapshot/diff are discarded.
+            _lastServerSequence = bulk.ServerSequence ?? _lastServerSequence;
+            _lastServerTimestamp = bulk.ServerTimestamp ?? _lastServerTimestamp;
         }
 
         /// <summary>
@@ -873,7 +895,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 return;
             }
 
-            _snapshotReloadTimer = new Timer(async _ => await ReloadSnapshotWithCheck(), null, SnapshotReloadTimeout, SnapshotReloadTimeout);
+            _snapshotReloadTimer = new Timer(state => _ = ReloadSnapshotWithCheck(), null, SnapshotReloadTimeout, SnapshotReloadTimeout);
         }
 
         private void DeactivateAutoSnapshotReloading()
@@ -892,7 +914,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 return;
             }
 
-            _validityCheckTimer = new Timer(async _ => await CheckValidityAndReload(), null, ValidityCheckTimeout, ValidityCheckTimeout);
+            _validityCheckTimer = new Timer(state => _ = CheckValidityAndReload(), null, ValidityCheckTimeout, ValidityCheckTimeout);
         }
 
         private void DeactivateValidityChecking()

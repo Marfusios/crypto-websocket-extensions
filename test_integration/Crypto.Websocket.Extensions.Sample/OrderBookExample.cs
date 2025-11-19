@@ -221,7 +221,7 @@ namespace Crypto.Websocket.Extensions.Sample
 
         private static async Task<ICryptoOrderBook> StartBinance(string pair, bool optimized, bool l2Optimized, BinanceUserStreamType type)
         {
-            var url = type == BinanceUserStreamType.Spot ? 
+            var url = type == BinanceUserStreamType.Spot ?
                 BinanceValues.ApiWebsocketUrl :
                 BinanceValues.FuturesApiWebsocketUrl;
             var communicator = new BinanceWebsocketCommunicator(url, Program.Logger.CreateLogger<BinanceWebsocketCommunicator>()) { Name = "Binance" };
@@ -327,8 +327,12 @@ namespace Crypto.Websocket.Extensions.Sample
             // Send subscription request to order book data
             client.Send(new Bitstamp.Client.Websocket.Requests.SubscribeRequest(
                 pair,
-                Channel.OrderBook
+                Channel.OrderBookDiff
             ));
+
+            // Bitstamp is special
+            // We need to load snapshot in advance manually via REST call
+            _ = source.LoadSnapshotWithoutLock(pair, 100);
 
             return orderBook;
         }
