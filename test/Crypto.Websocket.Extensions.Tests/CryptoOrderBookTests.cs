@@ -733,7 +733,7 @@ namespace Crypto.Websocket.Extensions.Tests
 
             Assert.Equal(pair, source.SnapshotLastPair);
             Assert.InRange(source.SnapshotCalledCount, 1, 5);
-            Assert.Equal(2, orderBookUpdatedCount);
+            Assert.Equal(3, orderBookUpdatedCount);
         }
 
         [Fact]

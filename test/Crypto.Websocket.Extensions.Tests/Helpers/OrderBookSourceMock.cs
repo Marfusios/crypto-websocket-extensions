@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -63,9 +62,7 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
             SnapshotCalledCount++;
             SnapshotLastPair = pair;
 
-            var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, new OrderBookLevel[0], CryptoOrderBookType.L2);
-
-            return Task.FromResult(bulk);
+            return Task.FromResult(_snapshot);
         }
 
         protected override OrderBookLevelBulk[] ConvertData(object[] data)
