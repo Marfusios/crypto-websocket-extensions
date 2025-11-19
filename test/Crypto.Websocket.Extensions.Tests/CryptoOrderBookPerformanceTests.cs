@@ -160,7 +160,7 @@ namespace Crypto.Websocket.Extensions.Tests
             orderBook.OrderBookUpdatedStream.Subscribe(x => endTime = DateTime.UtcNow);
 
             source.BufferEnabled = true;
-            source.BufferInterval = TimeSpan.FromMilliseconds(0);
+            source.BufferInterval = TimeSpan.FromMilliseconds(1);
 
             source.LoadSnapshotEnabled = false;
             orderBook.SnapshotReloadEnabled = false;

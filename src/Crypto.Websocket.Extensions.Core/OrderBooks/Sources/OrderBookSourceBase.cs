@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
-using Crypto.Websocket.Extensions.Core.Threading;
 using Microsoft.Extensions.Logging;
 
 namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
@@ -20,12 +18,13 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 #else
         private readonly object _bufferLocker = new object();
 #endif
-        private readonly CryptoAsyncLock _snapshotLocker = new CryptoAsyncLock();
+        private readonly SemaphoreSlim _snapshotLocker = new SemaphoreSlim(1, 1);
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
 
         private readonly Queue<object> _dataBuffer = new Queue<object>();
         private bool _bufferEnabled = true;
-        private readonly ManualResetEvent _bufferPauseEvent = new ManualResetEvent(false);
+        private PeriodicTimer _timer;
+        private TimeSpan _bufferInterval = TimeSpan.FromMilliseconds(10);
 
         /// <summary>
         /// Use this subject to stream order book snapshot data
@@ -43,6 +42,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         protected OrderBookSourceBase(ILogger logger)
         {
             _logger = logger;
+            _timer = new PeriodicTimer(_bufferInterval);
             StartProcessingFromBufferThread();
         }
 
@@ -88,7 +88,24 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         }
 
         /// <inheritdoc />
-        public TimeSpan BufferInterval { get; set; } = TimeSpan.FromMilliseconds(10);
+        public TimeSpan BufferInterval
+        {
+            get => _bufferInterval;
+            set
+            {
+                if (_bufferInterval == value)
+                    return;
+
+                if (value == TimeSpan.Zero)
+                    throw new ArgumentException("Buffer interval cannot be zero.", nameof(value));
+
+                _bufferInterval = value;
+
+                // Recreate timer with new interval
+                var oldTimer = Interlocked.Exchange(ref _timer, new PeriodicTimer(value));
+                oldTimer.Dispose();
+            }
+        }
 
         /// <inheritdoc />
         public IObservable<OrderBookLevelBulk> OrderBookSnapshotStream => _orderBookSnapshotSubject.AsObservable();
@@ -99,7 +116,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// <inheritdoc />
         public async Task LoadSnapshot(string pair, int count = 1000)
         {
-            using (await _snapshotLocker.LockAsync())
+            await _snapshotLocker.WaitAsync();
+            try
             {
                 OrderBookLevelBulk? data = null;
                 try
@@ -109,10 +127,14 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
                 catch (Exception e)
                 {
                     _logger.LogDebug("[{exchangeName}] Failed to load orderbook snapshot for pair '{pair}'. " +
-                                  "Error: {error}", ExchangeName, pair, e.Message);
+                                     "Error: {error}", ExchangeName, pair, e.Message);
                 }
 
                 StreamSnapshot(data);
+            }
+            finally
+            {
+                _snapshotLocker.Release();
             }
         }
 
@@ -147,19 +169,16 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// </summary>
         protected void BufferData(object data)
         {
-            if (_bufferEnabled)
+            if (!_bufferEnabled)
             {
-                lock (_bufferLocker)
-                {
-                    _dataBuffer.Enqueue(data);
-                }
-
-                // unblock waiting
-                _bufferPauseEvent.Set();
+                ConvertAndStream(new[] { data });
                 return;
             }
 
-            ConvertAndStream(new[] { data });
+            lock (_bufferLocker)
+            {
+                _dataBuffer.Enqueue(data);
+            }
         }
 
         /// <summary>
@@ -176,27 +195,19 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 
         private async Task ProcessData()
         {
-            var bufferIntervalMs = BufferInterval.TotalMilliseconds;
-
             while (!_cancellation.IsCancellationRequested && _bufferEnabled)
             {
                 try
                 {
-                    if (bufferIntervalMs > 0)
-                    {
-                        // delay only if enabled
-                        await Task.Delay(BufferInterval);
-                    }
-
-                    // wait when there is no message
-                    _bufferPauseEvent.WaitOne();
+                    if (!await _timer.WaitForNextTickAsync(_cancellation.Token))
+                        break;
 
                     StreamDataSynchronized();
                 }
+                catch (OperationCanceledException) { break; }
                 catch (Exception e)
                 {
-                    _logger.LogDebug("[{exchangeName}] Failed while buffering orderbook changes." +
-                                     "Error: {error}", ExchangeName, e.Message);
+                    _logger.LogDebug(e, "[{exchangeName}] Failed while buffering orderbook changes.", ExchangeName);
                 }
             }
         }
@@ -205,9 +216,14 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         {
             if (LoadSnapshotEnabled)
             {
-                using (_snapshotLocker.Lock())
+                _snapshotLocker.Wait();
+                try
                 {
                     StreamData();
+                }
+                finally
+                {
+                    _snapshotLocker.Release();
                 }
             }
             else
@@ -226,8 +242,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 
                 if (data.Length <= 0)
                 {
-                    // no message in buffer, enable waiting
-                    _bufferPauseEvent.Reset();
+                    // no message in buffer, do nothing
                     return;
                 }
             }

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.1;net6;net7;net8;net9</TargetFrameworks>
+		<TargetFrameworks>net6;net7;net8;net9</TargetFrameworks>
 		<PackageId>Crypto.Websocket.Extensions</PackageId>
 		<Authors>Mariusz Kotas</Authors>
 		<Description>Extensions to cryptocurrency websocket clients</Description>
