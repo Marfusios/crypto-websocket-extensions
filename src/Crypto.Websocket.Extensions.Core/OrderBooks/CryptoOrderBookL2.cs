@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks.Sources;
 
@@ -71,17 +70,17 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             snapshot.Update(BidPrice, AskPrice, BidAmount, AskAmount);
 
-            if (snapshot.Bids.Any())
-                UpdateQuotes(snapshot.Bids, BidLevelsInternal.Values.Take(snapshot.Bids.Count).ToList());
+            if (snapshot.Bids.Count > 0)
+                UpdateQuotes(snapshot.Bids, BidLevelsInternal.Values);
 
-            if (snapshot.Asks.Any())
-                UpdateQuotes(snapshot.Asks, AskLevelsInternal.Values.Take(snapshot.Asks.Count).ToList());
+            if (snapshot.Asks.Count > 0)
+                UpdateQuotes(snapshot.Asks, AskLevelsInternal.Values);
 
-            static void UpdateQuotes(IEnumerable<CryptoQuote> quotes, IReadOnlyList<OrderBookLevel> levels)
+            static void UpdateQuotes(IReadOnlyList<CryptoQuote> quotes, IList<OrderBookLevel> levels)
             {
-                var index = 0;
-                foreach (var quote in quotes)
+                for (var index = 0; index < quotes.Count; index++)
                 {
+                    var quote = quotes[index];
                     if (index < levels.Count)
                     {
                         quote.Price = levels[index].Price ?? 0;
@@ -93,7 +92,6 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                         quote.Amount = 0;
                     }
 
-                    index++;
                 }
             }
         }
@@ -116,33 +114,47 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// <inheritdoc />
         protected override void UpdateLevels(IEnumerable<OrderBookLevel> levels)
         {
-            foreach (var level in levels)
+            if (levels is IReadOnlyList<OrderBookLevel> list)
             {
-                var collection = GetLevelsCollection(level.Side);
-                if (collection == null)
-                    continue;
-
-                var existing = FindLevelById(level.Id, level.Side);
-                if (existing == null)
-                {
-                    level.AmountDifference = level.Amount ?? 0;
-                    level.CountDifference = level.Count ?? 0;
-                    level.AmountUpdatedCount = 0;
-
-                    InsertToCollection(collection, level);
-                    continue;
-                }
-
-                CalculateMetricsForUpdatedLevel(existing, level);
-
-                InsertToCollection(collection, existing);
+                UpdateLevels(list);
+                return;
             }
+
+            foreach (var level in levels)
+                UpdateLevel(level);
         }
 
-        private void InsertToCollection(IDictionary<double, OrderBookLevel>? collection, OrderBookLevel level)
+        /// <inheritdoc />
+        protected override void UpdateLevels(IReadOnlyList<OrderBookLevel> levels)
         {
+            for (var index = 0; index < levels.Count; index++)
+                UpdateLevel(levels[index]);
+        }
+
+        private void UpdateLevel(OrderBookLevel level)
+        {
+            var collection = GetLevelsCollection(level.Side);
             if (collection == null)
                 return;
+
+            var allLevels = GetAllCollection(level.Side);
+            if (!allLevels.TryGetValue(level.Id, out var existing))
+            {
+                level.AmountDifference = level.Amount ?? 0;
+                level.CountDifference = level.Count ?? 0;
+                level.AmountUpdatedCount = 0;
+
+                InsertToCollection(collection, allLevels, level);
+                return;
+            }
+
+            CalculateMetricsForUpdatedLevel(existing, level);
+
+            InsertToCollection(collection, allLevels, existing);
+        }
+
+        private void InsertToCollection(IDictionary<double, OrderBookLevel> collection, OrderBookLevelsById allLevels, OrderBookLevel level)
+        {
             if (IsInvalidLevel(level))
             {
                 LogDebug($"Received weird level, ignoring. Id: {level.Id}, price: {level.Price}, amount: {level.Amount}");
@@ -151,7 +163,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
             // ReSharper disable once PossibleInvalidOperationException
             collection[level.Price!.Value] = level;
-            GetAllCollection(level.Side)[level.Id] = level;
+            allLevels[level.Id] = level;
         }
 
         /// <inheritdoc />
@@ -160,46 +172,56 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             FillCurrentIndex(levels);
 
             foreach (var level in levels)
-            {
-                var collection = GetLevelsCollection(level.Side);
-                if (collection == null)
-                    continue;
-
-                var price = level.Price ?? -1;
-                var allLevels = GetAllCollection(level.Side);
-                OrderBookLevel? existing = null;
-
-                if (collection.ContainsKey(price))
-                {
-                    existing = collection[price];
-                    collection.Remove(price);
-                }
-                else if (allLevels.ContainsKey(level.Id))
-                {
-                    existing = allLevels[level.Id];
-                    var existingPrice = existing.Price ?? -1;
-                    collection.Remove(existingPrice);
-                }
-
-                allLevels.Remove(level.Id);
-
-                if (existing != null)
-                    CalculateMetricsForDeletedLevel(existing, level);
-            }
+                DeleteLevel(level);
         }
 
         /// <inheritdoc />
-        protected override OrderBookLevel? GetFirstBid() => BidLevelsInternal.FirstOrDefault().Value;
+        protected override void DeleteLevels(IReadOnlyList<OrderBookLevel> levels)
+        {
+            FillCurrentIndex(levels);
+
+            for (var index = 0; index < levels.Count; index++)
+                DeleteLevel(levels[index]);
+        }
+
+        private void DeleteLevel(OrderBookLevel level)
+        {
+            var collection = GetLevelsCollection(level.Side);
+            if (collection == null)
+                return;
+
+            var price = level.Price ?? -1;
+            var allLevels = GetAllCollection(level.Side);
+            OrderBookLevel? existing = null;
+
+            if (collection.TryGetValue(price, out existing))
+            {
+                collection.Remove(price);
+            }
+            else if (allLevels.TryGetValue(level.Id, out existing))
+            {
+                var existingPrice = existing.Price ?? -1;
+                collection.Remove(existingPrice);
+            }
+
+            allLevels.Remove(level.Id);
+
+            if (existing != null)
+                CalculateMetricsForDeletedLevel(existing, level);
+        }
 
         /// <inheritdoc />
-        protected override OrderBookLevel? GetFirstAsk() => AskLevelsInternal.FirstOrDefault().Value;
+        protected override OrderBookLevel? GetFirstBid() => BidLevelsInternal.Count > 0 ? BidLevelsInternal.Values[0] : null;
+
+        /// <inheritdoc />
+        protected override OrderBookLevel? GetFirstAsk() => AskLevelsInternal.Count > 0 ? AskLevelsInternal.Values[0] : null;
 
         /// <inheritdoc />
         protected override OrderBookLevel[] ComputeBidLevels()
         {
             lock (Locker)
             {
-                return BidLevelsInternal.Values.ToArray();
+                return CopyLevels(BidLevelsInternal.Values);
             }
         }
 
@@ -208,8 +230,20 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             lock (Locker)
             {
-                return AskLevelsInternal.Values.ToArray();
+                return CopyLevels(AskLevelsInternal.Values);
             }
+        }
+
+        private static OrderBookLevel[] CopyLevels(IList<OrderBookLevel> levels)
+        {
+            if (levels.Count == 0)
+                return Array.Empty<OrderBookLevel>();
+
+            var result = new OrderBookLevel[levels.Count];
+            for (var index = 0; index < levels.Count; index++)
+                result[index] = levels[index];
+
+            return result;
         }
     }
 }

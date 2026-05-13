@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Bitmex.Client.Websocket.Client;
@@ -80,17 +78,22 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private OrderBookLevel[] ConvertLevels(BookLevel[] data)
         {
-            return data
-                .Select(x => new OrderBookLevel
+            var result = new OrderBookLevel[data.Length];
+            for (var index = 0; index < data.Length; index++)
+            {
+                var level = data[index];
+                result[index] = new OrderBookLevel
                 (
-                    x.Id.ToString(),
-                    ConvertSide(x.Side),
-                    x.Price,
-                    x.Size,
+                    level.Id.ToString(),
+                    ConvertSide(level.Side),
+                    level.Price,
+                    level.Size,
                     null,
-                    x.Symbol
-                ))
-                .ToArray();
+                    level.Symbol
+                );
+            }
+
+            return result;
         }
 
         private CryptoOrderSide ConvertSide(BitmexSide side)
@@ -125,7 +128,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         protected override async Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count = 1000)
         {
             BookLevel[]? parsed = null;
-            var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
+            var pairSafe = (pair ?? string.Empty).Trim().ToUpperInvariant();
             var countSafe = count > 1000 ? 0 : count;
             var result = string.Empty;
 
@@ -137,7 +140,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
                 result = await content.ReadAsStringAsync();
                 parsed = JsonConvert.DeserializeObject<BookLevel[]>(result);
-                if (parsed == null || !parsed.Any())
+                if (parsed == null || parsed.Length == 0)
                     return null;
             }
             catch (Exception e)
@@ -167,9 +170,20 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
+        protected override bool TryConvertData(object data, out OrderBookLevelBulk? bulk)
+        {
+            bulk = data is BookResponse response
+                ? ConvertDiff(response)
+                : null;
+
+            return bulk != null;
+        }
+
+        /// <inheritdoc />
         protected override OrderBookLevelBulk[] ConvertData(object[] data)
         {
-            var result = new List<OrderBookLevelBulk>();
+            var result = new OrderBookLevelBulk[data.Length];
+            var count = 0;
             foreach (var response in data)
             {
                 var responseSafe = response as BookResponse;
@@ -177,10 +191,17 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                     continue;
 
                 var converted = ConvertDiff(responseSafe);
-                result.Add(converted);
+                result[count++] = converted;
             }
 
-            return result.ToArray();
+            if (count == 0)
+                return Array.Empty<OrderBookLevelBulk>();
+
+            if (count == result.Length)
+                return result;
+
+            Array.Resize(ref result, count);
+            return result;
         }
     }
 }

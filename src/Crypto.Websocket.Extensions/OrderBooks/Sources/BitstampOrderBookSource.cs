@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Globalization;
-using System.Linq;
 using System.Threading.Tasks;
 using Bitstamp.Client.Websocket.Client;
 using Bitstamp.Client.Websocket.Responses.Books;
@@ -59,13 +58,18 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private OrderBookLevel[] ConvertLevels(OrderBookResponse response)
         {
-            var bids = response.Data?.Bids
-                .Select(x => ConvertLevel(x, CryptoOrderSide.Bid, response.Symbol))
-                .ToArray() ?? Array.Empty<OrderBookLevel>();
-            var asks = response.Data?.Asks
-                .Select(x => ConvertLevel(x, CryptoOrderSide.Ask, response.Symbol))
-                .ToArray() ?? Array.Empty<OrderBookLevel>();
-            return bids.Concat(asks).ToArray();
+            var bids = response.Data?.Bids ?? Array.Empty<BookLevel>();
+            var asks = response.Data?.Asks ?? Array.Empty<BookLevel>();
+            var result = new OrderBookLevel[bids.Length + asks.Length];
+            var index = 0;
+
+            for (var bidIndex = 0; bidIndex < bids.Length; bidIndex++)
+                result[index++] = ConvertLevel(bids[bidIndex], CryptoOrderSide.Bid, response.Symbol);
+
+            for (var askIndex = 0; askIndex < asks.Length; askIndex++)
+                result[index++] = ConvertLevel(asks[askIndex], CryptoOrderSide.Ask, response.Symbol);
+
+            return result;
         }
 
         private OrderBookLevel ConvertLevel(BookLevel x, CryptoOrderSide side, string pair)

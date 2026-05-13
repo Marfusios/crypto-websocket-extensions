@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Binance.Client.Websocket.Client;
@@ -114,12 +112,14 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
             if (books == null)
                 return Array.Empty<OrderBookLevel>();
 
-            return books
-                .Select(x => ConvertLevel(x, pair, side))
-                .ToArray();
+            var result = new OrderBookLevel[books.Length];
+            for (var index = 0; index < books.Length; index++)
+                result[index] = ConvertLevel(books[index], pair, side);
+
+            return result;
         }
 
-        private OrderBookLevel ConvertLevel(Binance.Client.Websocket.Responses.Books.OrderBookLevel x,
+        private static OrderBookLevel ConvertLevel(Binance.Client.Websocket.Responses.Books.OrderBookLevel x,
             string? pair, CryptoOrderSide side)
         {
             return new OrderBookLevel
@@ -151,7 +151,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private async Task<OrderBookPartial?> LoadSnapshotRaw(string? pair, int count)
         {
-            var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
+            var pairSafe = (pair ?? string.Empty).Trim().ToUpperInvariant();
             var countSafe = count > 1000 ? 1000 : count;
             var result = string.Empty;
 
@@ -179,55 +179,75 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private OrderBookLevel[] ConvertSnapshot(OrderBookPartial response)
         {
-            var bids = ConvertLevels(response.Bids, response.Symbol, CryptoOrderSide.Bid);
-            var asks = ConvertLevels(response.Asks, response.Symbol, CryptoOrderSide.Ask);
+            var count = (response.Bids?.Length ?? 0) + (response.Asks?.Length ?? 0);
+            if (count == 0)
+                return Array.Empty<OrderBookLevel>();
 
-            var all = bids
-                .Concat(asks)
-                .Where(x => x.Amount > 0)
-                .ToArray();
-            return all;
+            var result = new OrderBookLevel[count];
+            var index = 0;
+            AddPositiveLevels(response.Bids, response.Symbol, CryptoOrderSide.Bid, result, ref index);
+            AddPositiveLevels(response.Asks, response.Symbol, CryptoOrderSide.Ask, result, ref index);
+            return TrimLevels(result, index);
         }
 
         private OrderBookLevelBulk[] ConvertDiff(OrderBookDiffResponse response)
         {
-            var result = new List<OrderBookLevelBulk>();
-            var bids = ConvertLevels(response.Data?.Bids, response.Data?.Symbol, CryptoOrderSide.Bid);
-            var asks = ConvertLevels(response.Data?.Asks, response.Data?.Symbol, CryptoOrderSide.Ask);
+            var data = response.Data;
+            var count = (data?.Bids?.Length ?? 0) + (data?.Asks?.Length ?? 0);
+            if (count == 0)
+                return Array.Empty<OrderBookLevelBulk>();
 
-            var all = bids.Concat(asks).ToArray();
-            var toDelete = all.Where(x => x.Amount <= 0).ToArray();
-            var toUpdate = all.Where(x => x.Amount > 0).ToArray();
+            var toDelete = new OrderBookLevel[count];
+            var toUpdate = new OrderBookLevel[count];
+            var deleteCount = 0;
+            var updateCount = 0;
+            AddDiffLevels(data?.Bids, data?.Symbol, CryptoOrderSide.Bid, toDelete, ref deleteCount, toUpdate, ref updateCount);
+            AddDiffLevels(data?.Asks, data?.Symbol, CryptoOrderSide.Ask, toDelete, ref deleteCount, toUpdate, ref updateCount);
 
-            if (toDelete.Any())
+            var result = new OrderBookLevelBulk[2];
+            var resultCount = 0;
+
+            if (deleteCount > 0)
             {
-                var bulk = new OrderBookLevelBulk(OrderBookAction.Delete, toDelete, CryptoOrderBookType.L2)
+                var bulk = new OrderBookLevelBulk(OrderBookAction.Delete, TrimLevels(toDelete, deleteCount), CryptoOrderBookType.L2)
                 {
                     ExchangeName = ExchangeName,
-                    ServerTimestamp = response.Data?.EventTime,
-                    ServerSequence = response.Data?.LastUpdateId
+                    ServerTimestamp = data?.EventTime,
+                    ServerSequence = data?.LastUpdateId
                 };
-                result.Add(bulk);
+                result[resultCount++] = bulk;
             }
 
-            if (toUpdate.Any())
+            if (updateCount > 0)
             {
-                var bulk = new OrderBookLevelBulk(OrderBookAction.Update, toUpdate, CryptoOrderBookType.L2)
+                var bulk = new OrderBookLevelBulk(OrderBookAction.Update, TrimLevels(toUpdate, updateCount), CryptoOrderBookType.L2)
                 {
                     ExchangeName = ExchangeName,
-                    ServerTimestamp = response.Data?.EventTime,
-                    ServerSequence = response.Data?.LastUpdateId
+                    ServerTimestamp = data?.EventTime,
+                    ServerSequence = data?.LastUpdateId
                 };
-                result.Add(bulk);
+                result[resultCount++] = bulk;
             }
 
-            return result.ToArray();
+            return TrimBulks(result, resultCount);
+        }
+
+        /// <inheritdoc />
+        protected override OrderBookLevelBulk[] ConvertData(object data)
+        {
+            return data is OrderBookDiffResponse response
+                ? ConvertDiff(response)
+                : Array.Empty<OrderBookLevelBulk>();
         }
 
         /// <inheritdoc />
         protected override OrderBookLevelBulk[] ConvertData(object[] data)
         {
-            var result = new List<OrderBookLevelBulk>();
+            if (data.Length == 0)
+                return Array.Empty<OrderBookLevelBulk>();
+
+            var result = new OrderBookLevelBulk[data.Length * 2];
+            var count = 0;
             foreach (var response in data)
             {
                 var responseSafe = response as OrderBookDiffResponse;
@@ -236,15 +256,75 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
                 var bulks = ConvertDiff(responseSafe);
 
-                if (!bulks.Any())
+                if (bulks.Length == 0)
                     continue;
 
-                result.AddRange(bulks);
+                for (var index = 0; index < bulks.Length; index++)
+                    result[count++] = bulks[index];
             }
 
-            return result.ToArray();
+            return TrimBulks(result, count);
         }
 
+        private static void AddPositiveLevels(Binance.Client.Websocket.Responses.Books.OrderBookLevel[]? books,
+            string? pair, CryptoOrderSide side, OrderBookLevel[] result, ref int index)
+        {
+            if (books == null)
+                return;
+
+            foreach (var book in books)
+            {
+                if (book.Quantity <= 0)
+                    continue;
+
+                result[index++] = ConvertLevel(book, pair, side);
+            }
+        }
+
+        private static void AddDiffLevels(Binance.Client.Websocket.Responses.Books.OrderBookLevel[]? books,
+            string? pair,
+            CryptoOrderSide side,
+            OrderBookLevel[] toDelete,
+            ref int deleteCount,
+            OrderBookLevel[] toUpdate,
+            ref int updateCount)
+        {
+            if (books == null)
+                return;
+
+            foreach (var book in books)
+            {
+                var level = ConvertLevel(book, pair, side);
+                if (level.Amount <= 0)
+                    toDelete[deleteCount++] = level;
+                else
+                    toUpdate[updateCount++] = level;
+            }
+        }
+
+        private static OrderBookLevel[] TrimLevels(OrderBookLevel[] levels, int count)
+        {
+            if (count == 0)
+                return Array.Empty<OrderBookLevel>();
+
+            if (count == levels.Length)
+                return levels;
+
+            Array.Resize(ref levels, count);
+            return levels;
+        }
+
+        private static OrderBookLevelBulk[] TrimBulks(OrderBookLevelBulk[] bulks, int count)
+        {
+            if (count == 0)
+                return Array.Empty<OrderBookLevelBulk>();
+
+            if (count == bulks.Length)
+                return bulks;
+
+            Array.Resize(ref bulks, count);
+            return bulks;
+        }
 
     }
 }

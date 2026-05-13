@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Responses;
 using Bitmex.Client.Websocket.Responses.Orders;
@@ -61,7 +60,7 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
         private void HandleOrders(OrderResponse response)
         {
-            if (response?.Data == null || !response.Data.Any())
+            if (response?.Data == null || response.Data.Length == 0)
             {
                 // weird state, do nothing
                 return;
@@ -90,9 +89,11 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         /// </summary>
         public CryptoOrder[] ConvertOrders(Order[] orders)
         {
-            return orders
-                .Select(ConvertOrder)
-                .ToArray();
+            var result = new CryptoOrder[orders.Length];
+            for (var index = 0; index < orders.Length; index++)
+                result[index] = ConvertOrder(orders[index]);
+
+            return result;
         }
 
         /// <summary>
@@ -101,8 +102,8 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         public CryptoOrder ConvertOrder(Order order)
         {
             var id = order.OrderId;
-            var existingCurrent = ExistingOrders.ContainsKey(id) ? ExistingOrders[id] : null;
-            var existingPartial = _partiallyFilledOrders.ContainsKey(id) ? _partiallyFilledOrders[id] : null;
+            ExistingOrders.TryGetValue(id, out var existingCurrent);
+            _partiallyFilledOrders.TryGetValue(id, out var existingPartial);
             var existing = existingPartial ?? existingCurrent;
 
             var price = Math.Abs(FirstNonZero(order.Price, order.AvgPx, existing?.Price) ?? 0);
@@ -207,25 +208,22 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         /// </summary>
         public static CryptoOrderType ConvertOrderType(string type)
         {
-            var typeSafe = (type ?? string.Empty).ToLower();
+            var typeSafe = type ?? string.Empty;
 
-            switch (typeSafe)
-            {
-                case "market":
-                    return CryptoOrderType.Market;
-                case "stop":
-                    return CryptoOrderType.Stop;
-                case "stoplimit":
-                    return CryptoOrderType.StopLimit;
-                case "limit":
-                    return CryptoOrderType.Limit;
-                case "limitiftouched":
-                    return CryptoOrderType.TakeProfitLimit;
-                case "marketiftouched":
-                    return CryptoOrderType.TakeProfitMarket;
-                default:
-                    return CryptoOrderType.Undefined;
-            }
+            if (typeSafe.Equals("market", StringComparison.OrdinalIgnoreCase))
+                return CryptoOrderType.Market;
+            if (typeSafe.Equals("stop", StringComparison.OrdinalIgnoreCase))
+                return CryptoOrderType.Stop;
+            if (typeSafe.Equals("stoplimit", StringComparison.OrdinalIgnoreCase))
+                return CryptoOrderType.StopLimit;
+            if (typeSafe.Equals("limit", StringComparison.OrdinalIgnoreCase))
+                return CryptoOrderType.Limit;
+            if (typeSafe.Equals("limitiftouched", StringComparison.OrdinalIgnoreCase))
+                return CryptoOrderType.TakeProfitLimit;
+            if (typeSafe.Equals("marketiftouched", StringComparison.OrdinalIgnoreCase))
+                return CryptoOrderType.TakeProfitMarket;
+
+            return CryptoOrderType.Undefined;
         }
 
         /// <summary>
@@ -274,13 +272,25 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         }
 
 
-        private static double? FirstNonZero(params double?[] numbers)
+        private static double? FirstNonZero(double? first, double? second)
         {
-            foreach (var number in numbers)
-            {
-                if (number.HasValue && Math.Abs(number.Value) > 0)
-                    return number.Value;
-            }
+            if (first.HasValue && Math.Abs(first.Value) > 0)
+                return first.Value;
+
+            if (second.HasValue && Math.Abs(second.Value) > 0)
+                return second.Value;
+
+            return null;
+        }
+
+        private static double? FirstNonZero(double? first, double? second, double? third)
+        {
+            var value = FirstNonZero(first, second);
+            if (value.HasValue)
+                return value;
+
+            if (third.HasValue && Math.Abs(third.Value) > 0)
+                return third.Value;
 
             return null;
         }

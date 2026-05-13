@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
@@ -36,6 +35,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// Use this subject to stream order book data (level difference)
         /// </summary>
         private readonly Subject<OrderBookLevelBulk[]> _orderBookSubject = new Subject<OrderBookLevelBulk[]>();
+
+        private Action<OrderBookLevelBulk>? _orderBookSingleHandlers;
+        private Action<OrderBookLevelBulk[]>? _orderBookBatchHandlers;
 
         /// <summary>
         /// Hidden constructor
@@ -95,6 +97,20 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 
         /// <inheritdoc />
         public IObservable<OrderBookLevelBulk[]> OrderBookStream => _orderBookSubject.AsObservable();
+
+        /// <summary>
+        /// Subscribes an order book to the internal allocation-aware stream.
+        /// </summary>
+        internal IDisposable SubscribeOrderBookChanges(Action<OrderBookLevelBulk> onSingleBulk, Action<OrderBookLevelBulk[]> onBulkBatch)
+        {
+            lock (_bufferLocker)
+            {
+                _orderBookSingleHandlers += onSingleBulk;
+                _orderBookBatchHandlers += onBulkBatch;
+            }
+
+            return new OrderBookChangeSubscription(this, onSingleBulk, onBulkBatch);
+        }
 
         /// <inheritdoc />
         public async Task LoadSnapshot(string pair, int count = 1000)
@@ -159,13 +175,33 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
                 return;
             }
 
-            ConvertAndStream(new[] { data });
+            ConvertAndStream(data);
         }
 
         /// <summary>
         /// Convert received data into output bulk object
         /// </summary>
         protected abstract OrderBookLevelBulk[] ConvertData(object[] data);
+
+        /// <summary>
+        /// Convert a single received item into output bulk objects.
+        /// </summary>
+        protected virtual OrderBookLevelBulk[] ConvertData(object data)
+        {
+            if (TryConvertData(data, out var bulk) && bulk != null)
+                return new[] { bulk };
+
+            return ConvertData(new[] { data });
+        }
+
+        /// <summary>
+        /// Convert a single received item into one output bulk without allocating an outer bulk array.
+        /// </summary>
+        protected virtual bool TryConvertData(object data, out OrderBookLevelBulk? bulk)
+        {
+            bulk = null;
+            return false;
+        }
 
         private void StartProcessingFromBufferThread()
         {
@@ -238,7 +274,67 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         private void ConvertAndStream(object[] dataArr)
         {
             var converted = ConvertData(dataArr);
-            _orderBookSubject.OnNext(converted);
+            StreamBatch(converted);
+        }
+
+        private void ConvertAndStream(object data)
+        {
+            if (TryConvertData(data, out var bulk) && bulk != null)
+            {
+                StreamSingle(bulk);
+                return;
+            }
+
+            var converted = ConvertData(data);
+            StreamBatch(converted);
+        }
+
+        private void StreamSingle(OrderBookLevelBulk bulk)
+        {
+            _orderBookSingleHandlers?.Invoke(bulk);
+
+            if (_orderBookSubject.HasObservers)
+                _orderBookSubject.OnNext(new[] { bulk });
+        }
+
+        private void StreamBatch(OrderBookLevelBulk[] converted)
+        {
+            _orderBookBatchHandlers?.Invoke(converted);
+
+            if (_orderBookSubject.HasObservers)
+                _orderBookSubject.OnNext(converted);
+        }
+
+        private void UnsubscribeOrderBookChanges(Action<OrderBookLevelBulk> onSingleBulk, Action<OrderBookLevelBulk[]> onBulkBatch)
+        {
+            lock (_bufferLocker)
+            {
+                _orderBookSingleHandlers -= onSingleBulk;
+                _orderBookBatchHandlers -= onBulkBatch;
+            }
+        }
+
+        private sealed class OrderBookChangeSubscription : IDisposable
+        {
+            private OrderBookSourceBase? _source;
+            private readonly Action<OrderBookLevelBulk> _onSingleBulk;
+            private readonly Action<OrderBookLevelBulk[]> _onBulkBatch;
+
+            public OrderBookChangeSubscription(
+                OrderBookSourceBase source,
+                Action<OrderBookLevelBulk> onSingleBulk,
+                Action<OrderBookLevelBulk[]> onBulkBatch)
+            {
+                _source = source;
+                _onSingleBulk = onSingleBulk;
+                _onBulkBatch = onBulkBatch;
+            }
+
+            public void Dispose()
+            {
+                var source = Interlocked.Exchange(ref _source, null);
+                source?.UnsubscribeOrderBookChanges(_onSingleBulk, _onBulkBatch);
+            }
         }
     }
 }

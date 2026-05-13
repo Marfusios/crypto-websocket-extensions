@@ -16,8 +16,16 @@ public class TopNLevelsChangeInfo : OrderBookChangeInfo, ITopNLevelsChangeInfo
     {
     }
 
+    /// <inheritdoc />
+    public TopNLevelsChangeInfo(string pair, string pairOriginal,
+        ICryptoQuotes quotes, IReadOnlyList<OrderBookLevel> levels, OrderBookLevelBulk source,
+        bool isSnapshot)
+        : base(pair, pairOriginal, quotes, levels, source, isSnapshot)
+    {
+    }
+
     /// <summary>
     /// The L2 snapshot of the top N bid/ask levels
     /// </summary>
-    public L2Snapshot Snapshot { get; internal set; }
+    public L2Snapshot Snapshot { get; internal set; } = null!;
 }

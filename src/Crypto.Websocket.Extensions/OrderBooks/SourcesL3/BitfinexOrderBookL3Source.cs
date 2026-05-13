@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Bitfinex.Client.Websocket.Client;
@@ -60,7 +58,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
         {
             // received snapshot, convert and stream
             var levels = ConvertLevels(books);
-            var last = books.LastOrDefault();
+            var last = books.Length > 0 ? books[books.Length - 1] : null;
             var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L3);
             FillBulk(last, bulk);
             StreamSnapshot(bulk);
@@ -73,9 +71,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
 
         private OrderBookLevel[] ConvertLevels(RawBook[] data)
         {
-            return data
-                .Select(ConvertLevel)
-                .ToArray();
+            var result = new OrderBookLevel[data.Length];
+            for (var index = 0; index < data.Length; index++)
+                result[index] = ConvertLevel(data[index]);
+
+            return result;
         }
 
         private OrderBookLevel ConvertLevel(RawBook x)
@@ -111,7 +111,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
         protected override async Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count = 1000)
         {
             RawBook[]? parsed = null;
-            var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
+            var pairSafe = (pair ?? string.Empty).Trim().ToUpperInvariant();
             pairSafe = $"t{pairSafe}";
             var countSafe = count > 100 ? 100 : count;
             var result = string.Empty;
@@ -124,7 +124,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
 
                 result = await content.ReadAsStringAsync();
                 parsed = JsonConvert.DeserializeObject<RawBook[]>(result);
-                if (parsed == null || !parsed.Any())
+                if (parsed == null || parsed.Length == 0)
                     return null;
 
                 foreach (var book in parsed)
@@ -140,7 +140,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
             }
 
             var levels = ConvertLevels(parsed);
-            var last = parsed.LastOrDefault();
+            var last = parsed.Length > 0 ? parsed[parsed.Length - 1] : null;
             var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L3);
             FillBulk(last, bulk);
             return bulk;
@@ -166,9 +166,20 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
         }
 
         /// <inheritdoc />
+        protected override bool TryConvertData(object data, out OrderBookLevelBulk? bulk)
+        {
+            bulk = data is RawBook response
+                ? ConvertDiff(response)
+                : null;
+
+            return bulk != null;
+        }
+
+        /// <inheritdoc />
         protected override OrderBookLevelBulk[] ConvertData(object[] data)
         {
-            var result = new List<OrderBookLevelBulk>();
+            var result = new OrderBookLevelBulk[data.Length];
+            var count = 0;
             foreach (var response in data)
             {
                 var responseSafe = response as RawBook;
@@ -176,10 +187,17 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
                     continue;
 
                 var converted = ConvertDiff(responseSafe);
-                result.Add(converted);
+                result[count++] = converted;
             }
 
-            return result.ToArray();
+            if (count == 0)
+                return Array.Empty<OrderBookLevelBulk>();
+
+            if (count == result.Length)
+                return result;
+
+            Array.Resize(ref result, count);
+            return result;
         }
 
 

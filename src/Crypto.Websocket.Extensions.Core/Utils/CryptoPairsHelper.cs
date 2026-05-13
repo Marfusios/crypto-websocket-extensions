@@ -10,12 +10,52 @@
         /// </summary>
         public static string Clean(string? pair)
         {
-            return (pair ?? string.Empty)
-                .Trim()
-                .ToLower()
-                .Replace("/", "")
-                .Replace("-", "")
-                .Replace("\\", "");
+            if (string.IsNullOrWhiteSpace(pair))
+                return string.Empty;
+
+            var start = 0;
+            var end = pair.Length - 1;
+            while (start <= end && char.IsWhiteSpace(pair[start]))
+                start++;
+
+            while (end >= start && char.IsWhiteSpace(pair[end]))
+                end--;
+
+            if (start > end)
+                return string.Empty;
+
+            var span = System.MemoryExtensions.AsSpan(pair, start, end - start + 1);
+            var outputLength = 0;
+            var needsCopy = start != 0 || end != pair.Length - 1;
+
+            foreach (var c in span)
+            {
+                if (IsSeparator(c))
+                {
+                    needsCopy = true;
+                    continue;
+                }
+
+                outputLength++;
+                needsCopy |= char.ToLowerInvariant(c) != c;
+            }
+
+            if (outputLength == 0)
+                return string.Empty;
+
+            if (!needsCopy)
+                return pair;
+
+            return string.Create(outputLength, (Pair: pair, Start: start, End: end), static (destination, source) =>
+            {
+                var index = 0;
+                for (var sourceIndex = source.Start; sourceIndex <= source.End; sourceIndex++)
+                {
+                    var c = source.Pair[sourceIndex];
+                    if (!IsSeparator(c))
+                        destination[index++] = char.ToLowerInvariant(c);
+                }
+            });
         }
 
         /// <summary>
@@ -25,7 +65,9 @@
         {
             var first = Clean(firstPair);
             var second = Clean(secondPair);
-            return first.Equals(second);
+            return first.Equals(second, System.StringComparison.Ordinal);
         }
+
+        private static bool IsSeparator(char c) => c is '/' or '-' or '\\';
     }
 }

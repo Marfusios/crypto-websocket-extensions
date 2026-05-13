@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Reactive.Linq;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Responses;
@@ -44,7 +43,7 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
         private void Subscribe()
         {
             _subscription = _client.Streams.TradesStream
-                .Where(x => x?.Data != null && x.Data.Any())
+                .Where(x => x?.Data != null && x.Data.Length > 0)
                 .Subscribe(HandleTradeSafe);
         }
 
@@ -67,7 +66,11 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
 
         private CryptoTrade[] ConvertTrades(Trade[] trades)
         {
-            return trades.Select(ConvertTrade).ToArray();
+            var result = new CryptoTrade[trades.Length];
+            for (var index = 0; index < trades.Length; index++)
+                result[index] = ConvertTrade(trades[index]);
+
+            return result;
         }
 
         private CryptoTrade ConvertTrade(Trade trade)

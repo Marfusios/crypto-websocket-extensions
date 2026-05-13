@@ -23,8 +23,15 @@ It helps to unify data models and usage of more clients together.
 * targets `netstandard2.1`, `net6.0`, `net7.0`, `net8.0`, `net9.0`, `net10.0`
 * built on [Websocket.Client 5.4.0](https://www.nuget.org/packages/Websocket.Client/5.4.0) through the updated exchange clients
 * third-party exchange adapters for Bybit, Luno, and VALR remain enabled; NuGet resolves the shared websocket transport to the newer package version
+* benchmarked order book hot paths with [BenchmarkDotNet](benchmarks/README.md)
 * reactive extensions ([Rx.NET](https://github.com/Reactive-Extensions/Rx.NET))
 * integrated logging abstraction ([LibLog](https://github.com/damianh/LibLog))
+
+### Performance
+
+The order book implementation is tuned for allocation-sensitive websocket streams. Common L2 diff processing avoids temporary notification objects when nobody is subscribed, keeps internal source-to-orderbook handoff on the single-update path, and uses list-based dispatch for bulk level updates to avoid interface enumerator allocations.
+
+The current benchmark suite focuses on `CryptoOrderBook`, `CryptoOrderBookL2`, and related source adapters. In the latest pass, representative BenchmarkDotNet runs showed `CryptoOrderBook.BidLevels` improving from 17,822 ns / 77 KB to 5,409 ns / 4.8 KB, and `CryptoOrderBookL2` diff processing improving from 935 ns / 545 B to 665 ns / 160 B. See the [benchmarks README](benchmarks/README.md) for commands and detailed results.
 
 ### Supported exchanges
 

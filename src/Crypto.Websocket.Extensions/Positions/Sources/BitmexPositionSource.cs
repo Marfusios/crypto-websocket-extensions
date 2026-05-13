@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Linq;
 using System.Reactive.Linq;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Responses.Positions;
@@ -48,7 +47,7 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
         private void Subscribe()
         {
             _subscription = _client.Streams.PositionStream
-                .Where(x => x?.Data != null && x.Data.Any())
+                .Where(x => x?.Data != null && x.Data.Length > 0)
                 .Subscribe(HandleSafe);
         }
 
@@ -71,13 +70,17 @@ namespace Crypto.Websocket.Extensions.Positions.Sources
 
         private CryptoPosition[] Convert(Position[] positions)
         {
-            return positions.Select(Convert).ToArray();
+            var result = new CryptoPosition[positions.Length];
+            for (var index = 0; index < positions.Length; index++)
+                result[index] = Convert(positions[index]);
+
+            return result;
         }
 
         private CryptoPosition Convert(Position position)
         {
             var key = GetPositionKey(position);
-            var existing = _positions.ContainsKey(key) ? _positions[key] : null;
+            _positions.TryGetValue(key, out var existing);
 
             var currency = position.Currency ?? "XBt";
 

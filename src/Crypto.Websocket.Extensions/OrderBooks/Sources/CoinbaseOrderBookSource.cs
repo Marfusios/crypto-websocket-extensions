@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Coinbase.Client.Websocket.Client;
@@ -70,10 +68,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private OrderBookLevel[] ConvertSnapshot(OrderBookSnapshotResponse snapshot)
         {
-            var bids = ConvertLevels(snapshot.ProductId, snapshot.Bids);
-            var asks = ConvertLevels(snapshot.ProductId, snapshot.Asks);
-            var levels = bids.Concat(asks).ToArray();
-            return levels;
+            return ConvertLevels(snapshot.ProductId, snapshot.Bids, snapshot.Asks);
         }
 
         private void HandleBook(OrderBookUpdateResponse update)
@@ -83,9 +78,11 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private OrderBookLevel[] ConvertLevels(string? pair, CoinbaseOrderBookLevel[] data)
         {
-            return data
-                .Select(x => ConvertLevel(pair, x))
-                .ToArray();
+            var result = new OrderBookLevel[data.Length];
+            for (var index = 0; index < data.Length; index++)
+                result[index] = ConvertLevel(pair, data[index]);
+
+            return result;
         }
 
         private OrderBookLevel ConvertLevel(string? pair, CoinbaseOrderBookLevel x)
@@ -121,7 +118,7 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         protected override async Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count = 1000)
         {
             OrderBookSnapshotDto? parsed;
-            var pairSafe = (pair ?? string.Empty).Trim().ToUpper();
+            var pairSafe = (pair ?? string.Empty).Trim().ToUpperInvariant();
             var result = string.Empty;
 
             try
@@ -142,25 +139,48 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                 return null;
             }
 
-            var bids = ConvertLevels(pair, parsed.Bids);
-            var asks = ConvertLevels(pair, parsed.Asks);
-            var levels = bids.Concat(asks).ToArray();
+            var levels = ConvertLevels(pair, parsed.Bids, parsed.Asks);
             var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, levels, CryptoOrderBookType.L2);
             return bulk;
         }
 
-        private IEnumerable<OrderBookLevelBulk> ConvertDiff(OrderBookUpdateResponse update)
+        private OrderBookLevelBulk[] ConvertDiff(OrderBookUpdateResponse update)
         {
-            var converted = ConvertLevels(update.ProductId, update.Changes);
+            if (update.Changes.Length == 0)
+                return Array.Empty<OrderBookLevelBulk>();
 
-            var group = converted.GroupBy(RecognizeAction).ToArray();
+            var toDelete = new OrderBookLevel[update.Changes.Length];
+            var toUpdate = new OrderBookLevel[update.Changes.Length];
+            var deleteCount = 0;
+            var updateCount = 0;
 
-            foreach (var actionGroup in group)
+            foreach (var change in update.Changes)
             {
-                var bulk = new OrderBookLevelBulk(actionGroup.Key, actionGroup.ToArray(), CryptoOrderBookType.L2);
-                FillBulk(update, bulk);
-                yield return bulk;
+                var level = ConvertLevel(update.ProductId, change);
+                if (RecognizeAction(level) == OrderBookAction.Delete)
+                    toDelete[deleteCount++] = level;
+                else
+                    toUpdate[updateCount++] = level;
             }
+
+            var result = new OrderBookLevelBulk[2];
+            var resultCount = 0;
+
+            if (deleteCount > 0)
+            {
+                var bulk = new OrderBookLevelBulk(OrderBookAction.Delete, TrimLevels(toDelete, deleteCount), CryptoOrderBookType.L2);
+                FillBulk(update, bulk);
+                result[resultCount++] = bulk;
+            }
+
+            if (updateCount > 0)
+            {
+                var bulk = new OrderBookLevelBulk(OrderBookAction.Update, TrimLevels(toUpdate, updateCount), CryptoOrderBookType.L2);
+                FillBulk(update, bulk);
+                result[resultCount++] = bulk;
+            }
+
+            return TrimBulks(result, resultCount);
         }
 
         private void FillBulk(ResponseBase response, OrderBookLevelBulk bulk)
@@ -171,9 +191,21 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
         }
 
         /// <inheritdoc />
+        protected override OrderBookLevelBulk[] ConvertData(object data)
+        {
+            return data is OrderBookUpdateResponse response
+                ? ConvertDiff(response)
+                : Array.Empty<OrderBookLevelBulk>();
+        }
+
+        /// <inheritdoc />
         protected override OrderBookLevelBulk[] ConvertData(object[] data)
         {
-            var result = new List<OrderBookLevelBulk>();
+            if (data.Length == 0)
+                return Array.Empty<OrderBookLevelBulk>();
+
+            var result = new OrderBookLevelBulk[data.Length * 2];
+            var count = 0;
             foreach (var response in data)
             {
                 var responseSafe = response as OrderBookUpdateResponse;
@@ -181,10 +213,49 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
                     continue;
 
                 var converted = ConvertDiff(responseSafe);
-                result.AddRange(converted);
+                for (var index = 0; index < converted.Length; index++)
+                    result[count++] = converted[index];
             }
 
-            return result.ToArray();
+            return TrimBulks(result, count);
+        }
+
+        private OrderBookLevel[] ConvertLevels(string? pair, CoinbaseOrderBookLevel[] bids, CoinbaseOrderBookLevel[] asks)
+        {
+            var result = new OrderBookLevel[bids.Length + asks.Length];
+            var index = 0;
+
+            for (var bidIndex = 0; bidIndex < bids.Length; bidIndex++)
+                result[index++] = ConvertLevel(pair, bids[bidIndex]);
+
+            for (var askIndex = 0; askIndex < asks.Length; askIndex++)
+                result[index++] = ConvertLevel(pair, asks[askIndex]);
+
+            return result;
+        }
+
+        private static OrderBookLevel[] TrimLevels(OrderBookLevel[] levels, int count)
+        {
+            if (count == 0)
+                return Array.Empty<OrderBookLevel>();
+
+            if (count == levels.Length)
+                return levels;
+
+            Array.Resize(ref levels, count);
+            return levels;
+        }
+
+        private static OrderBookLevelBulk[] TrimBulks(OrderBookLevelBulk[] bulks, int count)
+        {
+            if (count == 0)
+                return Array.Empty<OrderBookLevelBulk>();
+
+            if (count == bulks.Length)
+                return bulks;
+
+            Array.Resize(ref bulks, count);
+            return bulks;
         }
 
         // ReSharper disable once ClassNeverInstantiated.Local
@@ -236,20 +307,20 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private CoinbaseOrderBookLevel[] JArrayToTradingTicker(JArray data)
         {
-            var result = new List<CoinbaseOrderBookLevel>();
-            foreach (var item in data)
+            var result = new CoinbaseOrderBookLevel[data.Count];
+            for (var index = 0; index < data.Count; index++)
             {
-                var array = item.ToArray();
+                var item = data[index];
 
                 var level = new CoinbaseOrderBookLevel();
-                level.Price = (double)array[0];
-                level.Amount = (double)array[1];
+                level.Price = (double)item[0]!;
+                level.Amount = (double)item[1]!;
                 level.Side = _side;
 
-                result.Add(level);
+                result[index] = level;
             }
 
-            return result.ToArray();
+            return result;
         }
     }
 }

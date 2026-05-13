@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
@@ -242,10 +241,14 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                     _current = new L2Snapshot(this, BlankQuotes(), BlankQuotes());
                 }
 
-                IReadOnlyList<CryptoQuote> BlankQuotes() => Enumerable
-                    .Range(0, _notifyForLevelAndAbove)
-                    .Select(_ => new CryptoQuote(0, 0))
-                    .ToList(_notifyForLevelAndAbove);
+                IReadOnlyList<CryptoQuote> BlankQuotes()
+                {
+                    var result = new List<CryptoQuote>(_notifyForLevelAndAbove);
+                    for (var index = 0; index < _notifyForLevelAndAbove; index++)
+                        result.Add(new CryptoQuote(0, 0));
+
+                    return result;
+                }
             }
         }
 
@@ -311,7 +314,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         private void Subscribe()
         {
             _subscriptionSnapshot = Source.OrderBookSnapshotStream.Subscribe(HandleSnapshotSynchronized);
-            _subscriptionDiff = Source.OrderBookStream.Subscribe(HandleDiffsSynchronized);
+            _subscriptionDiff = Source is OrderBookSourceBase sourceBase
+                ? sourceBase.SubscribeOrderBookChanges(HandleDiffSynchronized, HandleDiffsSynchronized)
+                : Source.OrderBookStream.Subscribe(HandleDiffsSynchronized);
         }
 
         private void HandleSnapshotSynchronized(OrderBookLevelBulk? bulk)
@@ -319,7 +324,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             if (bulk == null || !IsForThis(bulk))
                 return;
 
-            var levelsForThis = bulk.Levels.Where(x => TargetPair.Equals(x.Pair)).ToArray();
+            var levelsForThis = FilterLevelsForTargetPair(bulk.Levels);
             if (levelsForThis.Length <= 0)
             {
                 // snapshot for different pair, ignore
@@ -329,8 +334,12 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             lock (Locker)
             {
                 HandleSnapshot(levelsForThis);
-                var change = CreateBookChangeNotification(levelsForThis, new[] { bulk }, true);
-                NotifyOrderBookChanges(change);
+
+                if (HasNotificationObservers)
+                {
+                    var change = CreateBookChangeNotification(levelsForThis, bulk, true);
+                    NotifyOrderBookChanges(change);
+                }
             }
         }
 
@@ -341,11 +350,75 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// <returns>True if the bulk is for this orderbook.</returns>
         protected abstract bool IsForThis(OrderBookLevelBulk? bulk);
 
-        private void HandleDiffsSynchronized(OrderBookLevelBulk?[] bulks)
+        private OrderBookLevel[] FilterLevelsForTargetPair(OrderBookLevel[] levels)
+        {
+            if (levels.Length == 0)
+                return Array.Empty<OrderBookLevel>();
+
+            var count = 0;
+            foreach (var level in levels)
+            {
+                if (TargetPair.Equals(level.Pair, StringComparison.Ordinal))
+                    count++;
+            }
+
+            if (count == 0)
+                return Array.Empty<OrderBookLevel>();
+
+            if (count == levels.Length)
+                return levels;
+
+            var result = new OrderBookLevel[count];
+            var index = 0;
+            foreach (var level in levels)
+            {
+                if (TargetPair.Equals(level.Pair, StringComparison.Ordinal))
+                    result[index++] = level;
+            }
+
+            return result;
+        }
+
+        private OrderBookLevelBulk[] FilterBulksForThis(OrderBookLevelBulk[] bulks)
+        {
+            var count = 0;
+            foreach (var bulk in bulks)
+            {
+                if (bulk != null && IsForThis(bulk))
+                    count++;
+            }
+
+            if (count == 0)
+                return Array.Empty<OrderBookLevelBulk>();
+
+            var result = new OrderBookLevelBulk[count];
+            var index = 0;
+            foreach (var bulk in bulks)
+            {
+                if (bulk != null && IsForThis(bulk))
+                    result[index++] = bulk;
+            }
+
+            return result;
+        }
+
+        private bool HasNotificationObservers =>
+            OrderBookUpdated.HasObservers ||
+            BidAskUpdated.HasObservers ||
+            TopLevelUpdated.HasObservers ||
+            TopNLevelsUpdated.HasObservers;
+
+        private void HandleDiffsSynchronized(OrderBookLevelBulk[] bulks)
         {
             var sw = DebugEnabled ? Stopwatch.StartNew() : null;
 
-            OrderBookLevelBulk[] forThis = bulks.Where(x => x != null).Where(IsForThis).ToArray()!;
+            if (bulks.Length == 1)
+            {
+                HandleSingleDiffSynchronized(bulks[0], bulks, sw);
+                return;
+            }
+
+            var forThis = FilterBulksForThis(bulks);
             if (forThis.Length <= 0)
             {
                 // diffs for different pair, ignore
@@ -358,7 +431,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             {
                 foreach (var bulk in forThis)
                 {
-                    var levelsForThis = bulk.Levels.Where(x => TargetPair.Equals(x.Pair)).ToList();
+                    var levelsForThis = FilterLevelsForTargetPair(bulk.Levels);
                     allLevels.AddRange(levelsForThis);
                     HandleDiff(bulk, levelsForThis);
                 }
@@ -366,27 +439,79 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 if (allLevels.Count > 0)
                 {
                     RecomputeAfterChangeAndSetIndexes(allLevels);
-                    var change = CreateBookChangeNotification(allLevels, forThis, false);
-                    NotifyOrderBookChanges(change);
+
+                    if (HasNotificationObservers)
+                    {
+                        var change = CreateBookChangeNotification(allLevels, forThis, false);
+                        NotifyOrderBookChanges(change);
+                    }
                 }
 
                 if (sw != null)
                 {
-                    var levels = forThis.SelectMany(x => x.Levels).Count();
+                    var levels = 0;
+                    foreach (var bulk in forThis)
+                        levels += bulk.Levels.Length;
+
                     LogDebug($"Diff ({forThis.Length} bulks, {levels} levels) processing took {sw.ElapsedMilliseconds} ms, {sw.ElapsedTicks} ticks");
                 }
             }
         }
 
+        private void HandleDiffSynchronized(OrderBookLevelBulk bulk)
+        {
+            var sw = DebugEnabled ? Stopwatch.StartNew() : null;
+            HandleSingleDiffSynchronized(bulk, null, sw);
+        }
+
+        private void HandleSingleDiffSynchronized(OrderBookLevelBulk? bulk, IReadOnlyList<OrderBookLevelBulk>? sourceBulks, Stopwatch? sw)
+        {
+            if (bulk == null || !IsForThis(bulk))
+                return;
+
+            var levelsForThis = FilterLevelsForTargetPair(bulk.Levels);
+            if (levelsForThis.Length <= 0)
+                return;
+
+            lock (Locker)
+            {
+                HandleDiff(bulk, levelsForThis);
+                RecomputeAfterChangeAndSetIndexes(levelsForThis);
+
+                if (HasNotificationObservers)
+                {
+                    var change = sourceBulks == null
+                        ? CreateBookChangeNotification(levelsForThis, bulk, false)
+                        : CreateBookChangeNotification(levelsForThis, sourceBulks, false);
+                    NotifyOrderBookChanges(change);
+                }
+
+                if (sw != null)
+                    LogDebug($"Diff (1 bulks, {bulk.Levels.Length} levels) processing took {sw.ElapsedMilliseconds} ms, {sw.ElapsedTicks} ticks");
+            }
+        }
+
         private void NotifyOrderBookChanges(TopNLevelsChangeInfo levelsChange)
         {
-            OrderBookUpdated.OnNext(levelsChange);
+            var hasOrderBookObservers = OrderBookUpdated.HasObservers;
+            var hasBidAskObservers = BidAskUpdated.HasObservers;
+            var hasTopLevelObservers = TopLevelUpdated.HasObservers;
+            var hasTopNObservers = TopNLevelsUpdated.HasObservers && NotifyForLevelAndAbove > 0;
+
+            if (hasOrderBookObservers)
+                OrderBookUpdated.OnNext(levelsChange);
+
+            if (!hasBidAskObservers && !hasTopLevelObservers && !hasTopNObservers)
+                return;
 
             (_previous, _current) = (_current, _previous);
+            _current.Update(BidPrice, AskPrice, BidAmount, AskAmount);
 
-            var bidAskChanged = NotifyIfBidAskChanged(levelsChange);
-            var topLevelChanged = NotifyIfTopLevelChanged(bidAskChanged, levelsChange);
-            NotifyIfTopNLevelsChanged(topLevelChanged, levelsChange);
+            var bidAskChanged = NotifyIfBidAskChanged(levelsChange, hasBidAskObservers);
+            var topLevelChanged = NotifyIfTopLevelChanged(bidAskChanged, levelsChange, hasTopLevelObservers);
+
+            if (hasTopNObservers)
+                NotifyIfTopNLevelsChanged(topLevelChanged, levelsChange);
         }
 
         private void HandleSnapshot(OrderBookLevel[] levels)
@@ -430,7 +555,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// <param name="level">The ask level.</param>
         protected abstract void HandleSnapshotAskLevel(OrderBookLevel level);
 
-        private void HandleDiff(OrderBookLevelBulk bulk, IReadOnlyCollection<OrderBookLevel> correctLevels)
+        private void HandleDiff(OrderBookLevelBulk bulk, IReadOnlyList<OrderBookLevel> correctLevels)
         {
             if (IgnoreDiffsBeforeSnapshot && !_isSnapshotLoaded)
             {
@@ -454,6 +579,15 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 default:
                     return;
             }
+        }
+
+        /// <summary>
+        /// Updates internal state levels.
+        /// </summary>
+        /// <param name="levels">The levels to update.</param>
+        protected virtual void UpdateLevels(IReadOnlyList<OrderBookLevel> levels)
+        {
+            UpdateLevels((IEnumerable<OrderBookLevel>)levels);
         }
 
         /// <summary>
@@ -506,6 +640,15 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             string.IsNullOrWhiteSpace(level.Id) ||
             level.Price == null ||
             level.Amount == null;
+
+        /// <summary>
+        /// Deletes internal state levels.
+        /// </summary>
+        /// <param name="levels">The levels to delete.</param>
+        protected virtual void DeleteLevels(IReadOnlyList<OrderBookLevel> levels)
+        {
+            DeleteLevels((IReadOnlyCollection<OrderBookLevel>)levels);
+        }
 
         /// <summary>
         /// Deletes internal state levels.
@@ -713,7 +856,16 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             lock (Locker)
             {
-                return AllBidLevels.Concat(AllAskLevels).Select(x => x.Value).ToArray();
+                var result = new OrderBookLevel[AllBidLevels.Count + AllAskLevels.Count];
+                var index = 0;
+
+                foreach (var level in AllBidLevels.Values)
+                    result[index++] = level;
+
+                foreach (var level in AllAskLevels.Values)
+                    result[index++] = level;
+
+                return result;
             }
         }
 
@@ -735,8 +887,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         private TopNLevelsChangeInfo CreateBookChangeNotification(IEnumerable<OrderBookLevel> levels, IReadOnlyList<OrderBookLevelBulk> sources, bool isSnapshot)
         {
             var quotes = new CryptoQuotes(BidPrice, AskPrice, BidAmount, AskAmount);
-            var clonedLevels = DebugEnabled ? levels.Select(x => x.Clone()).ToArray() : Array.Empty<OrderBookLevel>();
-            var lastSource = sources.LastOrDefault();
+            var clonedLevels = DebugEnabled ? CloneLevels(levels) : Array.Empty<OrderBookLevel>();
+            var lastSource = sources.Count > 0 ? sources[sources.Count - 1] : null;
             var change = new TopNLevelsChangeInfo(TargetPair, TargetPairOriginal, quotes, clonedLevels, sources, isSnapshot)
             {
                 ExchangeName = lastSource?.ExchangeName,
@@ -746,24 +898,41 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             return change;
         }
 
-        private bool NotifyIfBidAskChanged(OrderBookChangeInfo info)
+        private TopNLevelsChangeInfo CreateBookChangeNotification(IEnumerable<OrderBookLevel> levels, OrderBookLevelBulk source, bool isSnapshot)
+        {
+            var quotes = new CryptoQuotes(BidPrice, AskPrice, BidAmount, AskAmount);
+            var clonedLevels = DebugEnabled ? CloneLevels(levels) : Array.Empty<OrderBookLevel>();
+            var change = new TopNLevelsChangeInfo(TargetPair, TargetPairOriginal, quotes, clonedLevels, source, isSnapshot)
+            {
+                ExchangeName = source.ExchangeName,
+                ServerSequence = source.ServerSequence,
+                ServerTimestamp = source.ServerTimestamp
+            };
+            return change;
+        }
+
+        private bool NotifyIfBidAskChanged(OrderBookChangeInfo info, bool notify)
         {
             if (!CryptoMathUtils.IsSame(_previous.Bid, info.Quotes.Bid) ||
                 !CryptoMathUtils.IsSame(_previous.Ask, info.Quotes.Ask))
             {
-                BidAskUpdated.OnNext(info);
+                if (notify)
+                    BidAskUpdated.OnNext(info);
+
                 return true;
             }
             return false;
         }
 
-        private bool NotifyIfTopLevelChanged(bool bidAskChanged, OrderBookChangeInfo info)
+        private bool NotifyIfTopLevelChanged(bool bidAskChanged, OrderBookChangeInfo info, bool notify)
         {
             if (bidAskChanged ||
                 !CryptoMathUtils.IsSame(_previous.BidAmount, info.Quotes.BidAmount) ||
                 !CryptoMathUtils.IsSame(_previous.AskAmount, info.Quotes.AskAmount))
             {
-                TopLevelUpdated.OnNext(info);
+                if (notify)
+                    TopLevelUpdated.OnNext(info);
+
                 return true;
             }
             return false;
@@ -773,19 +942,13 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         {
             UpdateSnapshot(_current);
 
-            if (NotifyForLevelAndAbove <= 0)
-            {
-                // do nothing, save resources
-                return false;
-            }
-
             if (topLevelChanged ||
                 HasChange(_previous.Bids, _current.Bids) ||
                 HasChange(_previous.Asks, _current.Asks))
             {
                 info.Snapshot = new L2Snapshot(this,
-                    _current.Bids.Where(x => x.IsValid).ToList(_current.Bids.Count),
-                    _current.Asks.Where(x => x.IsValid).ToList(_current.Asks.Count));
+                    CopyValidQuotes(_current.Bids),
+                    CopyValidQuotes(_current.Asks));
 
                 TopNLevelsUpdated.OnNext(info);
                 return true;
@@ -797,7 +960,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 if (left.Count != right.Count)
                     return true;
 
-                foreach (var index in Enumerable.Range(0, left.Count))
+                for (var index = 0; index < left.Count; index++)
                 {
                     var leftQuote = left[index];
                     var rightQuote = right[index];
@@ -808,6 +971,37 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 }
                 return false;
             }
+        }
+
+        private static OrderBookLevel[] CloneLevels(IEnumerable<OrderBookLevel> levels)
+        {
+            if (levels is ICollection<OrderBookLevel> collection)
+            {
+                var result = new OrderBookLevel[collection.Count];
+                var index = 0;
+                foreach (var level in collection)
+                    result[index++] = level.Clone();
+
+                return result;
+            }
+
+            var cloned = new List<OrderBookLevel>();
+            foreach (var level in levels)
+                cloned.Add(level.Clone());
+
+            return cloned.ToArray();
+        }
+
+        private static IReadOnlyList<CryptoQuote> CopyValidQuotes(IReadOnlyList<CryptoQuote> quotes)
+        {
+            var result = new List<CryptoQuote>(quotes.Count);
+            foreach (var quote in quotes)
+            {
+                if (quote.IsValid)
+                    result.Add(quote);
+            }
+
+            return result;
         }
 
         private async Task ReloadSnapshotWithCheck()

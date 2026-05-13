@@ -8,8 +8,6 @@ using Hyperliquid.Client.Websocket.Responses.Fills;
 using Hyperliquid.Client.Websocket.Responses.Orders;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Crypto.Websocket.Extensions.Core.Orders;
 
 namespace Crypto.Websocket.Extensions.Orders.Sources
@@ -118,12 +116,22 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
 
         private void HandleFillsSnapshot(Fill[] fills)
         {
-            var orders = fills
-                .Where(x => !ExistingOrders.ContainsKey(x.OrderId.ToString()))
-                .Select(ConvertFill)
-                .ToArray();
-            if (orders.Length == 0)
+            var orders = new CryptoOrder[fills.Length];
+            var count = 0;
+            foreach (var fill in fills)
+            {
+                if (ExistingOrders.ContainsKey(fill.OrderId.ToString()))
+                    continue;
+
+                orders[count++] = ConvertFill(fill);
+            }
+
+            if (count == 0)
                 return;
+
+            if (count != orders.Length)
+                Array.Resize(ref orders, count);
+
             foreach (var order in orders)
                 order.IsSnapshot = true;
             OrderSnapshotSubject.OnNext(orders);
@@ -137,8 +145,8 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             var order = response.Order;
 
             var id = order.OrderId.ToString();
-            var existingCurrent = ExistingOrders.GetValueOrDefault(id);
-            var existingPartial = _partiallyFilledOrders.GetValueOrDefault(id);
+            ExistingOrders.TryGetValue(id, out var existingCurrent);
+            _partiallyFilledOrders.TryGetValue(id, out var existingPartial);
             var existing = existingPartial ?? existingCurrent;
 
             var price = Math.Abs(FirstNonZero(order.LimitPrice, existing?.Price) ?? 0);
@@ -178,8 +186,8 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         private CryptoOrder ConvertFill(Fill fill)
         {
             var id = fill.OrderId.ToString();
-            var existingCurrent = ExistingOrders.GetValueOrDefault(id);
-            var existingPartial = _partiallyFilledOrders.GetValueOrDefault(id);
+            ExistingOrders.TryGetValue(id, out var existingCurrent);
+            _partiallyFilledOrders.TryGetValue(id, out var existingPartial);
             var existing = existingPartial ?? existingCurrent;
 
             var price = Math.Abs(FirstNonZero(fill.Price, existing?.Price) ?? 0);
@@ -249,13 +257,13 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         }
 
 
-        private static double? FirstNonZero(params double?[] numbers)
+        private static double? FirstNonZero(double? first, double? second)
         {
-            foreach (var number in numbers)
-            {
-                if (number.HasValue && Math.Abs(number.Value) > 0)
-                    return number.Value;
-            }
+            if (first.HasValue && Math.Abs(first.Value) > 0)
+                return first.Value;
+
+            if (second.HasValue && Math.Abs(second.Value) > 0)
+                return second.Value;
 
             return null;
         }

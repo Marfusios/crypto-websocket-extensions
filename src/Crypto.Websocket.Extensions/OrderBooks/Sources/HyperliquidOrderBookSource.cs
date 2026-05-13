@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Globalization;
-using System.Linq;
 using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
@@ -73,14 +72,27 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
         private static OrderBookLevel[] ConvertLevels(BookResponse data)
         {
-            var bids = data.Levels.Length > 0 ? ConvertLevels(data.Levels[0], CryptoOrderSide.Bid, data.Coin) : [];
-            var asks = data.Levels.Length > 1 ? ConvertLevels(data.Levels[1], CryptoOrderSide.Ask, data.Coin) : [];
-            return bids.Concat(asks).ToArray();
+            var bids = data.Levels.Length > 0 ? data.Levels[0] : Array.Empty<Level>();
+            var asks = data.Levels.Length > 1 ? data.Levels[1] : Array.Empty<Level>();
+            var result = new OrderBookLevel[bids.Length + asks.Length];
+            var index = 0;
+
+            for (var bidIndex = 0; bidIndex < bids.Length; bidIndex++)
+                result[index++] = ConvertLevel(bids[bidIndex], CryptoOrderSide.Bid, data.Coin);
+
+            for (var askIndex = 0; askIndex < asks.Length; askIndex++)
+                result[index++] = ConvertLevel(asks[askIndex], CryptoOrderSide.Ask, data.Coin);
+
+            return result;
         }
 
         private static OrderBookLevel[] ConvertLevels(Level[] levels, CryptoOrderSide side, string pair)
         {
-            return levels.Select(x => ConvertLevel(x, side, pair)).ToArray();
+            var result = new OrderBookLevel[levels.Length];
+            for (var index = 0; index < levels.Length; index++)
+                result[index] = ConvertLevel(levels[index], side, pair);
+
+            return result;
         }
 
         private static OrderBookLevel ConvertLevel(Level x, CryptoOrderSide side, string pair)

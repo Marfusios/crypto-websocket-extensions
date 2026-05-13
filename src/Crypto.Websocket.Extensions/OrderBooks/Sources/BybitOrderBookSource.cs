@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Threading.Tasks;
 using Bybit.Client.Websocket.Client;
 using Bybit.Client.Websocket.Responses;
@@ -74,13 +72,18 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
 		private static OrderBookLevel[] ConvertLevels(OrderBookResponse response)
 		{
-			var bids = response.Data.Bids
-				.Select(x => ConvertLevel(x, CryptoOrderSide.Bid, response.Data.Symbol))
-				.ToArray();
-			var asks = response.Data.Asks
-				.Select(x => ConvertLevel(x, CryptoOrderSide.Ask, response.Data.Symbol))
-				.ToArray();
-			return bids.Concat(asks).ToArray();
+			var bids = response.Data.Bids;
+			var asks = response.Data.Asks;
+			var result = new OrderBookLevel[bids.Count + asks.Count];
+			var index = 0;
+
+			foreach (var bid in bids)
+				result[index++] = ConvertLevel(bid, CryptoOrderSide.Bid, response.Data.Symbol);
+
+			foreach (var ask in asks)
+				result[index++] = ConvertLevel(ask, CryptoOrderSide.Ask, response.Data.Symbol);
+
+			return result;
 		}
 
 		private static OrderBookLevel ConvertLevel(double[] x, CryptoOrderSide side, string pair)
@@ -101,15 +104,52 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 		/// <inheritdoc />
 		protected override Task<OrderBookLevelBulk?> LoadSnapshotInternal(string? pair, int count = 1000) => Task.FromResult<OrderBookLevelBulk?>(null);
 
-		private IEnumerable<OrderBookLevelBulk> ConvertDiff(OrderBookDeltaResponse response)
+		private OrderBookLevelBulk[] ConvertDiff(OrderBookDeltaResponse response)
 		{
-			var levels = ConvertLevels(response);
-			var group = levels.GroupBy(RecognizeAction).ToArray();
-			foreach (var actionGroup in group)
+			var bids = response.Data.Bids;
+			var asks = response.Data.Asks;
+			var maxCount = bids.Count + asks.Count;
+			var updates = new OrderBookLevel[maxCount];
+			var deletes = new OrderBookLevel[maxCount];
+			var updateCount = 0;
+			var deleteCount = 0;
+
+			foreach (var bid in bids)
+				AddDiffLevel(ConvertLevel(bid, CryptoOrderSide.Bid, response.Data.Symbol));
+
+			foreach (var ask in asks)
+				AddDiffLevel(ConvertLevel(ask, CryptoOrderSide.Ask, response.Data.Symbol));
+
+			if (updateCount == 0 && deleteCount == 0)
+				return Array.Empty<OrderBookLevelBulk>();
+
+			var result = new OrderBookLevelBulk[(updateCount > 0 ? 1 : 0) + (deleteCount > 0 ? 1 : 0)];
+			var index = 0;
+
+			if (updateCount > 0)
 			{
-				var bulk = new OrderBookLevelBulk(actionGroup.Key, actionGroup.ToArray(), CryptoOrderBookType.L2);
+				Array.Resize(ref updates, updateCount);
+				var bulk = new OrderBookLevelBulk(OrderBookAction.Update, updates, CryptoOrderBookType.L2);
 				FillBulk(response, bulk);
-				yield return bulk;
+				result[index++] = bulk;
+			}
+
+			if (deleteCount > 0)
+			{
+				Array.Resize(ref deletes, deleteCount);
+				var bulk = new OrderBookLevelBulk(OrderBookAction.Delete, deletes, CryptoOrderBookType.L2);
+				FillBulk(response, bulk);
+				result[index] = bulk;
+			}
+
+			return result;
+
+			void AddDiffLevel(OrderBookLevel level)
+			{
+				if (RecognizeAction(level) == OrderBookAction.Delete)
+					deletes[deleteCount++] = level;
+				else
+					updates[updateCount++] = level;
 			}
 		}
 
@@ -121,19 +161,33 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 		}
 
 		/// <inheritdoc />
+		protected override OrderBookLevelBulk[] ConvertData(object data)
+		{
+			return data is OrderBookDeltaResponse orderBookDeltaResponse
+				? ConvertDiff(orderBookDeltaResponse)
+				: Array.Empty<OrderBookLevelBulk>();
+		}
+
+		/// <inheritdoc />
 		protected override OrderBookLevelBulk[] ConvertData(object[] data)
 		{
-			var result = new List<OrderBookLevelBulk>();
+			var result = new OrderBookLevelBulk[data.Length * 2];
+			var count = 0;
 			foreach (var response in data)
 			{
 				if (response is not OrderBookDeltaResponse orderBookDeltaResponse)
 					continue;
 
 				var converted = ConvertDiff(orderBookDeltaResponse);
-				result.AddRange(converted);
+				for (var index = 0; index < converted.Length; index++)
+					result[count++] = converted[index];
 			}
 
-			return result.ToArray();
+			if (count == result.Length)
+				return result;
+
+			Array.Resize(ref result, count);
+			return result;
 		}
 	}
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
@@ -112,13 +111,13 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public CryptoOrderCollectionReadonly GetActiveOrders()
         {
-            var orders = _idToOrder
-                .Where(x =>
-                    IsOurOrder(x.Value.ClientId) &&
-                    x.Value.OrderStatus != CryptoOrderStatus.Canceled &&
-                    x.Value.OrderStatus != CryptoOrderStatus.Executed &&
-                    x.Value.OrderStatus != CryptoOrderStatus.Undefined)
-                .ToDictionary(x => x.Key, y => y.Value);
+            var orders = new Dictionary<string, CryptoOrder>(_idToOrder.Count);
+            foreach (var item in _idToOrder)
+            {
+                if (IsOurOrder(item.Value.ClientId) && IsActive(item.Value))
+                    orders[item.Key] = item.Value;
+            }
+
             return new CryptoOrderCollectionReadonly(orders);
         }
 
@@ -127,9 +126,13 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public CryptoOrderCollectionReadonly GetOrders()
         {
-            var orders = _idToOrder
-                .Where(x => IsOurOrder(x.Value.ClientId))
-                .ToDictionary(x => x.Key, y => y.Value);
+            var orders = new Dictionary<string, CryptoOrder>(_idToOrder.Count);
+            foreach (var item in _idToOrder)
+            {
+                if (IsOurOrder(item.Value.ClientId))
+                    orders[item.Key] = item.Value;
+            }
+
             return new CryptoOrderCollectionReadonly(orders);
         }
 
@@ -138,8 +141,10 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public CryptoOrderCollectionReadonly GetAllOrders()
         {
-            var orders = _idToOrder
-                .ToDictionary(x => x.Key, y => y.Value);
+            var orders = new Dictionary<string, CryptoOrder>(_idToOrder.Count);
+            foreach (var item in _idToOrder)
+                orders[item.Key] = item.Value;
+
             return new CryptoOrderCollectionReadonly(orders);
         }
 
@@ -148,9 +153,9 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public CryptoOrder? FindActiveOrder(string id)
         {
-            if (GetActiveOrders().ContainsKey(id))
-                return _idToOrder[id];
-            return null;
+            return _idToOrder.TryGetValue(id, out var order) && IsActive(order)
+                ? order
+                : null;
         }
 
         /// <summary>
@@ -166,8 +171,13 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public CryptoOrder FindActiveOrderByClientId(string clientId)
         {
-            var item = GetActiveOrders().FirstOrDefault(x => x.Value.ClientId == clientId);
-            return item.Value;
+            foreach (var item in _idToOrder)
+            {
+                if (IsActive(item.Value) && item.Value.ClientId == clientId)
+                    return item.Value;
+            }
+
+            return null!;
         }
 
         /// <summary>
@@ -175,8 +185,13 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public CryptoOrder FindOrderByClientId(string clientId)
         {
-            var item = _idToOrder.FirstOrDefault(x => x.Value.ClientId == clientId);
-            return item.Value;
+            foreach (var item in _idToOrder)
+            {
+                if (item.Value.ClientId == clientId)
+                    return item.Value;
+            }
+
+            return null!;
         }
 
         /// <summary>
@@ -199,7 +214,7 @@ namespace Crypto.Websocket.Extensions.Core.Orders
             if (string.IsNullOrWhiteSpace(clientId))
                 return false;
 
-            return clientId.StartsWith($"{ClientIdPrefixString}0");
+            return clientId.StartsWith($"{ClientIdPrefixString}0", StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -215,14 +230,13 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// </summary>
         public void RemoveCanceled()
         {
-            var canceled = _idToOrder.Where(x =>
-                    x.Value.OrderStatus == CryptoOrderStatus.Canceled ||
-                    x.Value.OrderStatus == CryptoOrderStatus.Undefined)
-                .ToArray();
-            foreach (var order in canceled)
+            foreach (var order in _idToOrder)
             {
-                if (_idToOrder.ContainsKey(order.Key))
+                if (order.Value.OrderStatus == CryptoOrderStatus.Canceled ||
+                    order.Value.OrderStatus == CryptoOrderStatus.Undefined)
+                {
                     _idToOrder.TryRemove(order.Key, out CryptoOrder _);
+                }
             }
         }
 
@@ -300,6 +314,13 @@ namespace Crypto.Websocket.Extensions.Core.Orders
                 return true;
 
             return false;
+        }
+
+        private static bool IsActive(CryptoOrder order)
+        {
+            return order.OrderStatus != CryptoOrderStatus.Canceled &&
+                   order.OrderStatus != CryptoOrderStatus.Executed &&
+                   order.OrderStatus != CryptoOrderStatus.Undefined;
         }
     }
 }

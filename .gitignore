@@ -44,6 +44,7 @@ dlldata.c
 # DNX
 project.lock.json
 artifacts/
+BenchmarkDotNet.Artifacts/
 
 *_i.c
 *_p.c

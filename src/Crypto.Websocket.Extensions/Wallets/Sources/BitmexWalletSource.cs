@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Reactive.Linq;
 using Bitmex.Client.Websocket.Client;
 using Bitmex.Client.Websocket.Responses.Margins;
@@ -47,7 +46,7 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
         private void Subscribe()
         {
             _subscription = _client.Streams.MarginStream
-                .Where(x => x?.Data != null && x.Data.Any())
+                .Where(x => x?.Data != null && x.Data.Length > 0)
                 .Subscribe(HandleWalletSafe);
         }
 
@@ -65,7 +64,11 @@ namespace Crypto.Websocket.Extensions.Wallets.Sources
 
         private void HandleWallet(MarginResponse response)
         {
-            WalletChangedSubject.OnNext(response.Data.Select(ConvertWallet).ToArray());
+            var wallets = new CryptoWallet[response.Data.Length];
+            for (var index = 0; index < response.Data.Length; index++)
+                wallets[index] = ConvertWallet(response.Data[index]);
+
+            WalletChangedSubject.OnNext(wallets);
         }
 
         private CryptoWallet ConvertWallet(Margin margin)

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using Aster.Client.Websocket.Client;
 using Aster.Client.Websocket.Responses.Orders;
 using Crypto.Websocket.Extensions.Core.Models;
@@ -70,9 +68,11 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         /// </summary>
         public CryptoOrder[] ConvertOrders(OrderUpdate[] orders)
         {
-            return orders
-                .Select(ConvertOrder)
-                .ToArray();
+            var result = new CryptoOrder[orders.Length];
+            for (var index = 0; index < orders.Length; index++)
+                result[index] = ConvertOrder(orders[index]);
+
+            return result;
         }
 
         /// <summary>
@@ -83,8 +83,8 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
             var order = orderUpdate.Order;
 
             var id = order.OrderId.ToString();
-            var existingCurrent = ExistingOrders.GetValueOrDefault(id);
-            var existingPartial = _partiallyFilledOrders.GetValueOrDefault(id);
+            ExistingOrders.TryGetValue(id, out var existingCurrent);
+            _partiallyFilledOrders.TryGetValue(id, out var existingPartial);
             var existing = existingPartial ?? existingCurrent;
 
             var price = Math.Abs(FirstNonZero(order.LastPriceFilled, order.Price, existing?.Price) ?? 0);
@@ -183,15 +183,24 @@ namespace Crypto.Websocket.Extensions.Orders.Sources
         }
 
 
-        private static double? FirstNonZero(params double?[] numbers)
+        private static double? FirstNonZero(double? first)
         {
-            foreach (var number in numbers)
-            {
-                if (number.HasValue && Math.Abs(number.Value) > 0)
-                    return number.Value;
-            }
+            return first.HasValue && Math.Abs(first.Value) > 0 ? first.Value : null;
+        }
 
-            return null;
+        private static double? FirstNonZero(double? first, double? second)
+        {
+            return FirstNonZero(first) ?? FirstNonZero(second);
+        }
+
+        private static double? FirstNonZero(double? first, double? second, double? third)
+        {
+            return FirstNonZero(first, second) ?? FirstNonZero(third);
+        }
+
+        private static double? FirstNonZero(double? first, double? second, double? third, double? fourth)
+        {
+            return FirstNonZero(first, second, third) ?? FirstNonZero(fourth);
         }
 
         private static double? Abs(double? value)

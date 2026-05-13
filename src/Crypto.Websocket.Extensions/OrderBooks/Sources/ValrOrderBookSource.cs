@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
@@ -74,13 +72,18 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 
 		private static OrderBookLevel[] ConvertLevels(L1TrackedOrderBookResponse response)
 		{
-			var bids = response.Data.Bids
-				.Select(x => ConvertLevel(x, CryptoOrderSide.Bid, response.CurrencyPairSymbol))
-				.ToArray();
-			var asks = response.Data.Asks
-				.Select(x => ConvertLevel(x, CryptoOrderSide.Ask, response.CurrencyPairSymbol))
-				.ToArray();
-			return bids.Concat(asks).ToArray();
+			var bids = response.Data.Bids;
+			var asks = response.Data.Asks;
+			var result = new OrderBookLevel[bids.Count + asks.Count];
+			var index = 0;
+
+			for (var bidIndex = 0; bidIndex < bids.Count; bidIndex++)
+				result[index++] = ConvertLevel(bids[bidIndex], CryptoOrderSide.Bid, response.CurrencyPairSymbol);
+
+			for (var askIndex = 0; askIndex < asks.Count; askIndex++)
+				result[index++] = ConvertLevel(asks[askIndex], CryptoOrderSide.Ask, response.CurrencyPairSymbol);
+
+			return result;
 		}
 
 		private static OrderBookLevel ConvertLevel(L1Quote x, CryptoOrderSide side, string pair)
@@ -109,15 +112,52 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 			return Task.FromResult<OrderBookLevelBulk?>(null);
 		}
 
-		private IEnumerable<OrderBookLevelBulk> ConvertDiff(L1TrackedOrderBookResponse response)
+		private OrderBookLevelBulk[] ConvertDiff(L1TrackedOrderBookResponse response)
 		{
-			var levels = ConvertLevels(response);
-			var group = levels.GroupBy(RecognizeAction).ToArray();
-			foreach (var actionGroup in group)
+			var bids = response.Data.Bids;
+			var asks = response.Data.Asks;
+			var maxCount = bids.Count + asks.Count;
+			var updates = new OrderBookLevel[maxCount];
+			var deletes = new OrderBookLevel[maxCount];
+			var updateCount = 0;
+			var deleteCount = 0;
+
+			for (var bidIndex = 0; bidIndex < bids.Count; bidIndex++)
+				AddDiffLevel(ConvertLevel(bids[bidIndex], CryptoOrderSide.Bid, response.CurrencyPairSymbol));
+
+			for (var askIndex = 0; askIndex < asks.Count; askIndex++)
+				AddDiffLevel(ConvertLevel(asks[askIndex], CryptoOrderSide.Ask, response.CurrencyPairSymbol));
+
+			if (updateCount == 0 && deleteCount == 0)
+				return Array.Empty<OrderBookLevelBulk>();
+
+			var result = new OrderBookLevelBulk[(updateCount > 0 ? 1 : 0) + (deleteCount > 0 ? 1 : 0)];
+			var index = 0;
+
+			if (updateCount > 0)
 			{
-				var bulk = new OrderBookLevelBulk(actionGroup.Key, actionGroup.ToArray(), CryptoOrderBookType.L2);
+				Array.Resize(ref updates, updateCount);
+				var bulk = new OrderBookLevelBulk(OrderBookAction.Update, updates, CryptoOrderBookType.L2);
 				FillBulk(response, bulk);
-				yield return bulk;
+				result[index++] = bulk;
+			}
+
+			if (deleteCount > 0)
+			{
+				Array.Resize(ref deletes, deleteCount);
+				var bulk = new OrderBookLevelBulk(OrderBookAction.Delete, deletes, CryptoOrderBookType.L2);
+				FillBulk(response, bulk);
+				result[index] = bulk;
+			}
+
+			return result;
+
+			void AddDiffLevel(OrderBookLevel level)
+			{
+				if (RecognizeAction(level) == OrderBookAction.Delete)
+					deletes[deleteCount++] = level;
+				else
+					updates[updateCount++] = level;
 			}
 		}
 
@@ -129,20 +169,33 @@ namespace Crypto.Websocket.Extensions.OrderBooks.Sources
 		}
 
 		/// <inheritdoc />
+		protected override OrderBookLevelBulk[] ConvertData(object data)
+		{
+			return data is L1TrackedOrderBookResponse response
+				? ConvertDiff(response)
+				: Array.Empty<OrderBookLevelBulk>();
+		}
+
+		/// <inheritdoc />
 		protected override OrderBookLevelBulk[] ConvertData(object[] data)
 		{
-			var result = new List<OrderBookLevelBulk>();
+			var result = new OrderBookLevelBulk[data.Length * 2];
+			var count = 0;
 			foreach (var response in data)
 			{
-				var responseSafe = response as L1TrackedOrderBookResponse;
-				if (responseSafe == null)
+				if (response is not L1TrackedOrderBookResponse responseSafe)
 					continue;
 
 				var converted = ConvertDiff(responseSafe);
-				result.AddRange(converted);
+				for (var index = 0; index < converted.Length; index++)
+					result[count++] = converted[index];
 			}
 
-			return result.ToArray();
+			if (count == result.Length)
+				return result;
+
+			Array.Resize(ref result, count);
+			return result;
 		}
 	}
 }

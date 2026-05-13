@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Reactive.Linq;
 using Crypto.Websocket.Extensions.Core.Models;
 using Crypto.Websocket.Extensions.Core.Trades.Models;
@@ -62,7 +61,10 @@ namespace Crypto.Websocket.Extensions.Trades.Sources
 
         private void HandleTrades(TradeResponse[] response)
         {
-            var trades = response.Select(ConvertTrade).ToArray();
+            var trades = new CryptoTrade[response.Length];
+            for (var index = 0; index < response.Length; index++)
+                trades[index] = ConvertTrade(response[index]);
+
             TradesSubject.OnNext(trades);
         }
 

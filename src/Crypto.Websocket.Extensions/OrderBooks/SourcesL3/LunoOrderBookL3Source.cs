@@ -113,7 +113,14 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
 
 		private OrderBookLevel[] ConvertLevels(IReadOnlyList<Order> levels, CryptoOrderSide side)
 		{
-			return [.. levels.Select(x => ConvertLevel(x, _client.Pair, side))];
+			if (levels.Count == 0)
+				return Array.Empty<OrderBookLevel>();
+
+			var result = new OrderBookLevel[levels.Count];
+			for (var index = 0; index < levels.Count; index++)
+				result[index] = ConvertLevel(levels[index], _client.Pair, side);
+
+			return result;
 		}
 
 		private static OrderBookLevel ConvertLevel(Order x, string pair, CryptoOrderSide side)
@@ -137,14 +144,27 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
 
 		OrderBookLevel[] ConvertSnapshot(OrderBookSnapshot snapshot)
 		{
-			var bids = ConvertLevels(snapshot.Bids, CryptoOrderSide.Bid);
-			var asks = ConvertLevels(snapshot.Asks, CryptoOrderSide.Ask);
+			var result = new OrderBookLevel[snapshot.Bids.Count + snapshot.Asks.Count];
+			var index = 0;
 
-			var all = bids
-				.Concat(asks)
-				.Where(x => x.Amount > 0)
-				.ToArray();
-			return all;
+			AddLevels(snapshot.Bids, CryptoOrderSide.Bid);
+			AddLevels(snapshot.Asks, CryptoOrderSide.Ask);
+
+			if (index == result.Length)
+				return result;
+
+			Array.Resize(ref result, index);
+			return result;
+
+			void AddLevels(IReadOnlyList<Order> levels, CryptoOrderSide side)
+			{
+				for (var levelIndex = 0; levelIndex < levels.Count; levelIndex++)
+				{
+					var level = ConvertLevel(levels[levelIndex], _client.Pair, side);
+					if (level.Amount > 0)
+						result[index++] = level;
+				}
+			}
 		}
 
 		OrderBookLevelBulk[] ConvertDiff(OrderBookDiff diff)
@@ -286,6 +306,15 @@ namespace Crypto.Websocket.Extensions.OrderBooks.SourcesL3
 				};
 				result.Add(bulk);
 			}
+		}
+
+		/// <inheritdoc />
+		protected override OrderBookLevelBulk[] ConvertData(object data)
+		{
+			if (data is not OrderBookDiff diff)
+				return Array.Empty<OrderBookLevelBulk>();
+
+			return ConvertDiff(diff);
 		}
 
 		/// <inheritdoc />
