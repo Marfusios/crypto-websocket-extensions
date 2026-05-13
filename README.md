@@ -20,7 +20,9 @@ It helps to unify data models and usage of more clients together.
 * installation via NuGet
     * full (with all exchange clients) - [Crypto.Websocket.Extensions](https://www.nuget.org/packages/Crypto.Websocket.Extensions)
 	* core (only interfaces and features) - [Crypto.Websocket.Extensions.Core](https://www.nuget.org/packages/Crypto.Websocket.Extensions.Core)
-* targeting .NET Standard 2.0 (.NET Core, Linux/MacOS compatible)
+* targets `netstandard2.1`, `net6.0`, `net7.0`, `net8.0`, `net9.0`, `net10.0`
+* built on [Websocket.Client 5.4.0](https://www.nuget.org/packages/Websocket.Client/5.4.0) through the updated exchange clients
+* third-party exchange adapters for Bybit, Luno, and VALR remain enabled; NuGet resolves the shared websocket transport to the newer package version
 * reactive extensions ([Rx.NET](https://github.com/Reactive-Extensions/Rx.NET))
 * integrated logging abstraction ([LibLog](https://github.com/damianh/LibLog))
 

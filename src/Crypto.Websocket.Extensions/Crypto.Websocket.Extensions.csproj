@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.1;net6;net7;net8;net9</TargetFrameworks>
+		<TargetFrameworks>netstandard2.1;net6.0;net7.0;net8.0;net9.0;net10.0</TargetFrameworks>
 		<PackageId>Crypto.Websocket.Extensions</PackageId>
 		<Authors>Mariusz Kotas</Authors>
 		<Description>Extensions to cryptocurrency websocket clients</Description>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<PackageReleaseNotes>Enhancements</PackageReleaseNotes>
-		<Copyright>Copyright 2025 Mariusz Kotas. All rights reserved.</Copyright>
+		<PackageReleaseNotes>Add .NET 10 support, update exchange clients, and resolve Websocket.Client 5.4.0.</PackageReleaseNotes>
+		<Copyright>Copyright 2026 Mariusz Kotas. All rights reserved.</Copyright>
 		<PackageTags>Crypto websockets websocket client cryptocurrency exchange bitcoin extensions</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/Marfusios/crypto-websocket-extensions</PackageProjectUrl>
@@ -25,14 +25,14 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Aster.Client.Websocket" Version="1.1.1" />
-		<PackageReference Include="Binance.Client.Websocket" Version="2.6.0" />
-		<PackageReference Include="Bitfinex.Client.Websocket" Version="4.3.1" />
-		<PackageReference Include="Bitmex.Client.Websocket" Version="3.3.1" />
-		<PackageReference Include="Bitstamp.Client.Websocket" Version="1.2.1" />
+		<PackageReference Include="Aster.Client.Websocket" Version="1.2.0" />
+		<PackageReference Include="Binance.Client.Websocket" Version="2.7.0" />
+		<PackageReference Include="Bitfinex.Client.Websocket" Version="4.4.0" />
+		<PackageReference Include="Bitmex.Client.Websocket" Version="3.4.0" />
+		<PackageReference Include="Bitstamp.Client.Websocket" Version="1.3.0" />
 		<PackageReference Include="Bybit.Client.Websocket" Version="1.0.2" />
-		<PackageReference Include="Coinbase.Client.Websocket" Version="2.3.1" />
-		<PackageReference Include="Hyperliquid.Client.Websocket" Version="1.0.2" />
+		<PackageReference Include="Coinbase.Client.Websocket" Version="2.4.0" />
+		<PackageReference Include="Hyperliquid.Client.Websocket" Version="1.1.0" />
 		<PackageReference Include="Luno.Client.Websocket" Version="8.0.2" />
 		<PackageReference Include="Valr.Client.Websocket" Version="5.3.1" />
 	</ItemGroup>
