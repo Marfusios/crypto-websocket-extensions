@@ -14,7 +14,7 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Models
         {
             Action = action;
             OrderBookType = orderBookType;
-            Levels = levels ?? new OrderBookLevel[0];
+            Levels = levels ?? System.Array.Empty<OrderBookLevel>();
         }
 
         /// <summary>

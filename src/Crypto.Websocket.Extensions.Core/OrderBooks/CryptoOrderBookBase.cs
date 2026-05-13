@@ -64,6 +64,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         /// </summary>
         protected readonly Subject<TopNLevelsChangeInfo> TopNLevelsUpdated = new();
 
+        private readonly IObservable<IOrderBookChangeInfo> _bidAskUpdatedStream;
+        private readonly IObservable<IOrderBookChangeInfo> _topLevelUpdatedStream;
+        private readonly IObservable<IOrderBookChangeInfo> _orderBookUpdatedStream;
+        private readonly IObservable<ITopNLevelsChangeInfo> _topNLevelsUpdatedStream;
+
         /// <summary>
         /// All the bid levels (not grouped by price).
         /// </summary>
@@ -104,6 +109,11 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
             _previous = new L2Snapshot(this, Array.Empty<CryptoQuote>(), Array.Empty<CryptoQuote>());
             _current = new L2Snapshot(this, Array.Empty<CryptoQuote>(), Array.Empty<CryptoQuote>());
+
+            _bidAskUpdatedStream = BidAskUpdated.AsObservable();
+            _topLevelUpdatedStream = TopLevelUpdated.AsObservable();
+            _orderBookUpdatedStream = OrderBookUpdated.AsObservable();
+            _topNLevelsUpdatedStream = TopNLevelsUpdated.AsObservable();
 
             TargetPairOriginal = targetPair;
             TargetPair = CryptoPairsHelper.Clean(targetPair);
@@ -217,16 +227,16 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         public bool CalculateMetricsFromSnapshots { get; set; }
 
         /// <inheritdoc />
-        public IObservable<IOrderBookChangeInfo> BidAskUpdatedStream => BidAskUpdated.AsObservable();
+        public IObservable<IOrderBookChangeInfo> BidAskUpdatedStream => _bidAskUpdatedStream;
 
         /// <inheritdoc />
-        public IObservable<IOrderBookChangeInfo> TopLevelUpdatedStream => TopLevelUpdated.AsObservable();
+        public IObservable<IOrderBookChangeInfo> TopLevelUpdatedStream => _topLevelUpdatedStream;
 
         /// <inheritdoc />
-        public IObservable<IOrderBookChangeInfo> OrderBookUpdatedStream => OrderBookUpdated.AsObservable();
+        public IObservable<IOrderBookChangeInfo> OrderBookUpdatedStream => _orderBookUpdatedStream;
 
         /// <inheritdoc />
-        public IObservable<ITopNLevelsChangeInfo> TopNLevelsUpdatedStream => TopNLevelsUpdated.AsObservable();
+        public IObservable<ITopNLevelsChangeInfo> TopNLevelsUpdatedStream => _topNLevelsUpdatedStream;
 
         /// <inheritdoc />
         public int NotifyForLevelAndAbove
@@ -241,11 +251,14 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                     _current = new L2Snapshot(this, BlankQuotes(), BlankQuotes());
                 }
 
-                IReadOnlyList<CryptoQuote> BlankQuotes()
+                CryptoQuote[] BlankQuotes()
                 {
-                    var result = new List<CryptoQuote>(_notifyForLevelAndAbove);
+                    if (_notifyForLevelAndAbove <= 0)
+                        return Array.Empty<CryptoQuote>();
+
+                    var result = new CryptoQuote[_notifyForLevelAndAbove];
                     for (var index = 0; index < _notifyForLevelAndAbove; index++)
-                        result.Add(new CryptoQuote(0, 0));
+                        result[index] = new CryptoQuote(0, 0);
 
                     return result;
                 }
@@ -356,8 +369,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 return Array.Empty<OrderBookLevel>();
 
             var count = 0;
-            foreach (var level in levels)
+            for (var levelIndex = 0; levelIndex < levels.Length; levelIndex++)
             {
+                var level = levels[levelIndex];
                 if (TargetPair.Equals(level.Pair, StringComparison.Ordinal))
                     count++;
             }
@@ -370,8 +384,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
             var result = new OrderBookLevel[count];
             var index = 0;
-            foreach (var level in levels)
+            for (var levelIndex = 0; levelIndex < levels.Length; levelIndex++)
             {
+                var level = levels[levelIndex];
                 if (TargetPair.Equals(level.Pair, StringComparison.Ordinal))
                     result[index++] = level;
             }
@@ -382,8 +397,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
         private OrderBookLevelBulk[] FilterBulksForThis(OrderBookLevelBulk[] bulks)
         {
             var count = 0;
-            foreach (var bulk in bulks)
+            for (var index = 0; index < bulks.Length; index++)
             {
+                var bulk = bulks[index];
                 if (bulk != null && IsForThis(bulk))
                     count++;
             }
@@ -391,12 +407,16 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
             if (count == 0)
                 return Array.Empty<OrderBookLevelBulk>();
 
+            if (count == bulks.Length)
+                return bulks;
+
             var result = new OrderBookLevelBulk[count];
-            var index = 0;
-            foreach (var bulk in bulks)
+            var resultIndex = 0;
+            for (var index = 0; index < bulks.Length; index++)
             {
+                var bulk = bulks[index];
                 if (bulk != null && IsForThis(bulk))
-                    result[index++] = bulk;
+                    result[resultIndex++] = bulk;
             }
 
             return result;
@@ -425,24 +445,36 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
                 return;
             }
 
-            var allLevels = new List<OrderBookLevel>();
+            var collectLevels = IsIndexComputationEnabled || DebugEnabled;
+            List<OrderBookLevel>? allLevels = collectLevels ? new List<OrderBookLevel>() : null;
+            var hasLevels = false;
 
             lock (Locker)
             {
                 foreach (var bulk in forThis)
                 {
                     var levelsForThis = FilterLevelsForTargetPair(bulk.Levels);
-                    allLevels.AddRange(levelsForThis);
+                    if (levelsForThis.Length <= 0)
+                        continue;
+
+                    hasLevels = true;
+                    allLevels?.AddRange(levelsForThis);
                     HandleDiff(bulk, levelsForThis);
                 }
 
-                if (allLevels.Count > 0)
+                if (hasLevels)
                 {
-                    RecomputeAfterChangeAndSetIndexes(allLevels);
+                    if (allLevels != null)
+                        RecomputeAfterChangeAndSetIndexes(allLevels);
+                    else
+                        RecomputeAfterChange();
 
                     if (HasNotificationObservers)
                     {
-                        var change = CreateBookChangeNotification(allLevels, forThis, false);
+                        var changedLevels = allLevels != null
+                            ? (IEnumerable<OrderBookLevel>)allLevels
+                            : Array.Empty<OrderBookLevel>();
+                        var change = CreateBookChangeNotification(changedLevels, forThis, false);
                         NotifyOrderBookChanges(change);
                     }
                 }
@@ -994,11 +1026,23 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks
 
         private static IReadOnlyList<CryptoQuote> CopyValidQuotes(IReadOnlyList<CryptoQuote> quotes)
         {
-            var result = new List<CryptoQuote>(quotes.Count);
-            foreach (var quote in quotes)
+            var count = 0;
+            for (var index = 0; index < quotes.Count; index++)
             {
+                if (quotes[index].IsValid)
+                    count++;
+            }
+
+            if (count == 0)
+                return Array.Empty<CryptoQuote>();
+
+            var result = new CryptoQuote[count];
+            var resultIndex = 0;
+            for (var index = 0; index < quotes.Count; index++)
+            {
+                var quote = quotes[index];
                 if (quote.IsValid)
-                    result.Add(quote);
+                    result[resultIndex++] = quote;
             }
 
             return result;

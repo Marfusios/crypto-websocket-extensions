@@ -37,7 +37,7 @@
                 }
 
                 outputLength++;
-                needsCopy |= char.ToLowerInvariant(c) != c;
+                needsCopy |= ToLowerInvariant(c) != c;
             }
 
             if (outputLength == 0)
@@ -53,7 +53,7 @@
                 {
                     var c = source.Pair[sourceIndex];
                     if (!IsSeparator(c))
-                        destination[index++] = char.ToLowerInvariant(c);
+                        destination[index++] = ToLowerInvariant(c);
                 }
             });
         }
@@ -69,5 +69,15 @@
         }
 
         private static bool IsSeparator(char c) => c is '/' or '-' or '\\';
+
+        private static char ToLowerInvariant(char c)
+        {
+            if (c is >= 'A' and <= 'Z')
+                return (char)(c + ('a' - 'A'));
+
+            return c <= 127
+                ? c
+                : char.ToLowerInvariant(c);
+        }
     }
 }

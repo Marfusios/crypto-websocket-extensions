@@ -21,6 +21,8 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         private readonly long? _orderPrefix;
         private readonly Subject<CryptoOrder> _orderChanged = new Subject<CryptoOrder>();
         private readonly Subject<CryptoOrder> _ourOrderChanged = new Subject<CryptoOrder>();
+        private readonly IObservable<CryptoOrder> _orderChangedStream;
+        private readonly IObservable<CryptoOrder> _ourOrderChangedStream;
         private readonly CryptoOrderCollection _idToOrder = new CryptoOrderCollection();
 
         private long _cidCounter;
@@ -40,6 +42,8 @@ namespace Crypto.Websocket.Extensions.Core.Orders
             TargetPairOriginal = targetPair;
             _source.SetExistingOrders(_idToOrder);
             _orderPrefix = orderPrefix;
+            _orderChangedStream = _orderChanged.AsObservable();
+            _ourOrderChangedStream = _ourOrderChanged.AsObservable();
 
             Subscribe();
         }
@@ -47,12 +51,12 @@ namespace Crypto.Websocket.Extensions.Core.Orders
         /// <summary>
         /// Order was changed stream
         /// </summary>
-        public IObservable<CryptoOrder> OrderChangedStream => _orderChanged.AsObservable();
+        public IObservable<CryptoOrder> OrderChangedStream => _orderChangedStream;
 
         /// <summary>
         /// Order was changed stream (only ours, based on client id prefix)
         /// </summary>
-        public IObservable<CryptoOrder> OurOrderChangedStream => _ourOrderChanged.AsObservable();
+        public IObservable<CryptoOrder> OurOrderChangedStream => _ourOrderChangedStream;
 
         /// <summary>
         /// Selected client id prefix

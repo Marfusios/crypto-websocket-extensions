@@ -15,11 +15,18 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
         protected readonly Subject<CryptoOrder> OrderCreatedSubject = new Subject<CryptoOrder>();
         protected readonly Subject<CryptoOrder> OrderUpdatedSubject = new Subject<CryptoOrder>();
 
+        private readonly IObservable<CryptoOrder[]> _ordersInitialStream;
+        private readonly IObservable<CryptoOrder> _orderCreatedStream;
+        private readonly IObservable<CryptoOrder> _orderUpdatedStream;
+
         protected CryptoOrderCollection ExistingOrders = new CryptoOrderCollection();
 
         protected OrderSourceBase(ILogger logger)
         {
             Logger = logger;
+            _ordersInitialStream = OrderSnapshotSubject.AsObservable();
+            _orderCreatedStream = OrderCreatedSubject.AsObservable();
+            _orderUpdatedStream = OrderUpdatedSubject.AsObservable();
         }
 
         /// <summary>
@@ -35,17 +42,17 @@ namespace Crypto.Websocket.Extensions.Core.Orders.Sources
         /// <summary>
         /// Stream snapshot of currently active orders
         /// </summary>
-        public virtual IObservable<CryptoOrder[]> OrdersInitialStream => OrderSnapshotSubject.AsObservable();
+        public virtual IObservable<CryptoOrder[]> OrdersInitialStream => _ordersInitialStream;
 
         /// <summary>
         /// Stream info about new active order
         /// </summary>
-        public virtual IObservable<CryptoOrder> OrderCreatedStream => OrderCreatedSubject.AsObservable();
+        public virtual IObservable<CryptoOrder> OrderCreatedStream => _orderCreatedStream;
 
         /// <summary>
         /// Stream on every status change of the order
         /// </summary>
-        public virtual IObservable<CryptoOrder> OrderUpdatedStream => OrderUpdatedSubject.AsObservable();
+        public virtual IObservable<CryptoOrder> OrderUpdatedStream => _orderUpdatedStream;
 
         /// <summary>
         /// Set collection of existing orders (to correctly handle orders state)

@@ -36,6 +36,9 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         /// </summary>
         private readonly Subject<OrderBookLevelBulk[]> _orderBookSubject = new Subject<OrderBookLevelBulk[]>();
 
+        private readonly IObservable<OrderBookLevelBulk> _orderBookSnapshotStream;
+        private readonly IObservable<OrderBookLevelBulk[]> _orderBookStream;
+
         private Action<OrderBookLevelBulk>? _orderBookSingleHandlers;
         private Action<OrderBookLevelBulk[]>? _orderBookBatchHandlers;
 
@@ -45,6 +48,8 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         protected OrderBookSourceBase(ILogger logger)
         {
             _logger = logger;
+            _orderBookSnapshotStream = _orderBookSnapshotSubject.AsObservable();
+            _orderBookStream = _orderBookSubject.AsObservable();
             StartProcessingFromBufferThread();
         }
 
@@ -93,10 +98,10 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
         public TimeSpan BufferInterval { get; set; } = TimeSpan.FromMilliseconds(10);
 
         /// <inheritdoc />
-        public IObservable<OrderBookLevelBulk> OrderBookSnapshotStream => _orderBookSnapshotSubject.AsObservable();
+        public IObservable<OrderBookLevelBulk> OrderBookSnapshotStream => _orderBookSnapshotStream;
 
         /// <inheritdoc />
-        public IObservable<OrderBookLevelBulk[]> OrderBookStream => _orderBookSubject.AsObservable();
+        public IObservable<OrderBookLevelBulk[]> OrderBookStream => _orderBookStream;
 
         /// <summary>
         /// Subscribes an order book to the internal allocation-aware stream.
@@ -254,21 +259,33 @@ namespace Crypto.Websocket.Extensions.Core.OrderBooks.Sources
 
         private void StreamData()
         {
-            object[] data;
+            object? singleData = null;
+            object[]? data = null;
+
             lock (_bufferLocker)
             {
-                data = _dataBuffer.ToArray();
-                _dataBuffer.Clear();
-
-                if (data.Length <= 0)
+                if (_dataBuffer.Count <= 0)
                 {
                     // no message in buffer, enable waiting
                     _bufferPauseEvent.Reset();
                     return;
                 }
+
+                if (_dataBuffer.Count == 1)
+                {
+                    singleData = _dataBuffer.Dequeue();
+                }
+                else
+                {
+                    data = _dataBuffer.ToArray();
+                    _dataBuffer.Clear();
+                }
             }
 
-            ConvertAndStream(data);
+            if (data != null)
+                ConvertAndStream(data);
+            else
+                ConvertAndStream(singleData!);
         }
 
         private void ConvertAndStream(object[] dataArr)

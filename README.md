@@ -31,7 +31,7 @@ It helps to unify data models and usage of more clients together.
 
 The order book implementation is tuned for allocation-sensitive websocket streams. Common L2 diff processing avoids temporary notification objects when nobody is subscribed, keeps internal source-to-orderbook handoff on the single-update path, and uses list-based dispatch for bulk level updates to avoid interface enumerator allocations.
 
-The current benchmark suite focuses on `CryptoOrderBook`, `CryptoOrderBookL2`, and related source adapters. In the latest pass, representative BenchmarkDotNet runs showed `CryptoOrderBook.BidLevels` improving from 17,822 ns / 77 KB to 5,409 ns / 4.8 KB, and `CryptoOrderBookL2` diff processing improving from 935 ns / 545 B to 665 ns / 160 B. See the [benchmarks README](benchmarks/README.md) for commands and detailed results.
+The current benchmark suite focuses on `CryptoOrderBook`, `CryptoOrderBookL2`, and related source adapters. In the latest pass, representative BenchmarkDotNet runs showed `CryptoOrderBook.BidLevels` improving from 17,822 ns / 77 KB to 5,409 ns / 4.8 KB, and `CryptoOrderBookL2` diff processing improving from 935 ns / 545 B to 618 ns / 161 B. See the [benchmarks README](benchmarks/README.md) for commands and detailed results.
 
 ### Supported exchanges
 

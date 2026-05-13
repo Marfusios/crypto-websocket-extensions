@@ -37,12 +37,12 @@ Representative results from BenchmarkDotNet ShortRun on Windows, .NET 10.0.5, AM
 
 | Benchmark | Before | After | Improvement |
 | --- | ---: | ---: | ---: |
-| `CryptoOrderBookL2`, no observers | 935.4 ns, 545 B | 664.5 ns, 160 B | 29% faster, 71% less allocation |
-| `CryptoOrderBookL2`, `OrderBookUpdatedStream` observer | 933.6 ns, 545 B | 770.2 ns, 337 B | 18% faster, 38% less allocation |
-| `CryptoOrderBook`, no observers | 1,781.2 ns, 1,154 B | 1,290.2 ns, 770 B | 28% faster, 33% less allocation |
-| `CryptoOrderBook`, `OrderBookUpdatedStream` observer | 1,629.1 ns, 1,155 B | 1,308.6 ns, 947 B | 20% faster, 18% less allocation |
+| `CryptoOrderBookL2`, no observers | 935.4 ns, 545 B | 618.4 ns, 161 B | 34% faster, 70% less allocation |
+| `CryptoOrderBookL2`, `OrderBookUpdatedStream` observer | 933.6 ns, 545 B | 683.9 ns, 337 B | 27% faster, 38% less allocation |
+| `CryptoOrderBook`, no observers | 1,781.2 ns, 1,154 B | 1,140.0 ns, 770 B | 36% faster, 33% less allocation |
+| `CryptoOrderBook`, `OrderBookUpdatedStream` observer | 1,629.1 ns, 1,155 B | 1,238.4 ns, 947 B | 24% faster, 18% less allocation |
 
-The processing improvements mainly come from avoiding notification allocation when no stream has subscribers, handling the common single-diff path directly, using an internal single-bulk handoff from `OrderBookSourceBase` to order books while preserving the public `OrderBookStream` API, lazily materializing single-source notification metadata only when subscribers read `Sources`, dispatching built-in bulk updates through indexed `IReadOnlyList<T>` loops instead of interface enumerators, and avoiding repeated dictionary lookups in per-level update/delete paths.
+The processing improvements mainly come from avoiding notification allocation when no stream has subscribers, handling the common single-diff path directly, using an internal single-bulk handoff from `OrderBookSourceBase` to order books while preserving the public `OrderBookStream` API, lazily materializing single-source notification metadata only when subscribers read `Sources`, dispatching built-in bulk updates through indexed `IReadOnlyList<T>` loops instead of interface enumerators, avoiding repeated dictionary lookups in per-level update/delete paths, skipping temporary collections in buffered/small-batch paths, and caching observable stream wrappers.
 
 ### Order Book Reads
 
