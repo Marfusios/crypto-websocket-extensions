@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
@@ -7,9 +7,9 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\Crypto.Websocket.Extensions\Crypto.Websocket.Extensions.csproj" />
-		<PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
-		<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-		<PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+		<PackageReference Include="Serilog.Sinks.Console" />
+		<PackageReference Include="Serilog.Sinks.File" />
+		<PackageReference Include="Serilog.Extensions.Logging" />
 	</ItemGroup>
 
 </Project>

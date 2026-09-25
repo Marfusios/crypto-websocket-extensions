@@ -21,11 +21,11 @@ It helps to unify data models and usage of more clients together.
     * full (with all exchange clients) - [Crypto.Websocket.Extensions](https://www.nuget.org/packages/Crypto.Websocket.Extensions)
 	* core (only interfaces and features) - [Crypto.Websocket.Extensions.Core](https://www.nuget.org/packages/Crypto.Websocket.Extensions.Core)
 * targets `netstandard2.1`, `net6.0`, `net7.0`, `net8.0`, `net9.0`, `net10.0`
-* built on [Websocket.Client 5.4.0](https://www.nuget.org/packages/Websocket.Client/5.4.0) through the updated exchange clients
+* built on [Websocket.Client 5.5.0](https://www.nuget.org/packages/Websocket.Client/5.5.0) through the updated exchange clients
 * third-party exchange adapters for Bybit, Luno, and VALR remain enabled; NuGet resolves the shared websocket transport to the newer package version
 * benchmarked order book hot paths with [BenchmarkDotNet](benchmarks/README.md)
 * reactive extensions ([Rx.NET](https://github.com/Reactive-Extensions/Rx.NET))
-* integrated logging abstraction ([LibLog](https://github.com/damianh/LibLog))
+* integrated logging abstraction ([Microsoft.Extensions.Logging](https://learn.microsoft.com/dotnet/core/extensions/logging))
 
 ### Performance
 
@@ -267,3 +267,17 @@ with an example how to ignore/discard buffered messages and always process only 
 ### Available for help
 I do consulting, please don't hesitate to contact me if you have a custom solution you would like me to implement ([web](http://mkotas.cz/), 
 <m@mkotas.cz>)
+
+### Publishing
+
+Packages are published from `master` using NuGet Trusted Publishing. Update the shared version in `Directory.Build.props` and add `docs/releases/<version>.md` before releasing. CI builds all package targets, runs unit and recorded-message integration tests on .NET 8 and .NET 10, and packs both libraries with symbols. It uses `NuGet/login` to obtain a temporary API key and creates the GitHub release only after verifying that both published packages identify the release commit.
+
+Configure the NuGet policy for user `marfusios`, owner `Marfusios`, repository `crypto-websocket-extensions`, workflow `dotnet-core.yml`, and both package IDs. Leave the environment field empty. No long-lived NuGet API key is required.
+
+A push to `master` starts the workflow. To trigger it manually from GitHub CLI:
+
+```shell
+gh workflow run dotnet-core.yml --ref master
+```
+
+For an interrupted publication, rerun the workflow at the original commit. Already uploaded packages are skipped; CI checks their embedded commit before publishing release notes. Each new release commit needs a new version.

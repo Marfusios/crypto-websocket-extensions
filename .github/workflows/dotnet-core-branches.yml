@@ -4,20 +4,32 @@ on:
   pull_request:
     branches: [ master ]
 
+permissions:
+  contents: read
+
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
+    - uses: actions/checkout@v7
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
       with:
-        dotnet-version: 10.0.x
+        dotnet-version: |
+          8.0.x
+          10.0.x
     - name: Install dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --configuration Release --no-restore
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal
+      run: dotnet build --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
+    - name: Unit tests
+      run: dotnet test test/Crypto.Websocket.Extensions.Tests/Crypto.Websocket.Extensions.Tests.csproj --configuration Release --no-build --logger "trx;LogFilePrefix=unit"
+    - name: Debug unit tests (includes buffering and timing coverage)
+      run: dotnet test test/Crypto.Websocket.Extensions.Tests/Crypto.Websocket.Extensions.Tests.csproj --configuration Debug --no-restore --logger "trx;LogFilePrefix=debug"
+    - name: Recorded-message integration tests
+      run: dotnet test test_integration/Crypto.Websocket.Extensions.Tests.Integration/Crypto.Websocket.Extensions.Tests.Integration.csproj --configuration Release --no-build --filter "FullyQualifiedName~StreamingRecordedMessages_ShouldHandleOrderBookCorrectly" --logger "trx;LogFilePrefix=integration"
+    - name: Pack core library
+      run: dotnet pack src/Crypto.Websocket.Extensions.Core/Crypto.Websocket.Extensions.Core.csproj --no-build --configuration Release -p:ContinuousIntegrationBuild=true --include-symbols -p:SymbolPackageFormat=snupkg -o artifacts
+    - name: Pack exchange library
+      run: dotnet pack src/Crypto.Websocket.Extensions/Crypto.Websocket.Extensions.csproj --no-build --configuration Release -p:ContinuousIntegrationBuild=true --include-symbols -p:SymbolPackageFormat=snupkg -o artifacts

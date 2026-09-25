@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.1;net6.0;net7.0;net8.0;net9.0;net10.0</TargetFrameworks>
@@ -6,7 +6,7 @@
 		<Authors>Mariusz Kotas</Authors>
 		<Description>Extensions to cryptocurrency websocket clients (core library, only interfaces and feature classes)</Description>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<PackageReleaseNotes>Add .NET 10 support and refresh runtime dependencies.</PackageReleaseNotes>
+		<PackageReleaseNotes>Refresh exchange clients and runtime dependencies; include order book allocation improvements. See https://github.com/Marfusios/crypto-websocket-extensions/releases/tag/v2.17.0.</PackageReleaseNotes>
 		<Copyright>Copyright 2026 Mariusz Kotas. All rights reserved.</Copyright>
 		<PackageTags>Crypto websockets websocket client cryptocurrency exchange bitcoin extensions</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -25,9 +25,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.9" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-		<PackageReference Include="System.Reactive" Version="6.1.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+		<PackageReference Include="Newtonsoft.Json" />
+		<PackageReference Include="System.Reactive" />
 	</ItemGroup>
 
 	<ItemGroup>
