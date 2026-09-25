@@ -53,13 +53,14 @@ The full package includes these exchange adapters. Available order book, trade, 
 | Aster                      | [Aster.Client.Websocket](https://www.nuget.org/packages/Aster.Client.Websocket)             |
 | Binance (spot and futures) | [Binance.Client.Websocket](https://www.nuget.org/packages/Binance.Client.Websocket)         |
 | Bitfinex                   | [Bitfinex.Client.Websocket](https://www.nuget.org/packages/Bitfinex.Client.Websocket)       |
-| BitMEX                     | [Bitmex.Client.Websocket](https://www.nuget.org/packages/Bitmex.Client.Websocket)           |
 | Bitstamp                   | [Bitstamp.Client.Websocket](https://www.nuget.org/packages/Bitstamp.Client.Websocket)       |
 | Bybit                      | [Bybit.Client.Websocket](https://www.nuget.org/packages/Bybit.Client.Websocket)             |
 | Coinbase                   | [Coinbase.Client.Websocket](https://www.nuget.org/packages/Coinbase.Client.Websocket)       |
 | Hyperliquid                | [Hyperliquid.Client.Websocket](https://www.nuget.org/packages/Hyperliquid.Client.Websocket) |
 | Luno                       | [Luno.Client.Websocket](https://www.nuget.org/packages/Luno.Client.Websocket)               |
 | VALR                       | [Valr.Client.Websocket](https://www.nuget.org/packages/Valr.Client.Websocket)               |
+
+BitMEX [ceased exchange operations on September 23, 2026](https://www.bitmex.com/wind-down/). Its adapter remains packaged for backward compatibility, but it is a legacy integration and no longer provides a live exchange feed.
 
 The Bitstamp order book adapter currently consumes full snapshots from `order_book_*` streams; `diff_order_book_*` support is not included in 2.17.0.
 
@@ -83,19 +84,21 @@ The Bitstamp order book adapter currently consumes full snapshots from `order_bo
 
 Usage (a console application with the full package installed):
 
+This example uses Coinbase Exchange's public [`level2_batch` channel](https://docs.cdp.coinbase.com/exchange/websocket-feed/channels#level2-batch-channel), which sends order book updates in 50 ms batches and requires no API key.
+
 ```csharp
 using System;
-using Bitmex.Client.Websocket;
-using Bitmex.Client.Websocket.Client;
-using Bitmex.Client.Websocket.Requests;
-using Bitmex.Client.Websocket.Websockets;
+using Coinbase.Client.Websocket;
+using Coinbase.Client.Websocket.Client;
+using Coinbase.Client.Websocket.Requests;
+using Coinbase.Client.Websocket.Communicator;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
 using Crypto.Websocket.Extensions.OrderBooks.Sources;
 
-const string pair = "XBTUSD";
-using var communicator = new BitmexWebsocketCommunicator(BitmexValues.ApiWebsocketUrl);
-using var client = new BitmexWebsocketClient(communicator);
-using var source = new BitmexOrderBookSource(client);
+const string pair = "BTC-USD";
+using var communicator = new CoinbaseWebsocketCommunicator(CoinbaseValues.ApiWebsocketUrl);
+using var client = new CoinbaseWebsocketClient(communicator);
+using var source = new CoinbaseOrderBookSource(client);
 using var orderBook = new CryptoOrderBook(pair, source);
 
 using var updates = orderBook.OrderBookUpdatedStream.Subscribe(change =>
@@ -103,7 +106,11 @@ using var updates = orderBook.OrderBookUpdatedStream.Subscribe(change =>
 
 // Subscribe on the initial connection and after every reconnect.
 using var reconnects = communicator.ReconnectionHappened.Subscribe(_ =>
-    client.Send(new BookSubscribeRequest(pair)));
+    client.Send(new SubscribeRequest
+    {
+        ProductIds = new[] { pair },
+        Channels = new[] { "level2_batch" }
+    }));
 
 await communicator.Start();
 Console.WriteLine("Press Enter to stop.");
@@ -145,7 +152,7 @@ Use `CombineLatest` to observe the latest quotes from several order books. It em
 ```csharp
 Observable.CombineLatest(new[]
             {
-                bitmexOrderBook.BidAskUpdatedStream,
+                coinbaseOrderBook.BidAskUpdatedStream,
                 bitfinexOrderBook.BidAskUpdatedStream,
                 binanceOrderBook.BidAskUpdatedStream,
             })
