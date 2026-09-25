@@ -53,7 +53,7 @@ jobs:
     - name: Unit tests
       run: dotnet test test/Crypto.Websocket.Extensions.Tests/Crypto.Websocket.Extensions.Tests.csproj --configuration Release --no-build --logger "trx;LogFilePrefix=unit"
     - name: Debug unit tests (includes buffering and timing coverage)
-      run: dotnet test test/Crypto.Websocket.Extensions.Tests/Crypto.Websocket.Extensions.Tests.csproj --configuration Debug --no-restore --logger "trx;LogFilePrefix=debug"
+      run: dotnet test test/Crypto.Websocket.Extensions.Tests/Crypto.Websocket.Extensions.Tests.csproj --configuration Debug --no-restore -p:TestTfmsInParallel=false --logger "trx;LogFilePrefix=debug"
     - name: Recorded-message integration tests
       run: dotnet test test_integration/Crypto.Websocket.Extensions.Tests.Integration/Crypto.Websocket.Extensions.Tests.Integration.csproj --configuration Release --no-build --filter "FullyQualifiedName~StreamingRecordedMessages_ShouldHandleOrderBookCorrectly" --logger "trx;LogFilePrefix=integration"
     - name: Test Report

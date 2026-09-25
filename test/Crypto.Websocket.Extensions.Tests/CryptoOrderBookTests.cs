@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -388,10 +388,19 @@ namespace Crypto.Websocket.Extensions.Tests
             var data2 = GetOrderBookSnapshotMockData(pair2, 200);
             var data = data2.Concat(data1).ToArray();
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
-            var source = new OrderBookSourceMock(snapshot);
+            using var source = new OrderBookSourceMock(snapshot);
 
             ICryptoOrderBook orderBook1 = new CryptoOrderBook(pair1, source) { DebugEnabled = true };
             ICryptoOrderBook orderBook2 = new CryptoOrderBook(pair2, source) { DebugEnabled = true };
+
+            var diffsProcessed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var processedBulks = 0;
+            using var subscription = source.OrderBookStream.Subscribe(bulks =>
+            {
+                // Source observers run after both order books process each batch.
+                if (Interlocked.Add(ref processedBulks, bulks.Length) >= 5)
+                    diffsProcessed.TrySetResult(true);
+            });
 
             source.StreamSnapshot();
 
@@ -444,7 +453,7 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair1, 999, CryptoOrderSide.Ask)
             ));
 
-            await Task.Delay(500);
+            await diffsProcessed.Task.WaitAsync(TimeSpan.FromSeconds(15));
 
             Assert.NotEmpty(orderBook1.BidLevels);
             Assert.NotEmpty(orderBook1.AskLevels);
@@ -707,20 +716,22 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 520, 50, CryptoOrderSide.Ask),
             };
             var snapshot = new OrderBookLevelBulk(OrderBookAction.Insert, data, CryptoOrderBookType.L2);
-            var source = new OrderBookSourceMock(snapshot);
+            using var source = new OrderBookSourceMock(snapshot);
             source.BufferInterval = TimeSpan.FromMilliseconds(100);
             var orderBookUpdatedCount = 0;
+            var notificationsProcessed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source)
+            using ICryptoOrderBook orderBook = new CryptoOrderBook(pair, source)
             {
                 ValidityCheckTimeout = TimeSpan.FromMilliseconds(200),
                 ValidityCheckEnabled = true,
                 ValidityCheckLimit = 2
             };
 
-            orderBook.OrderBookUpdatedStream.Subscribe(x =>
+            using var subscription = orderBook.OrderBookUpdatedStream.Subscribe(x =>
             {
-                orderBookUpdatedCount++;
+                if (Interlocked.Increment(ref orderBookUpdatedCount) == 2)
+                    notificationsProcessed.TrySetResult(true);
             });
 
             source.StreamSnapshot();
@@ -729,7 +740,8 @@ namespace Crypto.Websocket.Extensions.Tests
                 CreateLevel(pair, 499, 400, CryptoOrderSide.Ask)
             ));
 
-            await Task.Delay(TimeSpan.FromMilliseconds(2000));
+            await Task.WhenAll(source.SnapshotRequested.Task, notificationsProcessed.Task)
+                .WaitAsync(TimeSpan.FromSeconds(15));
 
             Assert.Equal(pair, source.SnapshotLastPair);
             Assert.InRange(source.SnapshotCalledCount, 1, 5);

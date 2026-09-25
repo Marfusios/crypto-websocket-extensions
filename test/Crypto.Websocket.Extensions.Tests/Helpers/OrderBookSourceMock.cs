@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Crypto.Websocket.Extensions.Core.OrderBooks;
@@ -12,6 +12,8 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
     {
         private readonly OrderBookLevelBulk _snapshot;
         private readonly OrderBookLevelBulk[] _bulks;
+
+        public TaskCompletionSource<string> SnapshotRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public int SnapshotCalledCount { get; private set; }
         public string SnapshotLastPair { get; private set; }
@@ -62,6 +64,7 @@ namespace Crypto.Websocket.Extensions.Tests.Helpers
         {
             SnapshotCalledCount++;
             SnapshotLastPair = pair;
+            SnapshotRequested.TrySetResult(pair);
 
             var bulk = new OrderBookLevelBulk(OrderBookAction.Insert, new OrderBookLevel[0], CryptoOrderBookType.L2);
 
